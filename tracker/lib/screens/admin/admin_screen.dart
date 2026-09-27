@@ -34,6 +34,8 @@ class _AdminScreenState extends State<AdminScreen>
   String _morningGraceTime = '08:45';
   String _searchQuery = '';
   String _filterRole = 'all';
+  int _currentPage = 0;
+  static const int _pageSize = 20;
 
   @override
   void initState() {
@@ -99,22 +101,29 @@ class _AdminScreenState extends State<AdminScreen>
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
-    final effectiveUsers = _users;
-
-    return effectiveUsers.where((u) {
+    return _users.where((u) {
       final matchesSearch = _searchQuery.isEmpty ||
           (u['username'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (u['fullName'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (u['empNom'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (u['empPrenom'] ?? '').toString().toLowerCase().contains(_searchQuery.toLowerCase());
-
       final matchesRole = _filterRole == 'all' ||
           u['role'] == _filterRole ||
           (_filterRole == 'inactive' && u['isActive'] == false);
-
       return matchesSearch && matchesRole;
     }).toList();
   }
+
+  List<Map<String, dynamic>> get _pagedUsers {
+    final all = _filteredUsers;
+    final start = _currentPage * _pageSize;
+    if (start >= all.length) return [];
+    return all.sublist(start, (start + _pageSize).clamp(0, all.length));
+  }
+
+  int get _totalPages => (_filteredUsers.length / _pageSize).ceil().clamp(1, 9999);
+
+  void _resetPage() => setState(() => _currentPage = 0);
 
   void _showAddUserDialog() {
     final usernameCtrl = TextEditingController();
@@ -1169,7 +1178,7 @@ class _AdminScreenState extends State<AdminScreen>
                   return Column(
                     children: [
                       TextField(
-                        onChanged: (v) => setState(() => _searchQuery = v),
+                        onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 0; }),
                         style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
                         decoration: InputDecoration(
                           hintText: 'بحث باسم المستخدم أو الاسم أو اللقب...',
@@ -1212,7 +1221,7 @@ class _AdminScreenState extends State<AdminScreen>
                             DropdownMenuItem(value: 'admin', child: Text('مسؤولو النظام')),
                             DropdownMenuItem(value: 'inactive', child: Text('الحسابات المعطلة')),
                           ],
-                          onChanged: (val) => setState(() => _filterRole = val ?? 'all'),
+                          onChanged: (val) => setState(() { _filterRole = val ?? 'all'; _currentPage = 0; }),
                         ),
                       ),
                     ],
@@ -1222,7 +1231,7 @@ class _AdminScreenState extends State<AdminScreen>
                   children: [
                     Expanded(
                       child: TextField(
-                        onChanged: (v) => setState(() => _searchQuery = v),
+                        onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 0; }),
                         style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal'),
                         decoration: InputDecoration(
                           hintText: 'بحث باسم المستخدم أو الاسم أو اللقب...',
@@ -1264,7 +1273,7 @@ class _AdminScreenState extends State<AdminScreen>
                           DropdownMenuItem(value: 'admin', child: Text('مسؤولو النظام')),
                           DropdownMenuItem(value: 'inactive', child: Text('الحسابات المعطلة')),
                         ],
-                        onChanged: (val) => setState(() => _filterRole = val ?? 'all'),
+                        onChanged: (val) => setState(() { _filterRole = val ?? 'all'; _currentPage = 0; }),
                       ),
                     ),
                   ],
@@ -1273,15 +1282,29 @@ class _AdminScreenState extends State<AdminScreen>
             ),
             const SizedBox(height: 14),
 
-            // Users List
-            Text(
-              'قائمة المستخدمين (${_filteredUsers.length}):',
-              style: const TextStyle(
-                fontFamily: 'Tajawal',
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFFD4AF37),
-              ),
+            // Users List header + pagination info
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'قائمة المستخدمين (${_filteredUsers.length}):',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFD4AF37),
+                  ),
+                ),
+                if (_filteredUsers.length > _pageSize)
+                  Text(
+                    'صفحة ${_currentPage + 1} / $_totalPages',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 12,
+                      color: Colors.white54,
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(height: 8),
 
@@ -1309,10 +1332,10 @@ class _AdminScreenState extends State<AdminScreen>
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _filteredUsers.length,
+                itemCount: _pagedUsers.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, idx) {
-                final u = _filteredUsers[idx];
+                final u = _pagedUsers[idx];
                 final isActive = u['isActive'] == true;
                 final roleStr = _formatRole(u['role']);
 
@@ -1532,7 +1555,62 @@ class _AdminScreenState extends State<AdminScreen>
               },
             ),
             const SizedBox(height: 24),
+
+            // ── Pagination Controls ──────────────────────────────────────
+            if (_filteredUsers.length > _pageSize)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A0A22),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Previous
+                    TextButton.icon(
+                      onPressed: _currentPage > 0
+                          ? () => setState(() => _currentPage--)
+                          : null,
+                      icon: const Icon(Icons.chevron_right, size: 20),
+                      label: const Text('السابق', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _currentPage > 0
+                            ? const Color(0xFFD4AF37)
+                            : Colors.white24,
+                      ),
+                    ),
+                    // Page indicator dots
+                    Text(
+                      '${_currentPage + 1}  /  $_totalPages',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        color: Color(0xFFD4AF37),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    // Next
+                    TextButton.icon(
+                      onPressed: _currentPage < _totalPages - 1
+                          ? () => setState(() => _currentPage++)
+                          : null,
+                      icon: const Icon(Icons.chevron_left, size: 20),
+                      label: const Text('التالي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: _currentPage < _totalPages - 1
+                            ? const Color(0xFFD4AF37)
+                            : Colors.white24,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             const AppFooter(),
+
             const SizedBox(height: 16),
           ],
         ),
