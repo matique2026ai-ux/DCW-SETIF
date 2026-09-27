@@ -26,6 +26,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _pinCtrl = TextEditingController();
+  final _pinFocusNode = FocusNode();
   bool _isLoading = false;
   bool _obscure = true;
   bool _obscurePin = true;
@@ -77,6 +78,9 @@ class _LoginScreenState extends State<LoginScreen>
       if (!_forceShowPin && _showPinField != shouldShow) {
         setState(() => _showPinField = shouldShow);
       }
+      if (_error != null) {
+        setState(() => _error = null);
+      }
     });
 
     _slideController.forward();
@@ -87,6 +91,7 @@ class _LoginScreenState extends State<LoginScreen>
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     _pinCtrl.dispose();
+    _pinFocusNode.dispose();
     _slideController.dispose();
     _shakeController.dispose();
     super.dispose();
@@ -171,6 +176,13 @@ class _LoginScreenState extends State<LoginScreen>
           _forceShowPin = true;
           _showPinField = true;
         });
+        _pinFocusNode.requestFocus();
+        if (_pinCtrl.text.isNotEmpty) {
+          _pinCtrl.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _pinCtrl.text.length,
+          );
+        }
       }
       setState(() {
         _error = errStr;
@@ -380,6 +392,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 color: Colors.white,
                                 fontSize: 14,
                               ),
+                              onChanged: (_) {
+                                if (_error != null) setState(() => _error = null);
+                              },
                               onSubmitted: (_) => _login(),
                               decoration: InputDecoration(
                                 labelText: loc.loginPassword,
@@ -459,6 +474,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ] else if (_showPinField || _forceShowPin) ...[
                               TextField(
                                 controller: _pinCtrl,
+                                focusNode: _pinFocusNode,
                                 cursorColor: const Color(0xFFD4AF37),
                                 obscureText: _obscurePin,
                                 keyboardType: TextInputType.number,
@@ -469,6 +485,13 @@ class _LoginScreenState extends State<LoginScreen>
                                   fontSize: 14,
                                   letterSpacing: 3,
                                 ),
+                                onChanged: (_) {
+                                  if (_error != null) {
+                                    setState(() => _error = null);
+                                  } else {
+                                    setState(() {});
+                                  }
+                                },
                                 onSubmitted: (_) => _login(),
                                 decoration: InputDecoration(
                                   labelText: 'رمز الأمان السري (PIN Code) — تأكيد الهوية',
@@ -487,12 +510,31 @@ class _LoginScreenState extends State<LoginScreen>
                                     Icons.shield_outlined,
                                     color: Color(0xFFD4AF37),
                                   ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePin ? Icons.visibility_off : Icons.visibility,
-                                      color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
-                                    ),
-                                    onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                                  suffixIcon: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_pinCtrl.text.isNotEmpty)
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.cancel_outlined,
+                                            color: Color(0xFFD4AF37),
+                                            size: 18,
+                                          ),
+                                          tooltip: 'مسح الرمز',
+                                          onPressed: () {
+                                            _pinCtrl.clear();
+                                            setState(() => _error = null);
+                                            _pinFocusNode.requestFocus();
+                                          },
+                                        ),
+                                      IconButton(
+                                        icon: Icon(
+                                          _obscurePin ? Icons.visibility_off : Icons.visibility,
+                                          color: const Color(0xFFD4AF37).withValues(alpha: 0.6),
+                                        ),
+                                        onPressed: () => setState(() => _obscurePin = !_obscurePin),
+                                      ),
+                                    ],
                                   ),
                                   filled: true,
                                   fillColor: const Color(0xFF3D1A45),
@@ -515,31 +557,105 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '💡 يُطلب رمز الأمان مرة واحدة فقط لتوثيق جهازك/متصفحك كجهاز رسمي للمدير.',
+                                '💡 الرمز الافتراضي للمسؤول: 202600 (6 أرقام) — لتوثيق المتصفح/الجهاز.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: fontFam,
-                                  color: Colors.white60,
+                                  color: Colors.white70,
                                   fontSize: 11,
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                            ],
-
-                            // Error
-                            if (_error != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  _error!,
+                              if (_pinCtrl.text.isNotEmpty && _pinCtrl.text.trim().length != 6) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  '⚠️ تنبيه: رمز الأمان يتكون من 6 أرقام (أنت كتبت ${_pinCtrl.text.trim().length} أرقام فقط)',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontFamily: fontFam,
-                                    color: const Color(0xFFEF4444),
-                                    fontSize: 13,
+                                    color: const Color(0xFFD4AF37),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 8),
+                            ],
+
+                            // Error message with instant retry/clear action
+                            if (_error != null) ...[
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEF4444).withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFEF4444).withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 18),
+                                          const SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                              _error!,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontFamily: fontFam,
+                                                color: const Color(0xFFEF4444),
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (_error!.contains('PIN') || _error!.contains('رمز الأمان') || _showPinField || _forceShowPin) ...[
+                                        const SizedBox(height: 8),
+                                        InkWell(
+                                          onTap: () {
+                                            _pinCtrl.clear();
+                                            setState(() => _error = null);
+                                            _pinFocusNode.requestFocus();
+                                          },
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 16),
+                                                const SizedBox(width: 6),
+                                                Text(
+                                                  'مسح الرمز وإعادة المحاولة (الرمز المعتمد: 202600)',
+                                                  style: TextStyle(
+                                                    fontFamily: fontFam,
+                                                    color: const Color(0xFFD4AF37),
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                               ),
+                            ],
                             const SizedBox(height: 24),
 
                             // Login button
