@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
@@ -130,6 +131,20 @@ class _LoginScreenState extends State<LoginScreen>
         }
       }
 
+      // 🚫 STRICT ENFORCEMENT: Field Inspectors are strictly forbidden from logging in via any Web Browser
+      if (kIsWeb && (auth.currentUser?.role == 'inspector' || auth.currentUser?.role == null)) {
+        await auth.logout();
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+            _error = '🚫 غير مصرّح بالدخول عبر المتصفح: حسابات المفتشين الميدانيين مقيّدة حصرياً بتطبيق الهاتف المحمول المصطب (DCW-SETIF-TRACKER).';
+          });
+          _shakeController.forward(from: 0);
+          _showInspectorWebBlockedDialog();
+        }
+        return;
+      }
+
       Widget nextScreen;
       switch (auth.currentUser?.role) {
         case 'admin':
@@ -190,6 +205,57 @@ class _LoginScreenState extends State<LoginScreen>
       });
       _shakeController.forward(from: 0);
     }
+  }
+
+  void _showInspectorWebBlockedDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF240D2D),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.block, color: Color(0xFFEF4444), size: 28),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'الولوج عبر المتصفح غير مصرّح به',
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '⚠️ تنبيه أمني إداري رسمي:\n'
+              'حسابات المفتشين الميدانيين مقيّدة أمنياً وقانونياً بالولوج حصرياً عبر تطبيق الهاتف المحمول المصطب (DCW-SETIF-TRACKER).\n\n'
+              '• يمنع منعاً باتاً فتح الحساب من متصفح الهاتف (Google Chrome / Safari).\n'
+              '• يمنع منعاً باتاً فتح الحساب من متصفح أجهزة الكمبيوتر المكتبية أو المحمولة.\n\n'
+              'يرجى فتح التطبيق المصطب على هاتفك المحمول المعتمد لتسجيل الحضور وتنفيذ مهامك الرقابية.',
+              style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70, height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('فهمت ذلك', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   @override

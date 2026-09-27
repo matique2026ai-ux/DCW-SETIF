@@ -268,8 +268,20 @@ class _AdminScreenState extends State<AdminScreen>
                       fillColor: Color(0xFF1E0B26),
                     ),
                     items: [
-                      const DropdownMenuItem<int?>(value: null, child: Text('بدون ربط (حساب إداري عام)')),
-                      ..._employees.map((e) {
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text(
+                          'بدون ربط (حساب إداري عام)',
+                          style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+                        ),
+                      ),
+                      ..._employees
+                          .where((e) {
+                            final nom = (e['Nom'] ?? '').toString().toLowerCase();
+                            final nomAr = (e['NomAr'] ?? '').toString().toLowerCase();
+                            return !nom.contains('tracker_admin') && !nomAr.contains('tracker_admin');
+                          })
+                          .map((e) {
                         final rawId = e['Id'] ?? e['id'];
                         final id = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
                         final nomAr = (e['NomAr'] ?? '').toString().trim();
@@ -283,12 +295,48 @@ class _AdminScreenState extends State<AdminScreen>
                             : (fullNameFr.isNotEmpty ? fullNameFr : 'موظف #$id');
                         final service = (e['Service'] ?? '').toString();
                         final matricule = (e['NumeroMatricule'] ?? '').toString();
-                        final label = matricule.isNotEmpty
-                            ? '$displayName [$matricule] - $service'
-                            : '$displayName - $service';
+
                         return DropdownMenuItem<int?>(
                           value: id,
-                          child: Text(label, overflow: TextOverflow.ellipsis),
+                          child: Row(
+                            children: [
+                              if (matricule.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4), width: 0.5),
+                                  ),
+                                  child: Text(
+                                    matricule,
+                                    style: const TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFD4AF37),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  displayName,
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (service.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  service,
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white54),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
                         );
                       }),
                     ],
@@ -519,14 +567,62 @@ class _AdminScreenState extends State<AdminScreen>
                       fillColor: Color(0xFF1E0B26),
                     ),
                     items: [
-                      const DropdownMenuItem(value: null, child: Text('بدون ربط (حساب عام)')),
-                      ..._employees.map((e) {
-                        final id = e['Id'] as int;
-                        final name = '${e['Nom'] ?? ''} ${e['Prenom'] ?? ''}'.trim();
-                        final service = e['Service'] ?? '';
-                        return DropdownMenuItem(
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text(
+                          'بدون ربط (حساب عام)',
+                          style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+                        ),
+                      ),
+                      ..._employees
+                          .where((e) {
+                            final nom = (e['Nom'] ?? '').toString().toLowerCase();
+                            final nomAr = (e['NomAr'] ?? '').toString().toLowerCase();
+                            return !nom.contains('tracker_admin') && !nomAr.contains('tracker_admin');
+                          })
+                          .map((e) {
+                        final rawId = e['Id'] ?? e['id'];
+                        final id = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
+                        final name = '${e['NomAr'] ?? e['Nom'] ?? ''} ${e['PrenomAr'] ?? e['Prenom'] ?? ''}'.trim();
+                        final displayName = name.isNotEmpty ? name : 'موظف #$id';
+                        final service = (e['Service'] ?? '').toString();
+                        final matricule = (e['NumeroMatricule'] ?? '').toString();
+                        return DropdownMenuItem<int?>(
                           value: id,
-                          child: Text('$name ($service)', overflow: TextOverflow.ellipsis),
+                          child: Row(
+                            children: [
+                              if (matricule.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4), width: 0.5),
+                                  ),
+                                  child: Text(
+                                    matricule,
+                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  displayName,
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (service.isNotEmpty) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  service,
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white54),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
                         );
                       }),
                     ],

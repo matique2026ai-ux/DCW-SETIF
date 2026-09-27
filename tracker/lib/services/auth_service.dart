@@ -122,6 +122,15 @@ class AuthService extends ChangeNotifier {
       final userData = result['user'];
       final token = result['token'] as String;
 
+      // 🚫 STRICT ENFORCEMENT: Field Inspectors are strictly forbidden from Web login
+      final userRole = (userData['role'] ?? '').toString();
+      final userRoleId = userData['roleId'] ?? 0;
+      if (kIsWeb && (userRole == 'inspector' || userRoleId == 4)) {
+        _isLoading = false;
+        notifyListeners();
+        throw Exception('🚫 الولوج عبر المتصفح غير مصرّح به للمفتشين الميدانيين: حساب المفتش مقيّد حصرياً بتطبيق الهاتف المحمول المصطب (DCW-SETIF-TRACKER). يمنع منعاً باتاً فتح الحساب من متصفح الهاتف أو الكمبيوتر.');
+      }
+
       // If login succeeded with effective PIN, remember on this device
       if (effectivePin != null && effectivePin.isNotEmpty) {
         await saveMasterPin(effectivePin);
