@@ -123,7 +123,6 @@ class _AdminScreenState extends State<AdminScreen>
 
   int get _totalPages => (_filteredUsers.length / _pageSize).ceil().clamp(1, 9999);
 
-  void _resetPage() => setState(() => _currentPage = 0);
 
   void _showAddUserDialog() {
     final usernameCtrl = TextEditingController();
