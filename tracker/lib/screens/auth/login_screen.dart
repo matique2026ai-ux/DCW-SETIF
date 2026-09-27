@@ -557,7 +557,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '💡 الرمز الافتراضي للمسؤول: 202600 (6 أرقام) — لتوثيق المتصفح/الجهاز.',
+                                '🔒 أدخل رمز الأمان السري الخاص بك (6 أرقام).',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontFamily: fontFam,
@@ -638,7 +638,7 @@ class _LoginScreenState extends State<LoginScreen>
                                                 const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 16),
                                                 const SizedBox(width: 6),
                                                 Text(
-                                                  'مسح الرمز وإعادة المحاولة (الرمز المعتمد: 202600)',
+                                                  'مسح الرمز وإعادة المحاولة',
                                                   style: TextStyle(
                                                     fontFamily: fontFam,
                                                     color: const Color(0xFFD4AF37),
