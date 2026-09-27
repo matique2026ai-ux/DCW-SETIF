@@ -60,11 +60,11 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
       if (view != null) {
         final screenWidth = view.physicalSize.width / view.devicePixelRatio;
         if (screenWidth < 900 && tabs.isNotEmpty) {
-          return const Size.fromHeight(116);
+          return const Size.fromHeight(104);
         }
       }
     } catch (_) {}
-    return const Size.fromHeight(68);
+    return Size.fromHeight(tabs.isNotEmpty ? 104 : 64);
   }
 
   @override
@@ -73,10 +73,8 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
     final screenWidth = MediaQuery.of(context).size.width;
     final isCompact = screenWidth < 900;
     final hasTabs = tabs.isNotEmpty;
-    final navHeight = (isCompact && hasTabs) ? 116.0 : (isCompact ? 64.0 : 68.0);
 
     return Container(
-      height: navHeight,
       decoration: BoxDecoration(
         color: const Color(0xFF1C0924).withValues(alpha: 0.96),
         border: const Border(
@@ -108,9 +106,9 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
       children: [
         // Top tier: Branding + Title + Action Buttons (Row layout preventing overlap)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           child: SizedBox(
-            height: 38,
+            height: 44,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -150,7 +148,7 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
                                   title,
                                   style: const TextStyle(
                                     fontFamily: 'Tajawal',
-                                    fontSize: 12.5,
+                                    fontSize: 12.0,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                     letterSpacing: 0.1,
@@ -573,6 +571,37 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Direct language toggle pill (one-tap toggle)
+            InkWell(
+              onTap: () => context.read<LanguageProvider>().toggleLanguage(),
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5), width: 0.8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.language, color: Color(0xFFD4AF37), size: 12),
+                    const SizedBox(width: 3),
+                    Text(
+                      isAr ? 'FR' : 'عربي',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Container(width: 1, height: 12, color: Colors.white12),
             if (onRefresh != null) ...[
               IconButton(
                 visualDensity: VisualDensity.compact,
@@ -728,13 +757,34 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
             ),
             Container(width: 1, height: isCompact ? 12 : 16, color: Colors.white12),
           ],
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: Icon(Icons.language, color: Colors.white70, size: isCompact ? 15 : 17),
-            tooltip: isAr ? 'تغيير اللغة' : 'Changer de langue',
-            onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
-            padding: isCompact ? const EdgeInsets.all(2) : const EdgeInsets.all(8),
-            constraints: isCompact ? const BoxConstraints(minWidth: 26, minHeight: 26) : null,
+          InkWell(
+            onTap: () => context.read<LanguageProvider>().toggleLanguage(),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5), width: 0.8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.language, size: 14, color: Color(0xFFD4AF37)),
+                  const SizedBox(width: 4),
+                  Text(
+                    isAr ? 'FR' : 'العربية',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           if (onLogout != null) ...[
             Container(width: 1, height: isCompact ? 12 : 16, color: Colors.white12),

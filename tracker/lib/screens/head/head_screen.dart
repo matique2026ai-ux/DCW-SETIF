@@ -261,11 +261,14 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   children: [
                     const Icon(Icons.people_alt, color: Color(0xFFD4AF37), size: 20),
                     const SizedBox(width: 8),
-                    Text(
-                      isAr ? 'مكتب المستخدمين — متابعة تعداد موظفي المديرية' : 'Bureau du Personnel — Effectif de la Direction',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
+                    Expanded(
+                      child: Text(
+                        isAr ? 'مكتب المستخدمين — متابعة تعداد موظفي المديرية' : 'Bureau du Personnel — Effectif de la Direction',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
@@ -3674,18 +3677,31 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     );
   }
 
+  String _getDisplayDepartmentName(bool isAr) {
+    if (_departmentName.contains('الإدارة')) {
+      return isAr ? 'مصلحة الإدارة والوسائل' : 'Service Administration & Moyens';
+    } else if (_departmentName.contains('المستهلك')) {
+      return isAr ? 'مصلحة حماية المستهلك وقمع الغش' : 'Protection Consommateur & Fraudes';
+    } else {
+      return isAr ? 'مصلحة المنافسة والتحقيقات' : 'Concurrence & Enquêtes Éco.';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthService>().currentUser;
+    final isAr = context.watch<LanguageProvider>().isArabic;
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: ModernExecutiveNavbar(
-          title: _departmentName,
-          subtitle: 'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
-          badgeText: 'رئيس مصلحة',
+          title: _getDisplayDepartmentName(isAr),
+          subtitle: isAr
+              ? 'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف'
+              : 'Resp: ${user?.fullName ?? user?.username ?? ''} • Direction Commerce Sétif',
+          badgeText: isAr ? 'رئيس مصلحة' : 'Chef de Service',
           showBackButton: Navigator.canPop(context),
           onBack: () => Navigator.pop(context),
           customTitleWidget: Column(
@@ -3698,21 +3714,24 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 children: [
                   Flexible(
                     child: Text(
-                      _departmentName,
+                      _getDisplayDepartmentName(isAr),
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 12.0,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
-                        letterSpacing: 0.2,
+                        letterSpacing: 0.1,
                       ),
                       overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 3),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 18),
-                    tooltip: 'تبديل المصلحة المعاينة',
+                    icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 16),
+                    tooltip: isAr ? 'تبديل المصلحة المعاينة' : 'Changer de service',
                     color: const Color(0xFF2D1035),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                     onSelected: (val) {
                       setState(() {
                         _departmentName = val;
@@ -3720,14 +3739,14 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                       });
                       _loadAllData();
                     },
-                    itemBuilder: (ctx) => const [
+                    itemBuilder: (ctx) => [
                       PopupMenuItem(
                         value: 'مصلحة الإدارة والوسائل',
                         child: Row(
                           children: [
-                            Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
-                            SizedBox(width: 8),
-                            Text('مصلحة الإدارة والوسائل (المستخدمين، الوسائل والرواتب)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                            const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'مصلحة الإدارة والوسائل (المستخدمين والوسائل)' : 'Administration & Moyens', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
                           ],
                         ),
                       ),
@@ -3735,9 +3754,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                         value: 'مصلحة حماية المستهلك وقمع الغش',
                         child: Row(
                           children: [
-                            Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
-                            SizedBox(width: 8),
-                            Text('مصلحة حماية المستهلك وقمع الغش (الرقابة الميدانية)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                            const Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'مصلحة حماية المستهلك وقمع الغش' : 'Protection Consommateur & Fraudes', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
                           ],
                         ),
                       ),
@@ -3745,17 +3764,17 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                         value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
                         child: Row(
                           children: [
-                            Icon(Icons.query_stats, color: Color(0xFFD4AF37), size: 16),
-                            SizedBox(width: 8),
-                            Text('مصلحة المنافسة والتحقيقات الاقتصادية (الأسعار والفوترة)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                            const Icon(Icons.query_stats, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'مصلحة المنافسة والتحقيقات الاقتصادية' : 'Concurrence & Enquêtes Éco.', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
                           ],
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 3),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
                       color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
@@ -3764,10 +3783,10 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                         width: 0.5,
                       ),
                     ),
-                    child: const Text(
-                      'رئيس مصلحة',
-                      style: TextStyle(
-                        fontSize: 9.5,
+                    child: Text(
+                      isAr ? 'رئيس مصلحة' : 'Chef Service',
+                      style: const TextStyle(
+                        fontSize: 8.5,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFFD4AF37),
                       ),
@@ -3775,15 +3794,17 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   ),
                 ],
               ),
-              const SizedBox(height: 1),
               Text(
-                'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف',
+                isAr
+                    ? 'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف'
+                    : 'Resp: ${user?.fullName ?? user?.username ?? ''} • Dir. Commerce Sétif',
                 style: const TextStyle(
-                  fontSize: 10.5,
+                  fontSize: 9.0,
                   color: Color(0xFFD4AF37),
                   fontWeight: FontWeight.w500,
                 ),
                 overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ],
           ),
@@ -3793,22 +3814,22 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
             setState(() {});
           },
           tabs: _isAdministration
-              ? const [
-                  ModernNavTabItem(icon: Icons.badge_outlined, label: 'المستخدمين والانضباط'),
-                  ModernNavTabItem(icon: Icons.apartment_outlined, label: 'المقرات والبصمة الجغرافية'),
-                  ModernNavTabItem(icon: Icons.account_balance_wallet_outlined, label: 'المحاسبة والرواتب'),
+              ? [
+                  ModernNavTabItem(icon: Icons.badge_outlined, label: isAr ? 'المستخدمين والانضباط' : 'Personnel & Discipline'),
+                  ModernNavTabItem(icon: Icons.apartment_outlined, label: isAr ? 'المقرات والبصمة الجغرافية' : 'Sièges & Géolocalisation'),
+                  ModernNavTabItem(icon: Icons.account_balance_wallet_outlined, label: isAr ? 'المحاسبة والرواتب' : 'Comptabilité & Salaires'),
                 ]
-              : const [
-                  ModernNavTabItem(icon: Icons.assignment, label: 'أوامر المهمة والبرامج'),
-                  ModernNavTabItem(icon: Icons.fact_check, label: 'تأشير المعاينات'),
-                  ModernNavTabItem(icon: Icons.people_alt, label: 'مفتشو المصلحة'),
+              : [
+                  ModernNavTabItem(icon: Icons.assignment, label: isAr ? 'أوامر المهمة والبرامج' : 'Ordres de Mission'),
+                  ModernNavTabItem(icon: Icons.fact_check, label: isAr ? 'تأشير المعاينات' : 'Validation Visites'),
+                  ModernNavTabItem(icon: Icons.people_alt, label: isAr ? 'مفتشو المصلحة' : 'Inspecteurs'),
                 ],
           additionalActions: [
             if (!_isAdministration) ...[
               IconButton(
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.add_task, color: AppTheme.AccentColor, size: 18),
-                tooltip: 'إصدار أمر مهمة جديد',
+                tooltip: isAr ? 'إصدار أمر مهمة جديد' : 'Nouvel ordre de mission',
                 onPressed: _showNewMissionDialog,
               ),
               const SizedBox(width: 4),

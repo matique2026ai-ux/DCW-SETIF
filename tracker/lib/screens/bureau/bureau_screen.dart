@@ -12,6 +12,7 @@ import 'package:drh_setif_tracker/screens/common/change_master_pin_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
+import 'package:drh_setif_tracker/providers/language_provider.dart';
 
 class BureauScreen extends StatefulWidget {
   const BureauScreen({super.key});
@@ -799,14 +800,17 @@ class _BureauScreenState extends State<BureauScreen>
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
+    final isAr = context.watch<LanguageProvider>().isArabic;
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: ModernExecutiveNavbar(
           title: loc.roleBureau,
-          badgeText: 'الموارد البشرية والرواتب',
-          subtitle: 'تسيير الموظفين والمسار المهني • مديرية التجارة سطيف',
+          badgeText: isAr ? 'الموارد البشرية والرواتب' : 'RH & Traitements',
+          subtitle: isAr
+              ? 'تسيير الموظفين والمسار المهني • مديرية التجارة سطيف'
+              : 'Gestion du Personnel & Carrières • Dir. Commerce Sétif',
           selectedIndex: _tabController.index,
           onTabSelected: (idx) {
             _tabController.animateTo(idx);
@@ -815,16 +819,16 @@ class _BureauScreenState extends State<BureauScreen>
           tabs: [
             ModernNavTabItem(
               icon: Icons.people_alt,
-              label: 'الموظفون (${_employees.length})',
+              label: isAr ? 'الموظفون (${_employees.length})' : 'Agents (${_employees.length})',
             ),
             ModernNavTabItem(
               icon: Icons.gavel,
-              label: 'الانضباط والاستفسارات (${_inquiries.length})',
+              label: isAr ? 'الانضباط والاستفسارات (${_inquiries.length})' : 'Discipline (${_inquiries.length})',
               badgeCount: _inquiries.where((i) => i['Status'] == 'deduction_ordered' || i['Status'] == 'sent').length,
             ),
-            const ModernNavTabItem(
+            ModernNavTabItem(
               icon: Icons.assignment_turned_in,
-              label: 'التبريرات والشهادات',
+              label: isAr ? 'التبريرات والشهادات' : 'Justifications & Certificats',
             ),
           ],
           additionalActions: [
@@ -843,7 +847,7 @@ class _BureauScreenState extends State<BureauScreen>
                       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                       padding: const EdgeInsets.all(4),
                       icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
-                      tooltip: 'إدراج موظف جديد',
+                      tooltip: isAr ? 'إدراج موظف جديد' : 'Nouvel Agent',
                       onPressed: _showAddEmployeeDialog,
                     ),
                   );
@@ -857,9 +861,9 @@ class _BureauScreenState extends State<BureauScreen>
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
-                  label: const Text(
-                    'إدراج موظف',
-                    style: TextStyle(
+                  label: Text(
+                    isAr ? 'إدراج موظف' : 'Nouvel Agent',
+                    style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
                       fontSize: 12,

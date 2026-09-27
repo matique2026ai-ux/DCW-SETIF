@@ -250,19 +250,6 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
               ),
 
-              // Language toggle
-              Positioned(
-                top: 16,
-                left: 16,
-                child: IconButton(
-                  onPressed: () => langProvider.toggleLanguage(),
-                  icon: const Icon(
-                    Icons.language,
-                    color: Color(0xFFD4AF37),
-                    size: 28,
-                  ),
-                ),
-              ),
 
               // Main content
               Center(
@@ -697,6 +684,50 @@ class _LoginScreenState extends State<LoginScreen>
                             const SizedBox(height: 12),
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Floating Language Pill Button (Always on top of Stack, fully clickable)
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => langProvider.toggleLanguage(),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF240D2D).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFD4AF37), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.45),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.language, color: Color(0xFFD4AF37), size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            isAr ? 'Français' : 'العربية',
+                            style: TextStyle(
+                              fontFamily: fontFam,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFFD4AF37),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

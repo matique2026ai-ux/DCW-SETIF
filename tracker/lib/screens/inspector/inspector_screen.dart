@@ -1657,9 +1657,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final user = context.watch<AuthService>().currentUser;
+    final isAr = context.watch<LanguageProvider>().isArabic;
 
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         backgroundColor: AppTheme.BackgroundColor,
         appBar: AppBar(
@@ -1712,7 +1713,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                           children: [
                             Flexible(
                               child: Text(
-                                loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
+                                isAr ? 'المفتشية الميدانية' : 'Contrôle Terrain',
                                 style: TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontSize: isSmall ? 13.0 : 14.5,
@@ -1735,9 +1736,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                   width: 0.5,
                                 ),
                               ),
-                              child: const Text(
-                                'مفتش',
-                                style: TextStyle(
+                              child: Text(
+                                isAr ? 'مفتش' : 'Inspecteur',
+                                style: const TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontSize: 8.5,
                                   fontWeight: FontWeight.bold,
@@ -1751,7 +1752,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         Text(
                           (user?.fullName != null && user!.fullName!.isNotEmpty)
                               ? '${user.fullName}'
-                              : 'مديرية التجارة وضبط السوق — سطيف',
+                              : (isAr ? 'مديرية التجارة وضبط السوق — سطيف' : 'Direction du Commerce — Sétif'),
                           style: TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: isSmall ? 9.5 : 10.5,
@@ -1868,6 +1869,36 @@ class _InspectorScreenState extends State<InspectorScreen> {
                             ),
                         ],
                       ),
+                      Container(width: 1, height: 14, color: Colors.white12),
+                      InkWell(
+                        onTap: () => context.read<LanguageProvider>().toggleLanguage(),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.language, color: Color(0xFFD4AF37), size: 12),
+                              const SizedBox(width: 3),
+                              Text(
+                                isAr ? 'FR' : 'عربي',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFD4AF37),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       if (isCompact) ...[
                         Container(width: 1, height: 14, color: Colors.white12),
                         PopupMenuButton<String>(
@@ -1882,8 +1913,6 @@ class _InspectorScreenState extends State<InspectorScreen> {
                           onSelected: (val) {
                             if (val == 'password') {
                               ChangePasswordDialog.show(context);
-                            } else if (val == 'language') {
-                              context.read<LanguageProvider>().toggleLanguage();
                             } else if (val == 'logout') {
                               context.read<AuthService>().logout();
                               Navigator.pushReplacement(
@@ -1900,20 +1929,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                   const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
                                   const SizedBox(width: 10),
                                   Text(
-                                    loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
-                                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            PopupMenuItem(
-                              value: 'language',
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.language, color: Colors.white70, size: 18),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
+                                    isAr ? 'تغيير كلمة المرور' : 'Changer mot de passe',
                                     style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
                                   ),
                                 ],
@@ -1927,7 +1943,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                   const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
                                   const SizedBox(width: 10),
                                   Text(
-                                    loc.isArabic ? 'تسجيل الخروج' : 'Déconnexion',
+                                    isAr ? 'تسجيل الخروج' : 'Déconnexion',
                                     style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 12),
                                   ),
                                 ],
@@ -1940,15 +1956,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         IconButton(
                           visualDensity: VisualDensity.compact,
                           icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
-                          tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
+                          tooltip: isAr ? 'تغيير كلمة المرور' : 'Changer mot de passe',
                           onPressed: () => ChangePasswordDialog.show(context),
-                        ),
-                        Container(width: 1, height: 16, color: Colors.white12),
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.language, color: Colors.white70, size: 18),
-                          tooltip: loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
-                          onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
                         ),
                         Container(width: 1, height: 16, color: Colors.white12),
                         IconButton(

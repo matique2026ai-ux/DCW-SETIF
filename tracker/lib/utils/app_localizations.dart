@@ -129,6 +129,21 @@ class AppLocalizations {
   String get loading => isArabic ? 'جاري التحميل...' : 'Chargement...';
   String get from => isArabic ? 'من طلب' : 'Demandé par';
   String get days => isArabic ? 'يوم' : 'jour(s)';
+
+  // Department Tabs & Modules
+  String get personnelAndDiscipline => isArabic ? 'المستخدمين والانضباط' : 'Personnel & Discipline';
+  String get inspectoratesAndGeofence => isArabic ? 'المقرات والبصمة الجغرافية' : 'Sièges & Géolocalisation';
+  String get accountingAndPayroll => isArabic ? 'المحاسبة والرواتب' : 'Comptabilité & Salaires';
+  String get vehicleFleet => isArabic ? 'حظيرة السيارات والوقود' : 'Parc Auto & Carburant';
+  String get equipmentAndKits => isArabic ? 'حقائب وأجهزة التفتيش' : 'Mallettes & Équipements';
+  String get disciplineAndInquiries => isArabic ? 'الانضباط والاستفسارات' : 'Discipline & Explications';
+  String get justificationsAndCertificates => isArabic ? 'التبريرات والشهادات' : 'Justifications & Certificats';
+  String get missionOrdersAndPrograms => isArabic ? 'أوامر المهمة والبرامج' : 'Ordres de Mission';
+  String get inspectionValidation => isArabic ? 'تأشير المعاينات' : 'Validation des Visites';
+  String get departmentInspectors => isArabic ? 'مفتشو المصلحة' : 'Inspecteurs du Service';
+  String get systemStatusAndServer => isArabic ? 'حالة النظام والسيرفر' : 'État du Système & Serveur';
+  String get rolePreview => isArabic ? 'معاينة شاشات الأدوار' : 'Aperçu des Rôles';
+  String get usersAndAccounts => isArabic ? 'المستخدمين والحسابات' : 'Utilisateurs & Comptes';
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
