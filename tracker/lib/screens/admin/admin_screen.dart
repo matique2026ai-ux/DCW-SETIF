@@ -255,31 +255,41 @@ class _AdminScreenState extends State<AdminScreen>
                     onChanged: (val) => setDialogState(() => selectedDepartment = val ?? 'مصلحة حماية المستهلك وقمع الغش'),
                   ),
                   const SizedBox(height: 12),
+                  // 🏛️ MANDATORY EMPLOYEE LINKING (Zero Fake Accounts Architecture)
                   DropdownButtonFormField<int?>(
                     initialValue: selectedEmpId,
                     isExpanded: true,
                     dropdownColor: const Color(0xFF2D1035),
                     style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 13),
                     decoration: const InputDecoration(
-                      labelText: 'ربط بالموظف من القائمة (اختياري)',
-                      labelStyle: TextStyle(color: Colors.white70),
-                      prefixIcon: Icon(Icons.link, color: Color(0xFFD4AF37)),
+                      labelText: 'الملف الإداري للموظف بمكتب المستخدمين (إلزامي) *',
+                      labelStyle: TextStyle(color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                      prefixIcon: Icon(Icons.badge, color: Color(0xFFD4AF37)),
                       filled: true,
                       fillColor: Color(0xFF1E0B26),
+                      helperText: 'لا يمكن إنشاء حساب إلا لموظف مسجل رسمياً في مصلحة المستخدمين',
+                      helperStyle: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white54),
                     ),
                     items: [
-                      const DropdownMenuItem<int?>(
-                        value: null,
-                        child: Text(
-                          'بدون ربط (حساب إداري عام)',
-                          style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
+                      if (selectedEmpId == null)
+                        const DropdownMenuItem<int?>(
+                          value: null,
+                          child: Text(
+                            '-- حدد الموظف من سجلات مكتب المستخدمين --',
+                            style: TextStyle(fontFamily: 'Tajawal', color: Colors.white60),
+                          ),
                         ),
-                      ),
                       ..._employees
                           .where((e) {
+                            final rawId = e['Id'] ?? e['id'];
+                            final id = rawId is int ? rawId : int.tryParse(rawId.toString()) ?? 0;
                             final nom = (e['Nom'] ?? '').toString().toLowerCase();
                             final nomAr = (e['NomAr'] ?? '').toString().toLowerCase();
-                            return !nom.contains('tracker_admin') && !nomAr.contains('tracker_admin');
+                            if (nom.contains('tracker_admin') || nomAr.contains('tracker_admin')) return false;
+                            // Exclude employees already linked to another active account
+                            final isAlreadyLinked = _users.any((u) => (u['employeeId'] ?? u['EmployeeId']) == id);
+                            if (isAlreadyLinked && id != selectedEmpId) return false;
+                            return true;
                           })
                           .map((e) {
                         final rawId = e['Id'] ?? e['id'];
@@ -408,8 +418,22 @@ class _AdminScreenState extends State<AdminScreen>
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
-                if (usernameCtrl.text.trim().isEmpty || passwordCtrl.text.trim().isEmpty) return;
                 final messenger = ScaffoldMessenger.of(context);
+                if (selectedEmpId == null) {
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('⚠️ قاعدة إدارية إلزامية: يجب اختيار الملف الإداري للموظف من سجلات مكتب المستخدمين أولاً.', style: TextStyle(fontFamily: 'Tajawal')),
+                      backgroundColor: AppTheme.WarningColor,
+                    ),
+                  );
+                  return;
+                }
+                if (usernameCtrl.text.trim().isEmpty || passwordCtrl.text.trim().isEmpty) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('⚠️ يرجى إدخال اسم المستخدم وكلمة المرور', style: TextStyle(fontFamily: 'Tajawal')), backgroundColor: AppTheme.WarningColor),
+                  );
+                  return;
+                }
                 final api = context.read<AuthService>().api;
                 Navigator.pop(ctx);
                 try {
