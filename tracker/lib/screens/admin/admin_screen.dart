@@ -1665,76 +1665,93 @@ class _AdminScreenState extends State<AdminScreen>
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(Icons.access_time_filled, color: Color(0xFFD4AF37), size: 24),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'فترة التسامح الصباحية المعتمدة (Morning Grace Threshold)',
-                        style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFFD4AF37)),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'الحضور بين 08:00 و $_morningGraceTime ص يُعتبر حضوراً نظامياً، والتأخر يُحسب بعده.',
-                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black38,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFD4AF37)),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _morningGraceTime,
-                      dropdownColor: const Color(0xFF1E1026),
-                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
-                      style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Color(0xFFD4AF37), fontSize: 13),
-                      items: const [
-                        DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
-                        DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
-                        DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
-                        DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
-                        DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
-                      ],
-                      onChanged: (val) async {
-                        if (val != null && val != _morningGraceTime) {
-                          try {
-                            final api = context.read<AuthService>().api;
-                            await api.updateSetting('morning_grace_time', val);
-                            setState(() => _morningGraceTime = val);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('✅ تم تعديل فترة التسامح الصباحية للنظام إلى $val'), backgroundColor: const Color(0xFF10B981)),
-                              );
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
-                              );
-                            }
-                          }
-                        }
-                      },
+                      child: const Icon(Icons.access_time_filled, color: Color(0xFFD4AF37), size: 20),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'فترة التسامح الصباحية (Tolérance)',
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Color(0xFFD4AF37),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFD4AF37)),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _morningGraceTime,
+                          dropdownColor: const Color(0xFF1E1026),
+                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFD4AF37),
+                            fontSize: 13,
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
+                            DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
+                            DropdownMenuItem(value: '08:45', child: Text('08:45 ص (موصى بها)')),
+                            DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة)')),
+                            DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
+                          ],
+                          onChanged: (val) async {
+                            if (val != null && val != _morningGraceTime) {
+                              try {
+                                final api = context.read<AuthService>().api;
+                                await api.updateSetting('morning_grace_time', val);
+                                setState(() => _morningGraceTime = val);
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('✅ تم تعديل فترة التسامح الصباحية للنظام إلى $val'),
+                                      backgroundColor: const Color(0xFF10B981),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('خطأ: $e'),
+                                      backgroundColor: AppTheme.DangerColor,
+                                    ),
+                                  );
+                                }
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'الحضور بين 08:00 و $_morningGraceTime ص يُعتبر حضوراً نظامياً، والتأخر يُحسب بعده.',
+                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11.5, color: Colors.white70),
                 ),
               ],
             ),
@@ -1754,30 +1771,37 @@ class _AdminScreenState extends State<AdminScreen>
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppTheme.DangerColor.withValues(alpha: 0.4)),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.cleaning_services, color: AppTheme.DangerColor, size: 32),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                Row(
+                  children: [
+                    const Icon(Icons.cleaning_services, color: AppTheme.DangerColor, size: 24),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
                         'إعادة تهيئة السجلات التشغيلية',
                         style: TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 2),
-                      Text(
-                        'تصفير سجلات الحضور والمعاينات الميدانية لبدء دورة العمل الرقابية الجديدة مع الحفاظ على قاعدة بيانات الموظفين.',
-                        style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.DangerColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                    ],
-                  ),
+                      onPressed: _showCleanDataDialog,
+                      child: const Text('إعادة تهيئة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                  ],
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.DangerColor, foregroundColor: Colors.white),
-                  onPressed: _showCleanDataDialog,
-                  child: const Text('إعادة تهيئة', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'تصفير سجلات الحضور والمعاينات الميدانية لبدء دورة العمل الرقابية الجديدة مع الحفاظ على قاعدة بيانات الموظفين.',
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 11.5, color: Colors.white60),
                 ),
               ],
             ),
