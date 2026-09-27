@@ -169,7 +169,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isConcurrence
-                                ? const Color(0xFF3B82F6).withValues(alpha: 0.4)
+                                ? const Color(0xFFD4AF37).withValues(alpha: 0.4)
                                 : const Color(0xFF10B981).withValues(alpha: 0.4),
                           ),
                         ),
@@ -181,7 +181,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: (isConcurrence ? const Color(0xFF3B82F6) : const Color(0xFF10B981))
+                                    color: (isConcurrence ? const Color(0xFFD4AF37) : const Color(0xFF10B981))
                                         .withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
@@ -191,7 +191,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                       fontFamily: 'Tajawal',
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: isConcurrence ? const Color(0xFF60A5FA) : const Color(0xFF34D399),
+                                      color: isConcurrence ? const Color(0xFFD4AF37) : const Color(0xFF34D399),
                                     ),
                                   ),
                                 ),
@@ -1590,24 +1590,27 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.blueAccent.withValues(alpha: 0.15),
+                                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
-                                border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+                                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.forward_to_inbox, color: Colors.blueAccent, size: 14),
+                                  const Icon(Icons.forward_to_inbox, color: Color(0xFFD4AF37), size: 14),
                                   const SizedBox(width: 4),
                                   Text(
                                     loc.isArabic ? 'إحالة آلية لرئيس مكتب المستخدمين' : 'Notification Bureau Personnel',
-                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.blueAccent),
+                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
                                   ),
                                 ],
                               ),

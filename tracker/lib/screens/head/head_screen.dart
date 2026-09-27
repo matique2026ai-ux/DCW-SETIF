@@ -301,7 +301,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                       title: isAr ? 'عطل / إجازات' : 'Congés / Justifiés',
                       value: '$leaveCount',
                       icon: Icons.event_available,
-                      color: const Color(0xFF3B82F6),
+                      color: const Color(0xFFD4AF37),
                     ),
                     const SizedBox(width: 8),
                     _buildAdminStatCard(
@@ -1123,7 +1123,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                     title: isAr ? 'القفل الجغرافي' : 'Geofence GPS',
                     value: '100% نشط',
                     icon: Icons.lock_clock,
-                    color: const Color(0xFF3B82F6),
+                    color: const Color(0xFF10B981),
                   ),
                 ],
               ),
@@ -1185,12 +1185,12 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: isMain ? const Color(0xFFD4AF37).withValues(alpha: 0.15) : const Color(0xFF3B82F6).withValues(alpha: 0.15),
+                      color: isMain ? const Color(0xFFD4AF37).withValues(alpha: 0.15) : const Color(0xFFD4AF37).withValues(alpha: 0.10),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       isMain ? Icons.account_balance : Icons.location_city,
-                      color: isMain ? const Color(0xFFD4AF37) : const Color(0xFF60A5FA),
+                      color: const Color(0xFFD4AF37),
                       size: 20,
                     ),
                   ),
@@ -2993,18 +2993,18 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF3B82F6).withValues(alpha: 0.2),
+                                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: const Color(0xFF3B82F6), width: 0.5),
+                                      border: Border.all(color: const Color(0xFFD4AF37), width: 0.5),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Icon(Icons.groups, size: 12, color: Color(0xFF60A5FA)),
+                                        const Icon(Icons.groups, size: 12, color: Color(0xFFD4AF37)),
                                         const SizedBox(width: 4),
                                         Text(
                                           assignedBrigadeBadge,
-                                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF60A5FA), fontWeight: FontWeight.bold),
+                                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
                                         ),
                                       ],
                                     ),
@@ -3745,7 +3745,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                         value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
                         child: Row(
                           children: [
-                            Icon(Icons.query_stats, color: Color(0xFF3B82F6), size: 16),
+                            Icon(Icons.query_stats, color: Color(0xFFD4AF37), size: 16),
                             SizedBox(width: 8),
                             Text('مصلحة المنافسة والتحقيقات الاقتصادية (الأسعار والفوترة)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
                           ],

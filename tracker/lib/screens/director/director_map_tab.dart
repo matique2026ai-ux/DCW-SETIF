@@ -782,21 +782,21 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0284C7).withValues(alpha: 0.15),
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF0284C7).withValues(alpha: 0.4)),
+                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.assignment, color: Color(0xFF38BDF8), size: 16),
+                        const Icon(Icons.assignment, color: Color(0xFFD4AF37), size: 16),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             loc.isArabic ? 'أمر المهمة الرقابية المعين:' : 'Ordre de mission assigné :',
-                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF38BDF8)),
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
                           ),
                         ),
                       ],

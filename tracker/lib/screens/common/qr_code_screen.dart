@@ -109,17 +109,17 @@ class QRCodeScreen extends StatelessWidget {
     } else if (isVisitBadge) {
       typeStr = 'معاينة وتفتيش ميداني رسمي';
       statusLabel = 'إثبات معاينة ورقابة ميدانية رسمية';
-      statusColor = const Color(0xFF38BDF8);
+      statusColor = const Color(0xFFD4AF37);
       statusIcon = Icons.storefront;
     } else if (isCheckOut) {
       typeStr = 'تسجيل انصراف نظامي (خروج)';
       statusLabel = 'إثبات انصراف رسمي معتمد';
-      statusColor = const Color(0xFF818CF8);
+      statusColor = const Color(0xFFF59E0B);
       statusIcon = Icons.logout;
     } else if (isNotCheckedIn) {
       typeStr = 'بطاقة مهنية رقمية (غير مسجل حضور اليوم)';
       statusLabel = 'بطاقة مهنية — الموظف لم يسجل الحضور اليوم';
-      statusColor = const Color(0xFFF59E0B);
+      statusColor = const Color(0xFFE11D48);
       statusIcon = Icons.warning_amber_rounded;
     } else {
       typeStr = 'تسجيل حضور صباحي معتمد بالـ GPS';
@@ -321,9 +321,9 @@ class QRCodeScreen extends StatelessWidget {
                                 'حالة الحضور اليوم',
                                 isPresent
                                     ? '🟢 حاضر ومسجل بالسيرفر الحي ✓'
-                                    : (isVisitBadge ? '🔵 في مهمة رقابية ميدانية' : '🔴 لم يسجل الحضور بعد (غائب)'),
+                                    : (isVisitBadge ? '🟡 في مهمة رقابية ميدانية' : '🔴 لم يسجل الحضور بعد (غائب)'),
                                 Icons.verified_outlined,
-                                valueColor: isPresent ? const Color(0xFF34D399) : (isVisitBadge ? const Color(0xFF38BDF8) : const Color(0xFFF87171)),
+                                valueColor: isPresent ? const Color(0xFF34D399) : (isVisitBadge ? const Color(0xFFD4AF37) : const Color(0xFFF87171)),
                               ),
                               const Divider(color: Color(0xFF2D1035), height: 16),
                               _buildInfoRow(
@@ -446,19 +446,27 @@ class QRCodeScreen extends StatelessWidget {
 
   static Widget _buildInfoRow(String label, String value, IconData icon, {Color? valueColor}) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: const Color(0xFFD4AF37)),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 16, color: const Color(0xFFD4AF37)),
+        ),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 12,
-            color: Colors.white60,
+        Expanded(
+          flex: 4,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 12,
+              color: Colors.white60,
+            ),
           ),
         ),
-        const Spacer(),
-        Flexible(
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 5,
           child: Text(
             value,
             style: TextStyle(

@@ -265,19 +265,27 @@ class VerificationScreen extends StatelessWidget {
 
   static Widget _buildRow(String label, String value, IconData icon, {Color? valueColor}) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: const Color(0xFFD4AF37)),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 16, color: const Color(0xFFD4AF37)),
+        ),
         const SizedBox(width: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 12,
-            color: Colors.white60,
+        Expanded(
+          flex: 4,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 12,
+              color: Colors.white60,
+            ),
           ),
         ),
-        const Spacer(),
-        Flexible(
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 5,
           child: Text(
             value,
             style: TextStyle(

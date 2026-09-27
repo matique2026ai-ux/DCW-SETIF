@@ -1019,7 +1019,7 @@ class _AdminScreenState extends State<AdminScreen>
                   const SizedBox(width: 8),
                   _buildStatCard('المفتشون الميدانيون', '$inspectorsCount', Icons.explore, const Color(0xFFD4AF37)),
                   const SizedBox(width: 8),
-                  _buildStatCard('إجمالي الموظفين', '${_employees.length}', Icons.badge, const Color(0xFF3B82F6)),
+                  _buildStatCard('إجمالي الموظفين', '${_employees.length}', Icons.badge, const Color(0xFFEAB308)),
                 ],
               ),
             ),
@@ -1641,7 +1641,7 @@ class _AdminScreenState extends State<AdminScreen>
               children: [
                 _buildHealthRow('حالة الخادم (API Status)', 'متصل ويعمل (Online)', Icons.check_circle, const Color(0xFF10B981)),
                 const Divider(color: Color(0xFF3D1A45)),
-                _buildHealthRow('بيئة الخادم السحابي', 'Render Web Service (Node.js Express)', Icons.cloud, const Color(0xFF3B82F6)),
+                _buildHealthRow('بيئة الخادم السحابي', 'Render Web Service (Node.js Express)', Icons.cloud, const Color(0xFFD4AF37)),
                 const Divider(color: Color(0xFF3D1A45)),
                 _buildHealthRow('قاعدة البيانات النشطة', 'PostgreSQL Cloud Database', Icons.storage, const Color(0xFFD4AF37)),
                 const Divider(color: Color(0xFF3D1A45)),
@@ -1893,7 +1893,7 @@ class _AdminScreenState extends State<AdminScreen>
                 ? 'برامج مراقبة الأسعار المقننة، تتبع سلاسل التوزيع، فواتير التوزيع والبيع، ومكافحة المضاربة غير المشروعة وتفريغ المخازن.'
                 : 'Contrôle des prix réglementés, suivi de la distribution, facturation, lutte contre la spéculation et vérification des stocks.',
             icon: Icons.query_stats,
-            color: const Color(0xFF3B82F6),
+            color: const Color(0xFFD4AF37),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة المنافسة والتحقيقات الاقتصادية'))),
           ),
           const SizedBox(height: 10),
@@ -2717,7 +2717,7 @@ class _AdminScreenState extends State<AdminScreen>
       case 'director':
         return const Color(0xFFF59E0B);
       case 'head_of_department':
-        return const Color(0xFF3B82F6);
+        return const Color(0xFFD4AF37);
       case 'bureau_chief':
         return const Color(0xFF10B981);
       case 'inspector':

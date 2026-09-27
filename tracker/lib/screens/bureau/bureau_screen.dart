@@ -935,9 +935,9 @@ class _BureauScreenState extends State<BureauScreen>
               const SizedBox(width: 8),
               _buildMiniStat('عطلة مرضية', '$sickCount', const Color(0xFFF59E0B)),
               const SizedBox(width: 8),
-              _buildMiniStat('عطلة سنوية', '$annualCount', const Color(0xFF3B82F6)),
+              _buildMiniStat('عطلة سنوية', '$annualCount', const Color(0xFFD4AF37)),
               const SizedBox(width: 8),
-              _buildMiniStat('رؤساء فرق', '$brigadeCount', const Color(0xFFD4AF37)),
+              _buildMiniStat('رؤساء فرق', '$brigadeCount', const Color(0xFFEAB308)),
             ],
           ),
         ),
@@ -945,41 +945,49 @@ class _BureauScreenState extends State<BureauScreen>
         // Section Header & Add Employee Action
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-          child: Row(
-            children: [
-              const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 20),
-              const SizedBox(width: 8),
-              const Text(
-                'سجل موظفي وأعوان الرقابة الإداري',
-                style: TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: _showAddEmployeeDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  elevation: 2,
-                ),
-                icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
-                label: const Text(
-                  'إدراج موظف / عون جديد',
-                  style: TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12.5,
-                    color: Colors.black,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 450;
+              return Row(
+                children: [
+                  const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isSmall ? 'سجل الموظفين' : 'سجل موظفي وأعوان الرقابة الإداري',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: isSmall ? 13.5 : 14.5,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-              ),
-            ],
+                  const SizedBox(width: 8),
+                  ElevatedButton.icon(
+                    onPressed: _showAddEmployeeDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: Colors.black,
+                      padding: EdgeInsets.symmetric(horizontal: isSmall ? 8 : 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      elevation: 2,
+                    ),
+                    icon: const Icon(Icons.person_add_alt_1, size: 16, color: Colors.black),
+                    label: Text(
+                      isSmall ? 'إدراج' : 'إدراج موظف',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
 
@@ -1202,7 +1210,7 @@ class _BureauScreenState extends State<BureauScreen>
         statusIcon = Icons.medical_services;
         break;
       case 'annual_leave':
-        statusColor = const Color(0xFF3B82F6);
+        statusColor = const Color(0xFFD4AF37);
         statusLabel = 'عطلة سنوية';
         statusIcon = Icons.beach_access;
         break;

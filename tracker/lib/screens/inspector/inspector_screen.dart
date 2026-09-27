@@ -2768,12 +2768,12 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                             Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                               decoration: BoxDecoration(
-                                                color: Colors.blue.withValues(alpha: 0.15),
+                                                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                                                 borderRadius: BorderRadius.circular(4),
                                               ),
                                               child: Text(
                                                 '⚖️ ${v['LegalAction']}',
-                                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF93C5FD)),
+                                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
                                               ),
                                             ),
                                         ],
