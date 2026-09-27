@@ -1,13 +1,14 @@
 # 🏛️ DCW-SETIF — دليل الوكيل والمطور (AGENTS.md)
 ### منصة الرقابة والتفتيش الميداني — مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف
 
-> **تاريخ آخر تحديث**: 27 سبتمبر 2026 (دعم وتأمين العمل في وضع عدم الاتصال Offline Mode وحفظ التوقيت الحقيقي)
+> **تاريخ آخر تحديث**: 27 سبتمبر 2026 (تأسيس المستودع الموحد الشامل Monorepo وتأمين العمل بدون اتصال)
 > **حالة المنظومة**: ✅ تدقيق شامل واختبار حي ميداني ناجح 100% على السيرفر وقاعدة البيانات السحابية الحية (Live Render Production).
-> **مستودع التطبيق (Flutter Web & Mobile)**: [DCW-SETIF-TRACKER](https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER) (الفرع الحالي: `main`)
-> **مستودع الخادم (Node.js/Express/PostgreSQL)**: [DCW-SETIF-BACKEND](https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND) (الفرع الحالي: `main`)
+> **المستودع الموحد الشامل (Unified Monorepo)**: [DCW-SETIF](https://github.com/matique2026ai-ux/DCW-SETIF) (الفرع: `main` — يجمع الخادم والتطبيق والوثائق)
+> **مستودع تطبيق النشر (Flutter Web & Mobile)**: [DCW-SETIF-TRACKER](https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER) (الفرع: `main`)
+> **مستودع خادم النشر (Node.js/Express/PostgreSQL)**: [DCW-SETIF-BACKEND](https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND) (الفرع: `main`)
 > **رابط المنصة الحية (Render Web App)**: [dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)
 > **السيرفر السحابي الحي (Render Backend API)**: `https://drh-setif-api.onrender.com/api`
-> **معرف النشر الأخير على Render**: `dep-dasd683bc2fs73ep81u0` (Web) | `dep-dasd67p7lnhs738mhqig` (API)
+> **معرف النشر الأخير على Render**: `dep-dasd683bc2fs73ep81u0` (Web) | `dep-dasdbj97lnhs738n6lj0` (API)
 > **عداد إصدارات APK للتطبيقات الميدانية**: الإصدار الحالي المبني والمُسلَّم: `v1.0.10+11` | الإصدار القادم: `v1.0.11+12`
 
 ---
