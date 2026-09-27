@@ -8,8 +8,8 @@
 > **إعدادات Render للواجهة (DCW-SETIF-TRACKER)**: الريبو `DCW-SETIF` | مسار النشر: `backend/public` | النشر التلقائي: `AutoDeploy: Yes`
 > **رابط المنصة الحية (Render Web App)**: [dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)
 > **السيرفر السحابي الحي (Render Backend API)**: `https://drh-setif-api.onrender.com/api`
-> **آخر إصدار مُنشور**: `v3.6.0-authentic-only` | آخر Commit: `fe3ccf3`
-> **عداد إصدارات APK للتطبيقات الميدانية**: الإصدار الحالي المبني والمُسلَّم: `v1.0.12+13` | الملف المباشر المعتمد: `DCW-SETIF-TRACKER.apk`
+> **آخر إصدار مُنشور**: `v3.6.0-authentic-only` | آخر Commit: `112b2d5`
+> **عداد إصدارات APK للتطبيقات الميدانية**: الإصدار الحالي المبني والمُسلَّم: `v1.0.13+14` | الملف المباشر المعتمد: `DCW-SETIF-TRACKER.apk`
 
 ---
 
