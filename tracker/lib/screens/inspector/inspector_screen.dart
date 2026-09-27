@@ -1689,201 +1689,285 @@ class _InspectorScreenState extends State<InspectorScreen> {
               ],
             ),
           ),
-          titleSpacing: 16,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const GoldenEmblemCoin(
-                size: 36,
-                showOuterGlow: false,
-                enableFloating: false,
-                animateGleam: false,
-              ),
-              const SizedBox(width: 12),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisAlignment: MainAxisAlignment.center,
+          titleSpacing: 8,
+          title: LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = MediaQuery.of(context).size.width < 400;
+              return Row(
                 children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: const Text(
-                          'مفتش ميداني',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
-                          ),
-                        ),
-                      ),
-                    ],
+                  GoldenEmblemCoin(
+                    size: isSmall ? 28 : 34,
+                    showOuterGlow: false,
+                    enableFloating: false,
+                    animateGleam: false,
                   ),
-                  const SizedBox(height: 1),
-                  Text(
-                    (user?.fullName != null && user!.fullName!.isNotEmpty)
-                        ? '${user.fullName} • ${user.serviceName ?? "مديرية التجارة - سطيف"}'
-                        : 'مديرية التجارة وضبط السوق — ولاية سطيف',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 10.5,
-                      color: Color(0xFFD4AF37),
-                      fontWeight: FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: Colors.black38,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (_pendingSyncCount > 0)
-                    InkWell(
-                      onTap: _isSyncing ? null : () => _syncPendingItems(silent: false),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        margin: const EdgeInsets.symmetric(horizontal: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD97706),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            _isSyncing
-                                ? const SizedBox(
-                                    width: 12,
-                                    height: 12,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Icon(Icons.sync, color: Colors.white, size: 14),
+                            Flexible(
+                              child: Text(
+                                loc.isArabic ? 'المفتشية الميدانية' : 'Contrôle Terrain',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: isSmall ? 13.0 : 14.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: 0.2,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
                             const SizedBox(width: 4),
-                            Text(
-                              '$_pendingSyncCount',
-                              style: const TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(
+                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: const Text(
+                                'مفتش',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFD4AF37),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    )
-                  else
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.cloud_done, color: Color(0xFF10B981), size: 18),
-                      tooltip: 'جميع البيانات متزامنة',
-                      onPressed: () => _syncPendingItems(silent: false),
-                    ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        icon: const Icon(Icons.mark_email_unread, color: Color(0xFFD4AF37), size: 18),
-                        tooltip: 'الاستفسارات الإدارية',
-                        onPressed: () => InspectorInquiriesSheet.show(context, user?.employeeId ?? user?.id ?? 1),
-                      ),
-                      if (_pendingInquiryCount > 0)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-                            child: Text(
-                              '$_pendingInquiryCount',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                        const SizedBox(height: 1),
+                        Text(
+                          (user?.fullName != null && user!.fullName!.isNotEmpty)
+                              ? '${user.fullName}'
+                              : 'مديرية التجارة وضبط السوق — سطيف',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: isSmall ? 9.5 : 10.5,
+                            color: const Color(0xFFD4AF37),
+                            fontWeight: FontWeight.w500,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                    ],
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
-                    tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
-                    onPressed: () => ChangePasswordDialog.show(context),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.language, color: Colors.white70, size: 18),
-                    tooltip: loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
-                    onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
-                  ),
-                  Container(width: 1, height: 16, color: Colors.white12),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
-                    tooltip: loc.isArabic ? 'تسجيل الخروج' : 'Déconnexion',
-                    onPressed: () {
-                      context.read<AuthService>().logout();
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ],
-              ),
+              );
+            },
+          ),
+          actions: [
+            Builder(
+              builder: (context) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                final isCompact = screenWidth < 500;
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_pendingSyncCount > 0)
+                        InkWell(
+                          onTap: _isSyncing ? null : () => _syncPendingItems(silent: false),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD97706),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _isSyncing
+                                    ? const SizedBox(
+                                        width: 12,
+                                        height: 12,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.sync, color: Colors.white, size: 13),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '$_pendingSyncCount',
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          icon: const Icon(Icons.cloud_done, color: Color(0xFF10B981), size: 17),
+                          tooltip: 'جميع البيانات متزامنة',
+                          onPressed: () => _syncPendingItems(silent: false),
+                        ),
+                      Container(width: 1, height: 14, color: Colors.white12),
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          IconButton(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                            icon: const Icon(Icons.mark_email_unread, color: Color(0xFFD4AF37), size: 17),
+                            tooltip: 'الاستفسارات الإدارية',
+                            onPressed: () => InspectorInquiriesSheet.show(context, user?.employeeId ?? user?.id ?? 1),
+                          ),
+                          if (_pendingInquiryCount > 0)
+                            Positioned(
+                              top: 2,
+                              right: 2,
+                              child: Container(
+                                padding: const EdgeInsets.all(2.5),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(minWidth: 12, minHeight: 12),
+                                child: Text(
+                                  '$_pendingInquiryCount',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 7.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (isCompact) ...[
+                        Container(width: 1, height: 14, color: Colors.white12),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, color: Color(0xFFD4AF37), size: 18),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 30, minHeight: 32),
+                          color: const Color(0xFF1E293B),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Color(0x33D4AF37)),
+                          ),
+                          onSelected: (val) {
+                            if (val == 'password') {
+                              ChangePasswordDialog.show(context);
+                            } else if (val == 'language') {
+                              context.read<LanguageProvider>().toggleLanguage();
+                            } else if (val == 'logout') {
+                              context.read<AuthService>().logout();
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => const LoginScreen()),
+                              );
+                            }
+                          },
+                          itemBuilder: (ctx) => [
+                            PopupMenuItem(
+                              value: 'password',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
+                                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: 'language',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.language, color: Colors.white70, size: 18),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
+                                    style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuDivider(height: 1),
+                            PopupMenuItem(
+                              value: 'logout',
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    loc.isArabic ? 'تسجيل الخروج' : 'Déconnexion',
+                                    style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFEF4444), fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Container(width: 1, height: 16, color: Colors.white12),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.lock_reset, color: Color(0xFFD4AF37), size: 18),
+                          tooltip: loc.isArabic ? 'تغيير كلمة المرور' : 'Changer mot de passe',
+                          onPressed: () => ChangePasswordDialog.show(context),
+                        ),
+                        Container(width: 1, height: 16, color: Colors.white12),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.language, color: Colors.white70, size: 18),
+                          tooltip: loc.isArabic ? 'تغيير اللغة' : 'Changer de langue',
+                          onPressed: () => context.read<LanguageProvider>().toggleLanguage(),
+                        ),
+                        Container(width: 1, height: 16, color: Colors.white12),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.logout, color: Color(0xFFEF4444), size: 18),
+                          tooltip: loc.isArabic ? 'تسجيل الخروج' : 'Déconnexion',
+                          onPressed: () {
+                            context.read<AuthService>().logout();
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            );
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -2102,16 +2186,20 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       children: [
                         const Icon(Icons.assignment, color: Color(0xFF38BDF8), size: 20),
                         const SizedBox(width: 8),
-                        const Text(
-                          'أمر المهمة والقطاع التفتيشي لليوم',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF38BDF8),
+                        const Expanded(
+                          child: Text(
+                            'أمر المهمة والقطاع التفتيشي لليوم',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF38BDF8),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
