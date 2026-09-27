@@ -10,6 +10,7 @@ import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/change_master_pin_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:drh_setif_tracker/services/inspectorate_service.dart';
@@ -42,6 +43,13 @@ class _AdminScreenState extends State<AdminScreen>
       if (mounted) setState(() {});
     });
     _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final auth = context.read<AuthService>();
+      if (auth.currentUser?.mustChangeCredentials == true) {
+        await MandatorySecuritySetupDialog.show(context);
+      }
+    });
   }
 
   @override
@@ -112,7 +120,7 @@ class _AdminScreenState extends State<AdminScreen>
     final usernameCtrl = TextEditingController();
     final passwordCtrl = TextEditingController(text: '123456');
     final fullNameCtrl = TextEditingController();
-    final pinCtrl = TextEditingController(text: '202600');
+    final pinCtrl = TextEditingController(text: '202600');  // default PIN — user must change on first login
     String selectedRole = 'inspector';
     String selectedDepartment = 'مصلحة حماية المستهلك وقمع الغش';
     int? selectedEmpId;
