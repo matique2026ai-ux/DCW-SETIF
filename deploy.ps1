@@ -34,7 +34,8 @@ Write-Host "      Monorepo pushed to github.com/matique2026ai-ux/DCW-SETIF." -Fo
 
 # 3. Deploy Backend to Render Repo
 Write-Host "`n[3/5] Deploying Backend to DCW-SETIF-BACKEND..." -ForegroundColor White
-git branch -D __deploy_backend 2>$null | Out-Null
+$existingB = git branch --list __deploy_backend
+if ($existingB) { git branch -D __deploy_backend | Out-Null }
 git subtree split --prefix=backend -b __deploy_backend
 git push -f https://github.com/matique2026ai-ux/DCW-SETIF-BACKEND.git __deploy_backend:main
 git branch -D __deploy_backend | Out-Null
@@ -43,7 +44,8 @@ Write-Host "      Backend deployed and Render API hook triggered." -ForegroundCo
 
 # 4. Deploy Tracker to Render Repo
 Write-Host "`n[4/5] Deploying Tracker to DCW-SETIF-TRACKER..." -ForegroundColor White
-git branch -D __deploy_tracker 2>$null | Out-Null
+$existingT = git branch --list __deploy_tracker
+if ($existingT) { git branch -D __deploy_tracker | Out-Null }
 git subtree split --prefix=tracker -b __deploy_tracker
 git push -f https://github.com/matique2026ai-ux/DCW-SETIF-TRACKER.git __deploy_tracker:main
 git branch -D __deploy_tracker | Out-Null
