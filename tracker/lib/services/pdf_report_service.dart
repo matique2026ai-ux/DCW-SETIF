@@ -19,10 +19,71 @@ class PdfReportService {
     final dateStr = DateFormat('yyyy/MM/dd').format(now);
     final timeStr = DateFormat('HH:mm').format(DateTime.now());
 
-    // Filter present and absent
+    // Distinguish leadership/admin staff from field inspectors
+    bool isLeadership(Map<String, dynamic> emp) {
+      final grade = (emp['Grade'] ?? emp['grade'] ?? '').toString();
+      final fonction = (emp['FonctionExercee'] ?? emp['fonctionExercee'] ?? '').toString();
+      final service = (emp['Service'] ?? emp['service'] ?? '').toString();
+      final nomAr = (emp['NomAr'] ?? emp['nomAr'] ?? '').toString();
+      final nom = (emp['Nom'] ?? emp['nom'] ?? '').toString();
+
+      return grade.contains('رئيس مصلحة') ||
+          grade.contains('رئيس مكتب') ||
+          grade.contains('المدير') ||
+          fonction.contains('رئيس مصلحة') ||
+          fonction.contains('رئيس مكتب') ||
+          nomAr.contains('رئيس') ||
+          nom.startsWith('chef_') ||
+          nom.startsWith('bureau_') ||
+          service.contains('مكتب المستخدمين') ||
+          service.contains('مصلحة الإدارة والوسائل') ||
+          service.contains('المديرية الولائية');
+    }
+
+    String getFormattedEmployeeName(Map<String, dynamic> emp) {
+      final nomAr = (emp['NomAr'] ?? emp['nomAr'] ?? '').toString().trim();
+      final prenomAr = (emp['PrenomAr'] ?? emp['prenomAr'] ?? '').toString().trim();
+      final nom = (emp['Nom'] ?? emp['nom'] ?? '').toString().trim();
+      final prenom = (emp['Prenom'] ?? emp['prenom'] ?? '').toString().trim();
+
+      if (nom.startsWith('chef_concurrence') || (nomAr == 'رئيس' && prenomAr.contains('المنافسة'))) {
+        return 'بلعيدي كريم';
+      }
+      if (nom.startsWith('chef_consommation') || (nomAr == 'رئيس' && prenomAr.contains('المستهلك'))) {
+        return 'منصوري عبد الحكيم';
+      }
+      if (nom.startsWith('chef_administration') || (nomAr == 'رئيس' && prenomAr.contains('الإدارة'))) {
+        return 'زروقي كمال';
+      }
+      if (nom.startsWith('bureau_user') || (nomAr == 'رئيس' && prenomAr.contains('المستخدمين'))) {
+        return 'مباركي سفيان';
+      }
+      if (nomAr.isNotEmpty || prenomAr.isNotEmpty) {
+        return '$nomAr $prenomAr'.trim();
+      }
+      return '$nom $prenom'.trim();
+    }
+
+    final leadershipList = employees.where((e) => isLeadership(e)).toList();
+    final inspectorsList = employees.where((e) => !isLeadership(e)).toList();
+
     final checkedInIds = attendance.map((a) => a['EmployeeId']).toSet();
-    final presentEmployees = employees.where((e) => checkedInIds.contains(e['Id'])).toList();
-    final absentEmployees = employees.where((e) => !checkedInIds.contains(e['Id'])).toList();
+    final presentInspectors = inspectorsList.where((e) => checkedInIds.contains(e['Id'])).toList();
+    final absentInspectors = inspectorsList.where((e) => !checkedInIds.contains(e['Id'])).toList();
+
+    int fieldActiveCount = 0;
+    int atHqCount = 0;
+
+    for (final emp in presentInspectors) {
+      final att = attendance.firstWhere((a) => a['EmployeeId'] == emp['Id'], orElse: () => {});
+      final isOut = att['IsCheckedOut'] == true || att['is_checked_out'] == true;
+      final empVisits = visits.where((v) => v['employee_id'] == emp['Id'] || v['EmployeeId'] == emp['Id']).length;
+      if (!isOut && empVisits > 0) {
+        fieldActiveCount++;
+      } else if (!isOut) {
+        atHqCount++;
+      }
+    }
 
     // Load fonts for Arabic support
     pw.Font? arabicFont;
@@ -153,13 +214,15 @@ class PdfReportService {
             // Key Statistics Summary Cards
             pw.Row(
               children: [
-                _buildPdfStatBox('إجمالي الموظفين', '${employees.length}', PdfColors.blueGrey800),
-                pw.SizedBox(width: 6),
-                _buildPdfStatBox('حاضرون في الميدان', '${presentEmployees.length}', PdfColors.green800),
-                pw.SizedBox(width: 6),
-                _buildPdfStatBox('غائبون عن التسجيل', '${absentEmployees.length}', PdfColors.red800),
-                pw.SizedBox(width: 6),
-                _buildPdfStatBox('معاينات تجارية', '${visits.length}', PdfColors.indigo800),
+                _buildPdfStatBox('إجمالي المفتشين', '${inspectorsList.length}', PdfColors.blueGrey800),
+                pw.SizedBox(width: 5),
+                _buildPdfStatBox('حاضرون بالمقر', '$atHqCount', PdfColors.amber800),
+                pw.SizedBox(width: 5),
+                _buildPdfStatBox('نشطون بالميدان', '$fieldActiveCount', PdfColors.green800),
+                pw.SizedBox(width: 5),
+                _buildPdfStatBox('غائبون عن البصمة', '${absentInspectors.length}', absentInspectors.isNotEmpty ? PdfColors.red800 : PdfColors.grey600),
+                pw.SizedBox(width: 5),
+                _buildPdfStatBox('معاينات منجزة', '${visits.length}', PdfColors.indigo800),
               ],
             ),
             pw.SizedBox(height: 14),
@@ -171,57 +234,85 @@ class PdfReportService {
                 color: PdfColors.green50,
                 border: pw.Border(right: pw.BorderSide(color: PdfColors.green700, width: 3)),
               ),
-              child: pw.Text(
-                '1. قائمة المفتشين الحاضرين في الميدان اليوم (${presentEmployees.length})',
-                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.green900),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    '1. وضعية المفتشين الميدانيين الحاضرين اليوم (${presentInspectors.length})',
+                    style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900),
+                  ),
+                  pw.Text(
+                    'مقر المديرية والمفتشيات الإقليمية',
+                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                  ),
+                ],
               ),
             ),
             pw.SizedBox(height: 6),
-            presentEmployees.isEmpty
+            presentInspectors.isEmpty
                 ? pw.Container(
                     width: double.infinity,
                     padding: const pw.EdgeInsets.all(8),
                     decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
-                    child: pw.Center(child: pw.Text('لا يوجد حضور مسجل بعد لهذا اليوم', style: const pw.TextStyle(fontSize: 9.5))),
+                    child: pw.Center(child: pw.Text('لا يوجد مفتش ميداني سجل حضوره بعد لهذا اليوم', style: const pw.TextStyle(fontSize: 9))),
                   )
                 : pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                     columnWidths: const {
-                      0: pw.FlexColumnWidth(1.8), // Leftmost: المعاينات
-                      1: pw.FlexColumnWidth(2.0), // وقت الحضور
-                      2: pw.FlexColumnWidth(3.5), // المصلحة / الرتبة
-                      3: pw.FlexColumnWidth(3.0), // الاسم واللقب
-                      4: pw.FixedColumnWidth(28), // Rightmost: الرقم
+                      0: pw.FlexColumnWidth(2.3), // Leftmost: الوضعية والمعاينات
+                      1: pw.FlexColumnWidth(1.6), // وقت الحضور
+                      2: pw.FlexColumnWidth(3.4), // المصلحة / الفرقة
+                      3: pw.FlexColumnWidth(2.7), // الاسم واللقب
+                      4: pw.FixedColumnWidth(24), // Rightmost: الرقم
                     },
                     children: [
                       pw.TableRow(
                         decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                         children: [
-                          _tableHeader('المعاينات'),
+                          _tableHeader('الوضعية الميدانية والمعاينات'),
                           _tableHeader('وقت الحضور'),
-                          _tableHeader('المصلحة / الرتبة'),
+                          _tableHeader('المصلحة والفرقة الرقابية'),
                           _tableHeader('الاسم واللقب'),
                           _tableHeader('الرقم'),
                         ],
                       ),
-                      ...presentEmployees.asMap().entries.map((entry) {
+                      ...presentInspectors.asMap().entries.map((entry) {
                         final i = entry.key + 1;
                         final emp = entry.value;
-                        final name = emp['NomAr'] != null && emp['NomAr'].toString().trim().isNotEmpty
-                            ? '${emp['NomAr']} ${emp['PrenomAr'] ?? ""}'.trim()
-                            : '${emp['Nom'] ?? ""} ${emp['Prenom'] ?? ""}'.trim();
+                        final name = getFormattedEmployeeName(emp);
+                        final brigade = (emp['BrigadeName'] ?? emp['brigadeName'] ?? '').toString();
                         final service = (emp['Service'] ?? '').toString();
+                        final serviceDisplay = brigade.isNotEmpty && brigade != 'الإدارة المركزية'
+                            ? '$service - $brigade'
+                            : service;
                         final att = attendance.firstWhere((a) => a['EmployeeId'] == emp['Id'], orElse: () => {});
                         final checkInTime = att['CheckInTime'] != null
                             ? att['CheckInTime'].toString().split('T').last.split('.').first
                             : '--:--';
+                        final isOut = att['IsCheckedOut'] == true || att['is_checked_out'] == true;
+                        final checkOutTime = att['CheckOutTime'] != null
+                            ? att['CheckOutTime'].toString().split('T').last.split('.').first
+                            : '';
                         final empVisits = visits.where((v) => v['employee_id'] == emp['Id'] || v['EmployeeId'] == emp['Id']).length;
+
+                        String statusText;
+                        PdfColor statusColor;
+                        if (isOut) {
+                          statusText = 'انصرف ($checkOutTime)';
+                          statusColor = PdfColors.blueGrey700;
+                        } else if (empVisits > 0) {
+                          statusText = 'نشط بالميدان ($empVisits معاينات)';
+                          statusColor = PdfColors.green800;
+                        } else {
+                          statusText = 'حاضر بالمقر (قيد التحضير)';
+                          statusColor = PdfColors.amber900;
+                        }
 
                         return pw.TableRow(
                           children: [
-                            _tableCell('$empVisits زيارات', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
+                            _tableCell(statusText, color: statusColor, bold: true, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
                             _tableCell(checkInTime, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center, color: PdfColors.green900),
-                            _tableCell(service),
+                            _tableCell(serviceDisplay),
                             _tableCell(name, bold: true),
                             _tableCell('$i', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
                           ],
@@ -231,25 +322,110 @@ class PdfReportService {
                   ),
             pw.SizedBox(height: 14),
 
-            // Section 2: ALL Absent Employees (Full List across pages, ordered from Right to Left)
+            // Section 2: Leadership & Heads of Service / Bureau
             pw.Container(
               padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               decoration: const pw.BoxDecoration(
-                color: PdfColors.red50,
-                border: pw.Border(right: pw.BorderSide(color: PdfColors.red700, width: 3)),
+                color: PdfColors.blue50,
+                border: pw.Border(right: pw.BorderSide(color: PdfColors.blue700, width: 3)),
               ),
-              child: pw.Text(
-                '2. قائمة الموظفين والمفتشين غير المسجلين اليوم (${absentEmployees.length}) — السجل الشامل',
-                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.red900),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text(
+                    '2. التأطير الإشرافي ورؤساء المصالح والمكاتب بالمقر (${leadershipList.length})',
+                    style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+                  ),
+                  pw.Text(
+                    'المهام الإدارية والإشراف على الفرق الميدانية',
+                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                  ),
+                ],
               ),
             ),
             pw.SizedBox(height: 6),
-            absentEmployees.isEmpty
+            leadershipList.isEmpty
                 ? pw.Container(
                     width: double.infinity,
                     padding: const pw.EdgeInsets.all(8),
                     decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
-                    child: pw.Center(child: pw.Text('جميع الموظفين سجلوا حضورهم اليوم بنسبة 100%', style: const pw.TextStyle(fontSize: 9.5))),
+                    child: pw.Center(child: pw.Text('لا توجد سجلات تأطير إداري مسجلة', style: const pw.TextStyle(fontSize: 9))),
+                  )
+                : pw.Table(
+                    border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                    columnWidths: const {
+                      0: pw.FlexColumnWidth(2.8), // Leftmost: الصفة والوضعية الإدارية
+                      1: pw.FlexColumnWidth(3.8), // المصلحة / الرتبة
+                      2: pw.FlexColumnWidth(2.8), // الاسم واللقب
+                      3: pw.FixedColumnWidth(24), // Rightmost: الرقم
+                    },
+                    children: [
+                      pw.TableRow(
+                        decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                        children: [
+                          _tableHeader('الصفة والوضعية الإدارية بالمقر'),
+                          _tableHeader('المصلحة الإدارية / الرتبة'),
+                          _tableHeader('الاسم واللقب'),
+                          _tableHeader('الرقم'),
+                        ],
+                      ),
+                      ...leadershipList.asMap().entries.map((entry) {
+                        final i = entry.key + 1;
+                        final emp = entry.value;
+                        final name = getFormattedEmployeeName(emp);
+                        final grade = (emp['Grade'] ?? emp['grade'] ?? 'رئيس مصلحة').toString();
+                        final service = (emp['Service'] ?? '').toString();
+                        final att = attendance.firstWhere((a) => a['EmployeeId'] == emp['Id'], orElse: () => {});
+                        final hasCheckIn = att['CheckInTime'] != null;
+                        final checkInTime = hasCheckIn
+                            ? att['CheckInTime'].toString().split('T').last.split('.').first
+                            : '';
+
+                        final statusText = hasCheckIn
+                            ? 'حاضر بالمقر ($checkInTime) — متابعة إدارية'
+                            : 'إشراف وتنسيق إداري بالمقر (منصب نوعي)';
+
+                        return pw.TableRow(
+                          children: [
+                            _tableCell(statusText, color: PdfColors.blueGrey800, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
+                            _tableCell('$service ($grade)'),
+                            _tableCell(name, bold: true),
+                            _tableCell('$i', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
+            pw.SizedBox(height: 14),
+
+            // Section 3: Absent Inspectors (Field staff only)
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+              decoration: pw.BoxDecoration(
+                color: absentInspectors.isNotEmpty ? PdfColors.red50 : PdfColors.green50,
+                border: pw.Border(right: pw.BorderSide(color: absentInspectors.isNotEmpty ? PdfColors.red700 : PdfColors.green700, width: 3)),
+              ),
+              child: pw.Text(
+                '3. قائمة المفتشين غير المسجلين للبصمة الصباحية (${absentInspectors.length})',
+                style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: absentInspectors.isNotEmpty ? PdfColors.red900 : PdfColors.green900),
+              ),
+            ),
+            pw.SizedBox(height: 6),
+            absentInspectors.isEmpty
+                ? pw.Container(
+                    width: double.infinity,
+                    padding: const pw.EdgeInsets.all(8),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.green50,
+                      border: pw.Border.all(color: PdfColors.green200),
+                      borderRadius: pw.BorderRadius.circular(4),
+                    ),
+                    child: pw.Center(
+                      child: pw.Text(
+                        '✅ جميع المفتشين الميدانيين سجلوا حضورهم الصباحي بنسبة 100% — لا توجد غيابات غير مبررة لهذا اليوم',
+                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.green900, fontWeight: pw.FontWeight.bold),
+                      ),
+                    ),
                   )
                 : pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
@@ -257,29 +433,27 @@ class PdfReportService {
                       0: pw.FlexColumnWidth(2.8), // Leftmost: الوضعية القانونية
                       1: pw.FlexColumnWidth(4.0), // المصلحة الإدارية / الرتبة
                       2: pw.FlexColumnWidth(3.0), // الاسم واللقب
-                      3: pw.FixedColumnWidth(28), // Rightmost: الرقم
+                      3: pw.FixedColumnWidth(24), // Rightmost: الرقم
                     },
                     children: [
                       pw.TableRow(
                         decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                         children: [
                           _tableHeader('الوضعية القانونية'),
-                          _tableHeader('المصلحة الإدارية / الرتبة'),
+                          _tableHeader('المصلحة والفرقة الرقابية'),
                           _tableHeader('الاسم واللقب'),
                           _tableHeader('الرقم'),
                         ],
                       ),
-                      ...absentEmployees.asMap().entries.map((entry) {
+                      ...absentInspectors.asMap().entries.map((entry) {
                         final i = entry.key + 1;
                         final emp = entry.value;
-                        final name = emp['NomAr'] != null && emp['NomAr'].toString().trim().isNotEmpty
-                            ? '${emp['NomAr']} ${emp['PrenomAr'] ?? ""}'.trim()
-                            : '${emp['Nom'] ?? ""} ${emp['Prenom'] ?? ""}'.trim();
+                        final name = getFormattedEmployeeName(emp);
                         final service = (emp['Service'] ?? '').toString();
 
                         return pw.TableRow(
                           children: [
-                            _tableCell('غياب غير مسجل (محل استفسار)', color: PdfColors.red700, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
+                            _tableCell('غياب غير مسجل (محل استفسار إداري)', color: PdfColors.red700, alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),
                             _tableCell(service),
                             _tableCell(name, bold: true),
                             _tableCell('$i', alignment: pw.Alignment.center, textAlign: pw.TextAlign.center),

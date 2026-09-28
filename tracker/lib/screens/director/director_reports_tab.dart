@@ -20,6 +20,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   List<Map<String, dynamic>> _attendance = [];
   List<Map<String, dynamic>> _deductions = [];
   List<Map<String, dynamic>> _programs = [];
+  List<Map<String, dynamic>> _visits = [];
   String _searchQuery = '';
   DateTime _selectedDate = DateTime.now();
   String _selectedFilter = 'absent'; // 'all', 'present', 'absent'
@@ -62,12 +63,17 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       final att = await api.getAttendance(date: dateStr);
       final ded = await api.getDeductions();
       final progs = await api.getPrograms();
+      List<Map<String, dynamic>> vis = [];
+      try {
+        vis = await api.getAllVisits(date: dateStr);
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _employees = cleanEmp;
           _attendance = att;
           _deductions = ded;
           _programs = progs;
+          _visits = vis;
           _isLoading = false;
         });
       }
@@ -928,7 +934,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                     PdfReportService.generateAndPrintDailyReport(
                       employees: _employees,
                       attendance: _attendance,
-                      visits: [],
+                      visits: _visits,
                       directorName: loc.isArabic ? 'السيد المدير الولائي' : 'Monsieur le Directeur de Wilaya',
                       reportDate: _selectedDate,
                     );
