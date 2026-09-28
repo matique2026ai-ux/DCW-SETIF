@@ -939,7 +939,16 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     final rawDate = (inq['IncidentDate'] ?? inq['incidentdate'] ?? inq['Date'] ?? inq['date'] ?? inq['CreatedAt'] ?? '').toString();
     final dateStr = rawDate.length >= 10 ? rawDate.substring(0, 10) : (rawDate.isNotEmpty ? rawDate : (loc.isArabic ? 'اليوم' : 'Aujourd\'hui'));
     final reply = inq['EmployeeReply'] ?? inq['employeereply'] ?? inq['Reply'] ?? inq['reply'];
-    final int lateMins = ((inq['LateMinutes'] ?? inq['lateminutes'] ?? 0) as num).toInt();
+    int lateMins = ((inq['LateMinutes'] ?? inq['lateminutes'] ?? 0) as num).toInt();
+    final inqType = (inq['Type'] ?? inq['type'] ?? '').toString();
+    final detailsText = (inq['Details'] ?? inq['details'] ?? '').toString();
+    if (lateMins == 0) {
+      final match = RegExp(r'\((\d+)\s*دقيقة\)').firstMatch(detailsText);
+      if (match != null) {
+        lateMins = int.tryParse(match.group(1) ?? '0') ?? 0;
+      }
+    }
+    final bool isLateType = inqType == 'late_arrival' || lateMins > 0;
     final bool hasLateMins = lateMins > 0;
     final bool hasReply = reply != null && reply.toString().trim().isNotEmpty;
 
@@ -1177,17 +1186,17 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     title: loc.isArabic
                         ? '1. موعد الانطلاق وفترة التسامح ($_morningGraceTime)'
                         : '1. Départ et heure de tolérance ($_morningGraceTime)',
-                    desc: hasLateMins
+                    desc: (hasLateMins || isLateType)
                         ? (loc.isArabic
-                            ? 'تجاوز فترة التسامح الصباحية بمقدار $lateMins دقيقة تأخر.'
-                            : 'Dépassement de la tolérance matinale de $lateMins min.')
+                            ? 'تم تسجيل التحاق متأخر بمقدار ${lateMins > 0 ? "$lateMins دقيقة" : "تأخر صباحي"} متجاوزاً فترة التسامح.'
+                            : 'Retard matinal enregistré de ${lateMins > 0 ? "$lateMins min" : "retard"} au-delà de la tolérance.')
                         : (loc.isArabic
                             ? 'عدم تسجيل حضور في النطاق الجغرافي المحدد.'
                             : 'Aucun pointage dans le périmètre géographique requis.'),
-                    status: hasLateMins
-                        ? (loc.isArabic ? '$lateMins دقيقة تأخر ⚠️' : '$lateMins min retard ⚠️')
+                    status: (hasLateMins || isLateType)
+                        ? (loc.isArabic ? '${lateMins > 0 ? "$lateMins دقيقة تأخر" : "متأخر"} ⚠️' : '${lateMins > 0 ? "$lateMins min" : "En retard"} ⚠️')
                         : (loc.isArabic ? 'غير مسجل ❌' : 'Non pointé ❌'),
-                    statusColor: hasLateMins ? AppTheme.WarningColor : AppTheme.DangerColor,
+                    statusColor: (hasLateMins || isLateType) ? AppTheme.WarningColor : AppTheme.DangerColor,
                   ),
                   const SizedBox(height: 6),
                   _evidenceCard(
