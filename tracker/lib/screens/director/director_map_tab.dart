@@ -358,13 +358,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     ),
                   ),
 
-                // Active In-Field Inspectors Markers (Excludes checked out agents to respect privacy)
+                // Active In-Field & Checked-Out Inspectors Markers (Retains checkout pin)
                 ..._mapData
                     .where(
                       (e) =>
                           e['latitude'] != null &&
-                          e['hasCheckedIn'] == true &&
-                          e['isCheckedOut'] != true,
+                          e['hasCheckedIn'] == true,
                     )
                     .map((emp) {
                       final double lat = (emp['latitude'] is num)
@@ -385,7 +384,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       } else if (isLate) {
                         markerColor = const Color(0xFFF59E0B);
                       } else if (isInField) {
-                        markerColor = const Color(0xFF38BDF8);
+                        markerColor = const Color(0xFFD4AF37);
                       } else {
                         markerColor = const Color(0xFF10B981);
                       }
@@ -438,10 +437,10 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                         ),
                                       ],
                                     ),
-                                    child: const Icon(
-                                      Icons.person,
+                                    child: Icon(
+                                      isOut ? Icons.exit_to_app : Icons.person,
                                       color: Colors.white,
-                                      size: 22,
+                                      size: isOut ? 20 : 22,
                                     ),
                                   ),
                                   if (vCount > 0)
@@ -515,11 +514,11 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                         const Spacer(),
                         _statsCapsuleContent(
                           loc,
-                          inFieldCount: inField.length,
-                          atHQCount: atHQ.length,
+                          inFieldList: inField,
+                          atHQList: atHQ,
                           visitsCount: visitMarkers.length,
-                          notRegisteredCount: notRegistered.length,
-                          checkedOutCount: checkedOut.length,
+                          notRegisteredList: notRegistered,
+                          checkedOutList: checkedOut,
                         ),
                         const Spacer(),
                         _mapStyleSwitcher(isCompact: false),
@@ -553,11 +552,11 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       ),
                       child: _statsCapsuleContent(
                         loc,
-                        inFieldCount: inField.length,
-                        atHQCount: atHQ.length,
+                        inFieldList: inField,
+                        atHQList: atHQ,
                         visitsCount: visitMarkers.length,
-                        notRegisteredCount: notRegistered.length,
-                        checkedOutCount: checkedOut.length,
+                        notRegisteredList: notRegistered,
+                        checkedOutList: checkedOut,
                       ),
                     ),
                   ),
@@ -675,11 +674,13 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     const SizedBox(height: 5),
                     _legendItem(const Color(0xFFF59E0B), loc.isArabic ? 'حاضر مع تأخر صباحي' : 'Présent avec retard'),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFF38BDF8), loc.isArabic ? 'نشط في الميدان' : 'Actif sur le terrain'),
+                    _legendItem(const Color(0xFFD4AF37), loc.isArabic ? 'نشط في الميدان' : 'Actif sur le terrain'),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFFD4AF37), loc.isArabic ? 'معاينة / محل تجاري' : 'Visite / commerce'),
+                    _legendItem(const Color(0xFFF59E0B), loc.isArabic ? 'معاينة / محل تجاري' : 'Visite / commerce'),
                     const SizedBox(height: 5),
                     _legendItem(const Color(0xFF64748B), loc.isArabic ? 'منصرف (أنهى الدوام)' : 'Sorti (fin de shift)'),
+                    const SizedBox(height: 5),
+                    _legendItem(const Color(0xFFEF4444), loc.isArabic ? 'لم يسجل الحضور (غائب)' : 'Non enregistré (absent)'),
                     const SizedBox(height: 5),
                     _legendItem(
                       const Color(0xFFD4AF37),
@@ -799,40 +800,343 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     );
   }
 
-  Widget _legend(String label, int count, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
+  Widget _legend(String label, int count, Color color, {VoidCallback? onTap}) {
+    final chip = Container(
+      padding: onTap != null ? const EdgeInsets.symmetric(horizontal: 7, vertical: 3) : EdgeInsets.zero,
+      decoration: onTap != null
+          ? BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: color.withValues(alpha: 0.4), width: 0.8),
+            )
+          : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 4),
+              ],
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            '$label: ',
+            style: const TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 11,
+              color: AppTheme.TextSecondary,
+            ),
+          ),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontFamily: 'Tajawal',
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (onTap != null) {
+      return InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: chip,
+      );
+    }
+    return chip;
+  }
+
+  void _showCategoryPersonnelModal(
+    BuildContext context,
+    String title,
+    List<Map<String, dynamic>> emps,
+    Color themeColor, {
+    bool isCheckout = false,
+    bool isAbsent = false,
+  }) {
+    final loc = AppLocalizations.of(context);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Directionality(
+        textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.75,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 4),
+            color: const Color(0xFF160A1D),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: themeColor.withValues(alpha: 0.45), width: 1.5),
+            boxShadow: const [
+              BoxShadow(color: Colors.black87, blurRadius: 20, spreadRadius: 4),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: themeColor.withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isCheckout ? Icons.exit_to_app : (isAbsent ? Icons.person_off : Icons.people_outline),
+                      color: themeColor,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          loc.isArabic ? 'العدد الإجمالي: ${emps.length} موظف' : 'Total : ${emps.length} employés',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 11,
+                            color: themeColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white70),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const Divider(color: Colors.white12, height: 16),
+              Expanded(
+                child: emps.isEmpty
+                    ? Center(
+                        child: Text(
+                          loc.isArabic ? 'لا يوجد موظفون في هذه القائمة حالياً' : 'Aucun employé dans cette catégorie',
+                          style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: emps.length,
+                        itemBuilder: (context, idx) {
+                          final emp = emps[idx];
+                          final name = emp['name']?.toString() ?? (loc.isArabic ? 'موظف' : 'Employé');
+                          final service = emp['service']?.toString() ?? '';
+                          final checkIn = emp['checkInTime'] != null ? _formatAttendanceTime(emp['checkInTime']) : null;
+                          final checkOut = emp['checkOutTime'] != null ? _formatAttendanceTime(emp['checkOutTime']) : null;
+                          final String? earlyReason = emp['earlyReason']?.toString() ?? emp['notes']?.toString();
+                          final String checkOutLoc = (emp['checkOutLocation'] ?? emp['hqName'] ?? '').toString();
+                          final double? lat = (emp['latitude'] is num) ? (emp['latitude'] as num).toDouble() : double.tryParse(emp['latitude']?.toString() ?? '');
+                          final double? lng = (emp['longitude'] is num) ? (emp['longitude'] as num).toDouble() : double.tryParse(emp['longitude']?.toString() ?? '');
+                          final hasCoords = lat != null && lng != null && (lat != 0 || lng != 0);
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.CardColor,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: themeColor.withValues(alpha: 0.3),
+                                width: 1.0,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 18,
+                                      backgroundColor: themeColor.withValues(alpha: 0.15),
+                                      child: Icon(
+                                        isCheckout ? Icons.exit_to_app : (isAbsent ? Icons.person_off : Icons.person),
+                                        color: themeColor,
+                                        size: 18,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          if (service.isNotEmpty)
+                                            Text(
+                                              service,
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 11,
+                                                color: AppTheme.TextSecondary,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (hasCoords)
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          _mapController.move(LatLng(lat, lng), 16.5);
+                                          _showInspectorModal(emp);
+                                        },
+                                        icon: const Icon(Icons.my_location, size: 14, color: Colors.black87),
+                                        label: Text(
+                                          loc.isArabic ? 'الخريطة 🗺️' : 'Carte 🗺️',
+                                          style: const TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(0xFFD4AF37),
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                if (isCheckout) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black26,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.login, size: 14, color: Color(0xFF10B981)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${loc.isArabic ? "الدخول:" : "Entrée:"} ${checkIn ?? "--"}',
+                                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                                            ),
+                                            const Spacer(),
+                                            const Icon(Icons.logout, size: 14, color: Color(0xFF94A3B8)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${loc.isArabic ? "الانصراف:" : "Sortie:"} ${checkOut ?? "--"}',
+                                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold),
+                                            ),
+                                          ],
+                                        ),
+                                        if (earlyReason != null && earlyReason.toString().isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.report_problem_outlined, size: 13, color: Color(0xFFF59E0B)),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  '${loc.isArabic ? "المبرر:" : "Motif:"} $earlyReason',
+                                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFBBF24)),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                        if (checkOutLoc.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.location_on_outlined, size: 13, color: Color(0xFFD4AF37)),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  '${loc.isArabic ? "موقع الانصراف:" : "Lieu:"} $checkOutLoc',
+                                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Colors.white60),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ] else if (isAbsent) ...[
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.cancel_outlined, size: 13, color: Color(0xFFEF4444)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        loc.isArabic ? 'لم يتم تسجيل الحضور بالبصمة الجغرافية اليوم' : 'Absence de pointage aujourd\'hui',
+                                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFCA5A5)),
+                                      ),
+                                    ],
+                                  ),
+                                ] else if (checkIn != null) ...[
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.access_time, size: 13, color: Color(0xFF10B981)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${loc.isArabic ? "سجل الحضور في:" : "Pointé à:"} $checkIn',
+                                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
             ],
           ),
         ),
-        const SizedBox(width: 5),
-        Text(
-          '$label: ',
-          style: const TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 11,
-            color: AppTheme.TextSecondary,
-          ),
-        ),
-        Text(
-          '$count',
-          style: TextStyle(
-            fontFamily: 'Tajawal',
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -982,9 +1286,36 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             const Divider(color: AppTheme.BorderColor),
             const SizedBox(height: 8),
             _infoRow(Icons.access_time, loc.isArabic ? 'توقيت الحضور' : 'Heure de pointage', checkInStr),
-            if (emp['notes'] != null && emp['notes'].toString().isNotEmpty) ...[
+            if (isOut) ...[
               const SizedBox(height: 8),
-              _infoRow(Icons.notes, loc.isArabic ? 'ملاحظة الانصراف/المبرر' : 'Note / Justification', emp['notes'].toString()),
+              _infoRow(
+                Icons.exit_to_app,
+                loc.isArabic ? 'توقيت الانصراف' : 'Heure de sortie',
+                _formatAttendanceTime(emp['checkOutTime']),
+                valueColor: const Color(0xFFCBD5E1),
+              ),
+              if (emp['checkOutLocation'] != null && emp['checkOutLocation'].toString().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _infoRow(
+                  Icons.location_on_outlined,
+                  loc.isArabic ? 'موقع الانصراف المسجل' : 'Lieu de départ',
+                  emp['checkOutLocation'].toString(),
+                  valueColor: const Color(0xFFD4AF37),
+                ),
+              ],
+              if (emp['earlyReason'] != null && emp['earlyReason'].toString().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _infoRow(
+                  Icons.report_problem_outlined,
+                  loc.isArabic ? 'مبرر الانصراف المبكر' : 'Motif de sortie',
+                  emp['earlyReason'].toString(),
+                  valueColor: const Color(0xFFF59E0B),
+                ),
+              ],
+            ],
+            if (emp['notes'] != null && emp['notes'].toString().isNotEmpty && emp['notes'] != emp['earlyReason']) ...[
+              const SizedBox(height: 8),
+              _infoRow(Icons.notes, loc.isArabic ? 'ملاحظة إضافية' : 'Note', emp['notes'].toString()),
             ],
             const SizedBox(height: 8),
             _infoRow(
@@ -1080,6 +1411,78 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 ),
               ),
             ),
+            if (isOut) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (dCtx) => AlertDialog(
+                        backgroundColor: const Color(0xFF240D2D),
+                        title: Row(
+                          children: [
+                            const Icon(Icons.restore, color: Color(0xFFD4AF37)),
+                            const SizedBox(width: 8),
+                            Text(
+                              loc.isArabic ? 'إلغاء الانصراف واستئناف الدوام' : 'Annuler la sortie',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                        content: Text(
+                          loc.isArabic
+                              ? 'هل تود إلغاء الانصراف المسجل للعون ($name) وإعادة تفعيل بطاقة حضوره لليوم (في حال الضغط خطأ من طرفه)؟'
+                              : 'Voulez-vous annuler la sortie de ($name) et réactiver son pointage ?',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(dCtx, false),
+                            child: Text(loc.isArabic ? 'تراجع' : 'Non', style: const TextStyle(fontFamily: 'Tajawal')),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
+                            onPressed: () => Navigator.pop(dCtx, true),
+                            child: Text(loc.isArabic ? 'تأكيد الإلغاء واستئناف الدوام' : 'Confirmer', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (confirm == true && mounted) {
+                      final api = context.read<AuthService>().api;
+                      final int eId = (emp['employeeId'] ?? emp['Id'] ?? emp['id'] ?? 0) as int;
+                      await api.cancelCheckOut(eId);
+                      if (ctx.mounted) Navigator.pop(ctx);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              loc.isArabic ? '✅ تم إلغاء الانصراف واستئناف دوام العون بنجاح' : 'Sortie annulée avec succès',
+                              style: const TextStyle(fontFamily: 'Tajawal'),
+                            ),
+                            backgroundColor: const Color(0xFF10B981),
+                          ),
+                        );
+                        _loadData(silent: false);
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.restore, color: Color(0xFFD4AF37), size: 18),
+                  label: Text(
+                    loc.isArabic ? 'إلغاء الانصراف الخاطئ واستئناف الدوام' : 'Annuler la sortie (Erreur)',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFD4AF37)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFD4AF37)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ],
             if (!isPresent) ...[
               const SizedBox(height: 8),
               SizedBox(
@@ -1339,7 +1742,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
+  Widget _infoRow(IconData icon, String label, String value, {Color? valueColor}) {
     return Row(
       children: [
         Icon(icon, size: 16, color: AppTheme.AccentColor),
@@ -1355,10 +1758,11 @@ class _DirectorMapTabState extends State<DirectorMapTab>
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Tajawal',
               fontSize: 12,
               fontWeight: FontWeight.bold,
+              color: valueColor ?? Colors.white,
             ),
           ),
         ),
@@ -1804,11 +2208,11 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
   Widget _statsCapsuleContent(
     AppLocalizations loc, {
-    required int inFieldCount,
-    required int atHQCount,
+    required List<Map<String, dynamic>> inFieldList,
+    required List<Map<String, dynamic>> atHQList,
     required int visitsCount,
-    required int notRegisteredCount,
-    required int checkedOutCount,
+    required List<Map<String, dynamic>> notRegisteredList,
+    required List<Map<String, dynamic>> checkedOutList,
   }) {
     if (_isLoading) {
       return const SizedBox(
@@ -1827,24 +2231,62 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _legend(loc.isArabic ? 'في الميدان' : 'Terrain', inFieldCount, const Color(0xFF38BDF8)),
-          const SizedBox(width: 10),
-          _legend(loc.isArabic ? 'بالمقر' : 'Au siège', atHQCount, AppTheme.SuccessColor),
-          const SizedBox(width: 10),
+          _legend(
+            loc.isArabic ? 'في الميدان' : 'Terrain',
+            inFieldList.length,
+            const Color(0xFFD4AF37),
+            onTap: () => _showCategoryPersonnelModal(
+              context,
+              loc.isArabic ? 'المفتشون في الميدان' : 'Agents sur le terrain',
+              inFieldList,
+              const Color(0xFFD4AF37),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _legend(
+            loc.isArabic ? 'بالمقر' : 'Au siège',
+            atHQList.length,
+            AppTheme.SuccessColor,
+            onTap: () => _showCategoryPersonnelModal(
+              context,
+              loc.isArabic ? 'الموظفون الحاضرون بالمقر' : 'Présents au siège',
+              atHQList,
+              AppTheme.SuccessColor,
+            ),
+          ),
+          const SizedBox(width: 8),
           _legend(loc.isArabic ? 'معاينات اليوم' : 'Visites', visitsCount, const Color(0xFFF59E0B)),
-          if (checkedOutCount > 0) ...[
-            const SizedBox(width: 10),
-            _legend(loc.isArabic ? 'انصرف' : 'Sortis', checkedOutCount, const Color(0xFF94A3B8)),
+          if (checkedOutList.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            _legend(
+              loc.isArabic ? 'انصرف' : 'Sortis',
+              checkedOutList.length,
+              const Color(0xFF94A3B8),
+              onTap: () => _showCategoryPersonnelModal(
+                context,
+                loc.isArabic ? 'الموظفون المنصرفون اليوم' : 'Agents sortis aujourd\'hui',
+                checkedOutList,
+                const Color(0xFF94A3B8),
+                isCheckout: true,
+              ),
+            ),
           ],
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           _legend(
             isWeekend
-                ? (loc.isArabic ? 'لم يسجل (عطلة رسمية)' : 'Non pointé (W-E)')
+                ? (loc.isArabic ? 'لم يسجل (عطلة)' : 'Non pointé (W-E)')
                 : (loc.isArabic ? 'لم يسجل' : 'Non pointé'),
-            notRegisteredCount,
+            notRegisteredList.length,
             isWeekend ? const Color(0xFF64748B) : AppTheme.DangerColor,
+            onTap: () => _showCategoryPersonnelModal(
+              context,
+              loc.isArabic ? 'غير المسجلين للحضور اليوم (غياب)' : 'Non enregistrés (absents)',
+              notRegisteredList,
+              AppTheme.DangerColor,
+              isAbsent: true,
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: _loadData,
             child: Container(

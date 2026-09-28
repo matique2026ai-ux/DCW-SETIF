@@ -1408,11 +1408,44 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                       color: AppTheme.DangerColor,
                     ),
                     const SizedBox(height: 8),
-                    _proofTile(
-                      icon: Icons.storefront_outlined,
-                      title: loc.isArabic ? 'المهام والمعاينات الميدانية' : 'Missions et visites sur le terrain',
-                      status: loc.isArabic ? '0 زيارات تجارية مسجلة اليوم (لا يوجد نشاط ميداني)' : '0 visites de contrôle enregistrées aujourd\'hui',
-                      color: const Color(0xFFF59E0B),
+                    Builder(
+                      builder: (context) {
+                        final String nomStr = (emp['NomAr'] ?? emp['Nom'] ?? '').toString();
+                        final String gradeStr = (emp['Grade'] ?? emp['grade'] ?? '').toString();
+                        final String funcStr = (emp['FonctionExercee'] ?? emp['fonctionExercee'] ?? '').toString();
+                        final String servStr = (emp['Service'] ?? emp['service'] ?? '').toString();
+
+                        final bool isLeadershipOrAdmin = nomStr.contains('رئيس') ||
+                            nomStr.contains('المدير') ||
+                            gradeStr.contains('رئيس') ||
+                            gradeStr.contains('مدير') ||
+                            funcStr.contains('رئيس') ||
+                            funcStr.contains('مدير') ||
+                            servStr.contains('الإدارة والوسائل') ||
+                            gradeStr.contains('متصرف') ||
+                            gradeStr.contains('ملحق') ||
+                            gradeStr.contains('محاسب') ||
+                            gradeStr.contains('كاتب') ||
+                            gradeStr.contains('إعلام');
+
+                        if (isLeadershipOrAdmin) {
+                          return _proofTile(
+                            icon: Icons.admin_panel_settings_outlined,
+                            title: loc.isArabic ? 'طبيعة المنصب والمهام الإدارية' : 'Nature du poste & Missions',
+                            status: loc.isArabic
+                                ? 'منصب نوعي إداري وإشرافي بالمقر (غير معني بالخرجات التفتيشية الميدانية)'
+                                : 'Poste d\'encadrement administratif au siège (non assujetti aux visites terrain)',
+                            color: const Color(0xFFD4AF37),
+                          );
+                        }
+
+                        return _proofTile(
+                          icon: Icons.storefront_outlined,
+                          title: loc.isArabic ? 'المهام والمعاينات الميدانية' : 'Missions et visites sur le terrain',
+                          status: loc.isArabic ? '0 زيارات تجارية مسجلة اليوم (لا يوجد نشاط ميداني)' : '0 visites de contrôle enregistrées aujourd\'hui',
+                          color: const Color(0xFFF59E0B),
+                        );
+                      },
                     ),
                     const SizedBox(height: 8),
                     _proofTile(
@@ -1996,6 +2029,88 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                         status: loc.isArabic
                             ? 'تم الانصراف في: ${_formatTime(att!['CheckOutTime'])}${att['EarlyReason'] != null ? " [المبرر: ${att['EarlyReason']}]" : ""}'
                             : 'Sortie enregistrée à : ${_formatTime(att!['CheckOutTime'])}',
+                        color: att['EarlyReason'] != null ? const Color(0xFFF59E0B) : const Color(0xFF94A3B8),
+                      ),
+                      if (att['EarlyReason'] != null) ...[
+                        const SizedBox(height: 8),
+                        _proofTile(
+                          icon: Icons.pending_actions,
+                          title: loc.isArabic ? 'الوضعية القانونية للانصراف المبكر' : 'Statut réglementaire',
+                          status: loc.isArabic
+                              ? '⚠️ انصراف مبكر استعجالي — معلق بانتظار تقديم الشهادة الطبية أو المبرر الورقي بمكتب المستخدمين خلال 48 ساعة أو موافقة المدير'
+                              : 'Départ anticipé en attente de justificatif papier/médical sous 48h',
+                          color: const Color(0xFFEF4444),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final confirm = await showDialog<bool>(
+                              context: context,
+                              builder: (dCtx) => AlertDialog(
+                                backgroundColor: const Color(0xFF240D2D),
+                                title: Row(
+                                  children: [
+                                    const Icon(Icons.restore, color: Color(0xFFD4AF37)),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      loc.isArabic ? 'إلغاء الانصراف واستئناف الدوام' : 'Annuler la sortie',
+                                      style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
+                                  ],
+                                ),
+                                content: Text(
+                                  loc.isArabic
+                                      ? 'هل تود إلغاء الانصراف المسجل للموظف ($name) وإعادة تفعيل بطاقة حضوره لليوم (في حال الضغط خطأ من طرفه)؟'
+                                      : 'Voulez-vous annuler la sortie de ($name) et réactiver son pointage ?',
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dCtx, false),
+                                    child: Text(loc.isArabic ? 'تراجع' : 'Non', style: const TextStyle(fontFamily: 'Tajawal')),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
+                                    onPressed: () => Navigator.pop(dCtx, true),
+                                    child: Text(loc.isArabic ? 'تأكيد الإلغاء واستئناف الدوام' : 'Confirmer', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true && mounted) {
+                              final api = context.read<AuthService>().api;
+                              final int eId = (emp['Id'] ?? emp['id'] ?? att['EmployeeId'] ?? 0) as int;
+                              await api.cancelCheckOut(eId);
+                              if (ctx.mounted) Navigator.pop(ctx);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      loc.isArabic ? '✅ تم إلغاء الانصراف الخاطئ واستئناف دوام الموظف بنجاح' : 'Sortie annulée avec succès',
+                                      style: const TextStyle(fontFamily: 'Tajawal'),
+                                    ),
+                                    backgroundColor: const Color(0xFF10B981),
+                                  ),
+                                );
+                                _load(silent: false);
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.restore, color: Color(0xFFD4AF37), size: 18),
+                          label: Text(
+                            loc.isArabic ? 'إلغاء الانصراف الخاطئ واستئناف الدوام' : 'Annuler la sortie (Erreur)',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFD4AF37)),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFD4AF37)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
                       ),
                     ],
                   ],

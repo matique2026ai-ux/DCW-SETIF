@@ -757,16 +757,16 @@ class _InspectorScreenState extends State<InspectorScreen> {
               const SizedBox(height: 8),
               Text(
                 loc.isArabic
-                    ? '🔒 حماية الخصوصية: سيتم إيقاف التتبع الجغرافي وتوثيق البصمة الجغرافية الرسمية لموقع الانصراف.'
+                    ? '🔒 حماية الخصوصية: سيتم إيقاف التتبع الجغرافي وتوثيق البصمة الجغرافية الرسمية لموقع الانصراف.\n⚠️ هذا الإجراء نهائي لليوم ولا يمكنك التراجع عنه ذاتياً، وفي حال الضغط خطأ يجب الاتصال بالإدارة لإلغائه إدارياً.'
                     : '🔒 Confidentialité : Le suivi GPS sera immédiatement désactivé après le pointage de sortie.',
-                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60, height: 1.4),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.isArabic ? 'تراجع / إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
+              child: Text(loc.isArabic ? 'تراجع / إلغاء (ضغطت خطأ)' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
             ),
             ElevatedButton.icon(
               onPressed: () {
@@ -855,10 +855,20 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.3)),
                 ),
-                child: Text(
-                  customNotice ??
-                      '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر توثيق المبرر الإداري أو المهمة المكلف بها.',
-                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D), height: 1.4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customNotice ??
+                          '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر توثيق المبرر الإداري أو المهمة المكلف بها.',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D), height: 1.4),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      '📌 تنبيه إداري وقانوني: التصريح بالوعكة الصحية أو الظرف الاستعجالي ليس إعفاءً تلقائياً؛ بل يُحفظ في النظام كوضعية معلقة، ويلزمك القانون بتقديم شهادة طبية رسمية أو مبرر ورقي لمكتب المستخدمين خلال مهلة أقصاها 48 ساعة وإلا عُدّ غياباً غير مبرر يخضع للاقتطاع من الراتب طبقاً للأمر 06-03.',
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 14),
@@ -899,7 +909,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal')),
+              child: const Text('إلغاء والتراجع (ضغطت خطأ)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
             ),
             ElevatedButton.icon(
               onPressed: () {
