@@ -908,419 +908,30 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     );
   }
 
-  Future<void> _showInquiryDossier(Map<String, dynamic> initialInq) async {
-    final loc = AppLocalizations.of(context);
-    Map<String, dynamic> inq = initialInq;
-    try {
-      final api = context.read<AuthService>().api;
-      final freshInqs = await api.getInquiries();
-      final targetId = initialInq['Id'] ?? initialInq['id'];
-      final found = freshInqs.firstWhere(
-        (i) => (i['Id'] ?? i['id']) == targetId,
-        orElse: () => initialInq,
-      );
-      inq = found;
-      if (mounted) {
-        setState(() {
-          _inquiries = freshInqs;
-        });
-      }
-    } catch (_) {}
-
-    if (!mounted) return;
-
-    final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
-    final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
-    final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
-        ? '$nomAr $prenomAr'.trim()
-        : (inq['EmployeeName'] ?? inq['employee_name'] ?? (loc.isArabic ? 'عضو فرقة الرقابة والتفتيش' : 'Agent de contrôle')).toString();
-    final service = (inq['Service'] ?? inq['service'] ?? (loc.isArabic ? 'مديرية التجارة سطيف' : 'Direction du Commerce Sétif')).toString();
-    final status = (inq['Status'] ?? inq['status'] ?? 'sent').toString();
-    final rawDate = (inq['IncidentDate'] ?? inq['incidentdate'] ?? inq['Date'] ?? inq['date'] ?? inq['CreatedAt'] ?? '').toString();
-    final dateStr = rawDate.length >= 10 ? rawDate.substring(0, 10) : (rawDate.isNotEmpty ? rawDate : (loc.isArabic ? 'اليوم' : 'Aujourd\'hui'));
-    final reply = inq['EmployeeReply'] ?? inq['employeereply'] ?? inq['Reply'] ?? inq['reply'];
-    int lateMins = ((inq['LateMinutes'] ?? inq['lateminutes'] ?? 0) as num).toInt();
-    final inqType = (inq['Type'] ?? inq['type'] ?? '').toString();
-    final detailsText = (inq['Details'] ?? inq['details'] ?? '').toString();
-    if (lateMins == 0) {
-      final match = RegExp(r'\((\d+)\s*دقيقة\)').firstMatch(detailsText);
-      if (match != null) {
-        lateMins = int.tryParse(match.group(1) ?? '0') ?? 0;
-      }
-    }
-    final bool isLateType = inqType == 'late_arrival' || lateMins > 0;
-    final bool hasLateMins = lateMins > 0;
-    final bool hasReply = reply != null && reply.toString().trim().isNotEmpty;
-
+  void _showInquiryDossier(Map<String, dynamic> initialInq) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(context).size.height * 0.90,
-        decoration: const BoxDecoration(
-          color: Color(0xFF130F1A),
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 44,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            // Header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.gavel, color: Color(0xFFD4AF37), size: 22),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          loc.isArabic ? 'ملف الاستفسار واتخاذ القرار السيادي للمدير' : 'Dossier d\'explications & Décision souveraine',
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          loc.isArabic
-                              ? 'Dossier Disciplinaire & Pouvoir d\'Appréciation - المدير الولائي الآمر بالصرف'
-                              : 'Dossier Disciplinaire & Pouvoir d\'Appréciation - Directeur Ordonnateur',
-                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.TextSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(color: Colors.white12, height: 1),
-
-            // Dossier Body
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  // Employee Header Card
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF261230), AppTheme.CardColor]),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 26,
-                          backgroundColor: AppTheme.PrimaryColor.withValues(alpha: 0.2),
-                          child: const Icon(Icons.person, size: 30, color: AppTheme.PrimaryColor),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                name,
-                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                service,
-                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                loc.isArabic
-                                    ? 'تاريخ الواقعة: $dateStr  ${hasLateMins ? " | تأخر: $lateMins دقيقة" : ""}'
-                                    : 'Date: $dateStr  ${hasLateMins ? " | Retard: $lateMins min" : ""}',
-                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Employee Written Reply Section (The Core!)
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: hasReply
-                          ? Colors.cyan.withValues(alpha: 0.1)
-                          : Colors.black26,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: hasReply
-                            ? Colors.cyan.withValues(alpha: 0.4)
-                            : Colors.white12,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              hasReply ? Icons.reply_all : Icons.pending_actions,
-                              color: hasReply ? Colors.cyanAccent : Colors.orange,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                hasReply
-                                    ? (loc.isArabic ? 'رد وتبريرات الموظف الرسمية:' : 'Réponse et justifications écrites :')
-                                    : (loc.isArabic ? 'الموظف لم يرسل رده بعد (ضمن مهلة 48 ساعة)' : 'En attente de réponse (délai légal de 48h)'),
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 13,
-                                  color: hasReply ? Colors.cyanAccent : Colors.orange,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          hasReply
-                              ? '$reply'
-                              : (loc.isArabic
-                                  ? 'بانتظار إدخال الموظف لمبرراته عبر التطبيق أو تقديم وثيقة رسمية.'
-                                  : 'En attente des explications de l\'agent via l\'application ou document officiel.'),
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 12,
-                            color: Colors.white,
-                            height: 1.5,
-                          ),
-                        ),
-                        if (hasReply && inq['ReplyDate'] != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.access_time, size: 13, color: Colors.cyanAccent),
-                              const SizedBox(width: 5),
-                              Text(
-                                loc.isArabic
-                                    ? 'تاريخ تسجيل الرد: ${inq['ReplyDate'].toString().substring(0, 16)}'
-                                    : 'Enregistré le : ${inq['ReplyDate'].toString().substring(0, 16)}',
-                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Colors.cyanAccent),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (hasReply && inq['ReplyAttachment'] != null && inq['ReplyAttachment'].toString().isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.cyanAccent.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.cyanAccent.withValues(alpha: 0.4)),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.attach_file, color: Colors.cyanAccent, size: 16),
-                                const SizedBox(width: 6),
-                                Text(
-                                  loc.isArabic
-                                      ? 'مرفق إثبات رسمي: ${inq['ReplyAttachment']}'
-                                      : 'Pièce justificative : ${inq['ReplyAttachment']}',
-                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // 4 Digital Evidence Cards
-                  Text(
-                    loc.isArabic ? 'أدلة وقرائن الإثبات الرقمية (GPS & الحضور):' : 'Preuves et constats numériques (GPS & Pointage) :',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFD4AF37),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _evidenceCard(
-                    icon: Icons.timer_off_outlined,
-                    title: loc.isArabic
-                        ? '1. موعد الانطلاق وفترة التسامح ($_morningGraceTime)'
-                        : '1. Départ et heure de tolérance ($_morningGraceTime)',
-                    desc: (hasLateMins || isLateType)
-                        ? (loc.isArabic
-                            ? 'تم تسجيل التحاق متأخر بمقدار ${lateMins > 0 ? "$lateMins دقيقة" : "تأخر صباحي"} متجاوزاً فترة التسامح.'
-                            : 'Retard matinal enregistré de ${lateMins > 0 ? "$lateMins min" : "retard"} au-delà de la tolérance.')
-                        : (loc.isArabic
-                            ? 'عدم تسجيل حضور في النطاق الجغرافي المحدد.'
-                            : 'Aucun pointage dans le périmètre géographique requis.'),
-                    status: (hasLateMins || isLateType)
-                        ? (loc.isArabic ? '${lateMins > 0 ? "$lateMins دقيقة تأخر" : "متأخر"} ⚠️' : '${lateMins > 0 ? "$lateMins min" : "En retard"} ⚠️')
-                        : (loc.isArabic ? 'غير مسجل ❌' : 'Non pointé ❌'),
-                    statusColor: (hasLateMins || isLateType) ? AppTheme.WarningColor : AppTheme.DangerColor,
-                  ),
-                  const SizedBox(height: 6),
-                  _evidenceCard(
-                    icon: Icons.storefront_outlined,
-                    title: loc.isArabic ? '2. المردودية والزيارات الميدانية' : '2. Rendement et visites de contrôle',
-                    desc: loc.isArabic
-                        ? 'سجل الزيارات والمعاينات التجارية والمحاضر الرقابية في هذا التاريخ.'
-                        : 'Registre des visites commerciales et PV établis à cette date.',
-                    status: loc.isArabic ? '0 زيارات ❌' : '0 visites ❌',
-                    statusColor: AppTheme.DangerColor,
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Printable Inquiry Sheet Button
-                  OutlinedButton.icon(
-                    onPressed: () => InquiryLetterDialog.show(context, inq),
-                    icon: const Icon(Icons.picture_as_pdf, color: Color(0xFFD4AF37)),
-                    label: Text(
-                      loc.isArabic ? 'معاينة استمارة الاستفسار الإداري الرسمية' : 'Aperçu du formulaire officiel de demande d\'explications',
-                      style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFD4AF37)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Sovereign Decision Buttons for Director (if status == 'answered' or 'sent')
-                  if (status == 'answered' || status == 'sent') ...[
-                    Text(
-                      loc.isArabic
-                          ? 'القرار السيادي للمدير الولائي (صاحب السلطة والآمر بالصرف):'
-                          : 'Décision souveraine du Directeur de Wilaya (Ordonnateur) :',
-                      style: const TextStyle(
-                        fontFamily: 'Tajawal',
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        // Option 1: Justified (Classé sans suite)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _submitDecision(
-                              inquiryId: inq['Id'] as int,
-                              decision: 'justified',
-                              name: name,
-                              parentCtx: ctx,
-                            ),
-                            icon: const Icon(Icons.check, size: 16),
-                            label: Text(
-                              loc.isArabic ? 'قبول التبرير (حفظ)' : 'Accepter (Classer)',
-                              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.SuccessColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Option 2: Warning (Avertissement)
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _submitDecision(
-                              inquiryId: inq['Id'] as int,
-                              decision: 'warning',
-                              name: name,
-                              parentCtx: ctx,
-                            ),
-                            icon: const Icon(Icons.warning_amber, size: 16),
-                            label: Text(
-                              loc.isArabic ? 'توجيه إنذار' : 'Avertissement',
-                              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // Option 3: Final Deduction Decision
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _showDeductionDaysDialog(
-                              inquiryId: inq['Id'] as int,
-                              name: name,
-                              parentCtx: ctx,
-                            ),
-                            icon: const Icon(Icons.gavel, size: 16),
-                            label: Text(
-                              loc.isArabic ? 'قرار خصم نافذ' : 'Ordre de déduction',
-                              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.DangerColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ],
-        ),
+      builder: (ctx) => _InquiryDossierModal(
+        initialInquiry: initialInq,
+        morningGraceTime: _morningGraceTime,
+        onInquiryUpdated: (updated) {
+          if (mounted) {
+            setState(() {
+              final idx = _inquiries.indexWhere((i) => (i['Id'] ?? i['id']) == (updated['Id'] ?? updated['id']));
+              if (idx != -1) {
+                _inquiries[idx] = updated;
+              }
+            });
+          }
+        },
+        onDecision: (id, decision, name, parentCtx) {
+          _submitDecision(inquiryId: id, decision: decision, name: name, parentCtx: parentCtx);
+        },
+        onDeductionOrder: (id, name, parentCtx) {
+          _showDeductionDaysDialog(inquiryId: id, name: name, parentCtx: parentCtx);
+        },
       ),
     );
   }
@@ -1486,62 +1097,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     }
   }
 
-  Widget _evidenceCard({
-    required IconData icon,
-    required String title,
-    required String desc,
-    required String status,
-    required Color statusColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.BackgroundColor.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.BorderColor.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: statusColor, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
-                      ),
-                    ),
-                    Text(
-                      status,
-                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 10, color: statusColor),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  desc,
-                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary, height: 1.3),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildAutoFlaggedViolationsSection(AppLocalizations loc) {
     final List<Map<String, dynamic>> flaggedList = [];
@@ -1960,6 +1516,648 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _InquiryDossierModal extends StatefulWidget {
+  final Map<String, dynamic> initialInquiry;
+  final String morningGraceTime;
+  final Function(Map<String, dynamic>) onInquiryUpdated;
+  final Function(int id, String decision, String name, BuildContext ctx) onDecision;
+  final Function(int id, String name, BuildContext ctx) onDeductionOrder;
+
+  const _InquiryDossierModal({
+    required this.initialInquiry,
+    required this.morningGraceTime,
+    required this.onInquiryUpdated,
+    required this.onDecision,
+    required this.onDeductionOrder,
+  });
+
+  @override
+  State<_InquiryDossierModal> createState() => _InquiryDossierModalState();
+}
+
+class _InquiryDossierModalState extends State<_InquiryDossierModal> {
+  late Map<String, dynamic> _inq;
+  Timer? _liveTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _inq = Map<String, dynamic>.from(widget.initialInquiry);
+    _liveTimer = Timer.periodic(const Duration(seconds: 4), (_) => _pollFresh());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _pollFresh());
+  }
+
+  @override
+  void dispose() {
+    _liveTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _pollFresh() async {
+    if (!mounted) return;
+    try {
+      final api = context.read<AuthService>().api;
+      final freshList = await api.getInquiries();
+      final targetId = _inq['Id'] ?? _inq['id'];
+      final found = freshList.firstWhere(
+        (i) => (i['Id'] ?? i['id']) == targetId,
+        orElse: () => _inq,
+      );
+      if (mounted) {
+        setState(() {
+          _inq = found;
+        });
+        widget.onInquiryUpdated(found);
+      }
+    } catch (_) {}
+  }
+
+  String _formatDateTime(dynamic raw, AppLocalizations loc) {
+    if (raw == null) return '';
+    final dt = (raw is DateTime) ? raw.toLocal() : DateTime.tryParse(raw.toString())?.toLocal();
+    if (dt == null) return raw.toString();
+
+    final now = DateTime.now();
+    final timeStr = DateFormat('HH:mm').format(dt);
+    if (DateUtils.isSameDay(dt, now)) {
+      return loc.isArabic ? 'اليوم في تمام الساعة $timeStr' : 'Aujourd\'hui à $timeStr';
+    } else if (DateUtils.isSameDay(dt, now.subtract(const Duration(days: 1)))) {
+      return loc.isArabic ? 'أمس في تمام الساعة $timeStr' : 'Hier à $timeStr';
+    }
+    final dateStr = DateFormat('yyyy/MM/dd').format(dt);
+    return loc.isArabic ? '$dateStr — الساعة $timeStr' : '$dateStr à $timeStr';
+  }
+
+  String _formatIncidentDate(dynamic raw, AppLocalizations loc) {
+    if (raw == null) return loc.isArabic ? 'اليوم' : 'Aujourd\'hui';
+    final dt = (raw is DateTime) ? raw.toLocal() : DateTime.tryParse(raw.toString())?.toLocal();
+    if (dt == null) return raw.toString();
+
+    final now = DateTime.now();
+    if (DateUtils.isSameDay(dt, now)) {
+      return loc.isArabic ? 'اليوم (${DateFormat('yyyy/MM/dd').format(now)})' : 'Aujourd\'hui (${DateFormat('yyyy/MM/dd').format(now)})';
+    }
+    return DateFormat('yyyy/MM/dd').format(dt);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final nomAr = _inq['NomAr'] ?? _inq['nomar'] ?? _inq['Nom'] ?? _inq['nom'] ?? _inq['name'] ?? _inq['employeeName'] ?? '';
+    final prenomAr = _inq['PrenomAr'] ?? _inq['prenomar'] ?? _inq['Prenom'] ?? _inq['prenom'] ?? '';
+    final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
+        ? '$nomAr $prenomAr'.trim()
+        : (_inq['EmployeeName'] ?? _inq['employee_name'] ?? (loc.isArabic ? 'عضو فرقة الرقابة والتفتيش' : 'Agent de contrôle')).toString();
+    final service = (_inq['Service'] ?? _inq['service'] ?? (loc.isArabic ? 'مديرية التجارة سطيف' : 'Direction du Commerce Sétif')).toString();
+    final status = (_inq['Status'] ?? _inq['status'] ?? 'sent').toString();
+    final rawDate = (_inq['IncidentDate'] ?? _inq['incidentdate'] ?? _inq['Date'] ?? _inq['date'] ?? _inq['CreatedAt'] ?? '').toString();
+    final incidentDateFormatted = _formatIncidentDate(rawDate, loc);
+    final reply = _inq['EmployeeReply'] ?? _inq['employeereply'] ?? _inq['Reply'] ?? _inq['reply'];
+    final bool hasReply = reply != null && reply.toString().trim().isNotEmpty;
+
+    int lateMins = ((_inq['LateMinutes'] ?? _inq['lateminutes'] ?? 0) as num).toInt();
+    final inqType = (_inq['Type'] ?? _inq['type'] ?? '').toString();
+    final detailsText = (_inq['Details'] ?? _inq['details'] ?? '').toString();
+    if (lateMins == 0) {
+      final match = RegExp(r'\((\d+)\s*دقيقة\)').firstMatch(detailsText);
+      if (match != null) {
+        lateMins = int.tryParse(match.group(1) ?? '0') ?? 0;
+      }
+    }
+    final bool isLateType = inqType == 'late_arrival' || lateMins > 0;
+    final bool hasLateMins = lateMins > 0;
+    final inqId = (_inq['Id'] ?? _inq['id']) as int;
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.92,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF180F22), Color(0xFF100917)],
+        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BorderSide(color: Color(0x66D4AF37), width: 1.5)),
+      ),
+      child: Column(
+        children: [
+          // Drag Handle
+          Center(
+            child: Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 6),
+              width: 46,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0x66D4AF37)),
+                  ),
+                  child: const Icon(Icons.gavel, color: Color(0xFFD4AF37), size: 22),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            loc.isArabic ? 'ملف الاستفسار واتخاذ القرار السيادي' : 'Dossier d\'explications & Décision',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Live Pulse Pill
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  loc.isArabic ? 'مباشر' : 'Live',
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 9.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF10B981),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        loc.isArabic
+                            ? 'المدير الولائي للتجارة — الآمر بالصرف الوحيد ومالك السلطة التقديرية'
+                            : 'Directeur de Wilaya — Ordonnateur et Pouvoir d\'Appréciation',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white70),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Colors.white12, height: 1),
+
+          // Dossier Content
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // 1. Employee Profile Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF281433), Color(0xFF1C0D24)],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0x55D4AF37), width: 1.2),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black38, blurRadius: 10, offset: Offset(0, 4)),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+                        ),
+                        child: const CircleAvatar(
+                          radius: 26,
+                          backgroundColor: Color(0xFF3B1E4A),
+                          child: Icon(Icons.person, size: 30, color: Color(0xFFD4AF37)),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 16.5,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              service,
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11.5, color: Colors.white70),
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: const Color(0x66D4AF37)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.calendar_today, size: 11, color: Color(0xFFD4AF37)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'تاريخ الواقعة: $incidentDateFormatted',
+                                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (hasLateMins || isLateType)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(color: const Color(0x66F59E0B)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.timer, size: 11, color: Color(0xFFF59E0B)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'تأخر: ${lateMins > 0 ? "$lateMins دقيقة" : "تأخر صباحي"}',
+                                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // 2. Employee Written Reply Section (The Core!)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: hasReply
+                          ? [const Color(0xFF0C2433), const Color(0xFF091924)]
+                          : [const Color(0xFF261D12), const Color(0xFF1B140C)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: hasReply ? const Color(0xFF38BDF8).withValues(alpha: 0.5) : const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: hasReply ? const Color(0xFF38BDF8).withValues(alpha: 0.08) : Colors.transparent,
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            hasReply ? Icons.format_quote_rounded : Icons.pending_actions,
+                            color: hasReply ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              hasReply
+                                  ? (loc.isArabic ? 'رد وتبريرات الموظف الرسمية الموثقة:' : 'Réponse et justifications écrites :')
+                                  : (loc.isArabic ? 'الموظف لم يرسل رده بعد (ضمن مهلة 48 ساعة)' : 'En attente de réponse (délai légal de 48h)'),
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13.5,
+                                color: hasReply ? const Color(0xFF38BDF8) : const Color(0xFFF59E0B),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        hasReply
+                            ? '« $reply »'
+                            : (loc.isArabic
+                                ? 'بانتظار إدخال الموظف لمبرراته عبر التطبيق أو تقديم وثيقة رسمية.'
+                                : 'En attente des explications de l\'agent via l\'application ou document officiel.'),
+                        style: TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: hasReply ? 14.5 : 12,
+                          fontWeight: hasReply ? FontWeight.bold : FontWeight.normal,
+                          color: Colors.white,
+                          height: 1.5,
+                        ),
+                      ),
+                      if (hasReply && (_inq['ReplyDate'] != null || _inq['ReplyAt'] != null)) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time_filled, size: 14, color: Color(0xFF38BDF8)),
+                            const SizedBox(width: 6),
+                            Text(
+                              loc.isArabic
+                                  ? 'تاريخ التسجيل: ${_formatDateTime(_inq['ReplyDate'] ?? _inq['ReplyAt'], loc)}'
+                                  : 'Enregistré : ${_formatDateTime(_inq['ReplyDate'] ?? _inq['ReplyAt'], loc)}',
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF38BDF8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 3. Digital Evidence Section
+                Text(
+                  loc.isArabic ? 'أدلة وقرائن الإثبات الرقمية (GPS & الحضور):' : 'Preuves et constats numériques (GPS & Pointage) :',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFD4AF37),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Card 1: Attendance & Grace Time
+                _evidenceCard(
+                  icon: Icons.schedule_outlined,
+                  title: loc.isArabic
+                      ? '1. موعد الالتحاق وفترة التسامح (${widget.morningGraceTime} ص)'
+                      : '1. Heure d\'arrivée et tolérance (${widget.morningGraceTime})',
+                  desc: (hasLateMins || isLateType)
+                      ? (loc.isArabic
+                          ? 'تم التحاق الموظف بعد انقضاء فترة التسامح الصباحية المقررة (${widget.morningGraceTime} ص). البصمة موثقة بالـ GPS في المقر.'
+                          : 'Arrivée enregistrée au-delà de la tolérance matinale (${widget.morningGraceTime}). Pointage GPS validé au siège.')
+                      : (loc.isArabic
+                          ? 'عدم تسجيل أي حركة حضور أو بصمة داخل النطاق الجغرافي للمقر حتى موعد الاستفسار.'
+                          : 'Aucun pointage dans le périmètre géographique requis.'),
+                  status: (hasLateMins || isLateType)
+                      ? (loc.isArabic ? '${lateMins > 0 ? "$lateMins دقيقة تأخر" : "تأخر صباحي"} ⚠️' : '${lateMins > 0 ? "$lateMins min" : "En retard"} ⚠️')
+                      : (loc.isArabic ? 'غياب غير مسجل ❌' : 'Non pointé ❌'),
+                  statusColor: (hasLateMins || isLateType) ? const Color(0xFFF59E0B) : const Color(0xFFEF4444),
+                ),
+                const SizedBox(height: 8),
+
+                // Card 2: Field Operations & Yield
+                _evidenceCard(
+                  icon: isLateType ? Icons.domain_outlined : Icons.storefront_outlined,
+                  title: loc.isArabic ? '2. الحالة الميدانية والمردودية الرقابية' : '2. Activité sur le terrain',
+                  desc: isLateType
+                      ? (loc.isArabic
+                          ? 'الاستفسار يخص الانضباط الصباحي. الموظف متواجد بالمقر تحضيراً لمهام التفتيش الميداني.'
+                          : 'Concerne la ponctualité matinale. Agent présent au siège avant les sorties de terrain.')
+                      : (loc.isArabic
+                          ? 'سجل الزيارات والمعاينات التجارية والمحاضر الرقابية في هذا التاريخ.'
+                          : 'Registre des visites commerciales et PV établis à cette date.'),
+                  status: isLateType
+                      ? (loc.isArabic ? 'الفترة الصباحية بالمقر 🏢' : 'Matinée au siège 🏢')
+                      : (loc.isArabic ? '0 زيارات مسجلة ❌' : '0 visites ❌'),
+                  statusColor: isLateType ? const Color(0xFF38BDF8) : const Color(0xFFEF4444),
+                ),
+
+                const SizedBox(height: 14),
+
+                // 4. Official Inquiry Sheet Preview Button
+                OutlinedButton.icon(
+                  onPressed: () => InquiryLetterDialog.show(context, _inq),
+                  icon: const Icon(Icons.picture_as_pdf, color: Color(0xFFD4AF37)),
+                  label: Text(
+                    loc.isArabic ? 'معاينة استمارة الاستفسار الإداري الرسمية' : 'Aperçu du formulaire officiel de demande d\'explications',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+
+                const SizedBox(height: 18),
+
+                // 5. Sovereign Decision Buttons for Director
+                if (status == 'answered' || status == 'sent') ...[
+                  Text(
+                    loc.isArabic
+                        ? 'القرار السيادي للمدير الولائي (صاحب السلطة والآمر بالصرف):'
+                        : 'Décision souveraine du Directeur de Wilaya (Ordonnateur) :',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      // Option 1: Justified (Classé sans suite)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => widget.onDecision(
+                            inqId,
+                            'justified',
+                            name,
+                            context,
+                          ),
+                          icon: const Icon(Icons.check_circle_outline, size: 17),
+                          label: Text(
+                            loc.isArabic ? 'قبول التبرير (حفظ)' : 'Accepter (Classer)',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                            elevation: 3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Option 2: Warning (Avertissement)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => widget.onDecision(
+                            inqId,
+                            'warning',
+                            name,
+                            context,
+                          ),
+                          icon: const Icon(Icons.warning_amber_rounded, size: 17),
+                          label: Text(
+                            loc.isArabic ? 'توجيه إنذار' : 'Avertissement',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF59E0B),
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                            elevation: 3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Option 3: Final Deduction Decision
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => widget.onDeductionOrder(
+                            inqId,
+                            name,
+                            context,
+                          ),
+                          icon: const Icon(Icons.gavel, size: 17),
+                          label: Text(
+                            loc.isArabic ? 'قرار خصم نافذ' : 'Ordre de déduction',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF4444),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+                            elevation: 3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _evidenceCard({
+    required IconData icon,
+    required String title,
+    required String desc,
+    required String status,
+    required Color statusColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF160D1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: statusColor, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                      ),
+                    ),
+                    Text(
+                      status,
+                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 10.5, color: statusColor),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  desc,
+                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
