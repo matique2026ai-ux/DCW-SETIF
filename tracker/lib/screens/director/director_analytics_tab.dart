@@ -508,20 +508,22 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── TOP ROW: 4 PRIMARY STRATEGIC PILLARS (Clean, sleek, balanced height) ──
+        // ── TOP ROW: 4 PRIMARY STRATEGIC PILLARS (Clean, sleek, executive height) ──
         LayoutBuilder(
           builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth > 900;
-            final isTablet = constraints.maxWidth > 550;
+            final isDesktop = constraints.maxWidth > 950;
+            final isTablet = constraints.maxWidth > 600;
             final crossAxisCount = isDesktop ? 4 : (isTablet ? 2 : 1);
 
-            return GridView.count(
-              crossAxisCount: crossAxisCount,
+            return GridView(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 10,
+                mainAxisExtent: isDesktop ? 96.0 : (isTablet ? 98.0 : 100.0),
+              ),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 10,
-              childAspectRatio: isDesktop ? 2.4 : (isTablet ? 2.6 : 2.7),
               children: [
                 _buildHeroMetricCard(
                   title: isArabic ? 'معاينات وتدخلات الرقابة' : 'Visites de Contrôle',
@@ -577,17 +579,19 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
         // ── BOTTOM ROW: 4 OPERATIONAL & LEGAL ACTION MINI-TILES ──
         LayoutBuilder(
           builder: (context, constraints) {
-            final isDesktop = constraints.maxWidth > 900;
-            final isTablet = constraints.maxWidth > 550;
+            final isDesktop = constraints.maxWidth > 950;
+            final isTablet = constraints.maxWidth > 600;
             final crossAxisCount = isDesktop ? 4 : (isTablet ? 2 : 1);
 
-            return GridView.count(
-              crossAxisCount: crossAxisCount,
+            return GridView(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 8,
+                mainAxisExtent: isDesktop ? 60.0 : (isTablet ? 62.0 : 64.0),
+              ),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 8,
-              childAspectRatio: isDesktop ? 3.6 : (isTablet ? 3.8 : 4.0),
               children: [
                 _buildCompactActionTile(
                   title: isArabic ? 'الجاهزية والانتشار' : 'Déploiement',
@@ -636,11 +640,27 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     Map<String, dynamic> ins,
     List<dynamic> recentVisits,
   ) {
-    final double maxVisits = dailyTrend.isEmpty
-        ? 1.0
-        : dailyTrend
-            .map((e) => (e['visits'] as num?)?.toDouble() ?? 0.0)
-            .fold(1.0, (max, v) => v > max ? v : max);
+    final List<dynamic> chartData;
+    final bool hasVisitsData = dailyTrend.isNotEmpty && dailyTrend.any((e) => ((e['visits'] as num?)?.toInt() ?? 0) > 0);
+
+    if (dailyTrend.isNotEmpty) {
+      chartData = dailyTrend;
+    } else {
+      final now = DateTime.now();
+      chartData = List.generate(7, (i) {
+        final d = now.subtract(Duration(days: 6 - i));
+        return {
+          'date': DateFormat('yyyy-MM-dd').format(d),
+          'visits': 0,
+          'violations': 0,
+          'seizures': 0.0,
+        };
+      });
+    }
+
+    final double maxVisits = chartData
+        .map((e) => (e['visits'] as num?)?.toDouble() ?? 0.0)
+        .fold(1.0, (max, v) => v > max ? v : max);
 
     final String violationRate = ins['violationRate']?.toString() ?? '0.0';
     final String complianceRate = ins['complianceRate']?.toString() ?? '100.0';
@@ -746,64 +766,72 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                 ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+
+          // Readiness notice if no visits recorded yet today
+          if (!hasVisitsData)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, color: Color(0xFFD4AF37), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isArabic
+                          ? 'السجل محيَّن آنياً وجاهز: سيبدأ المنحنى البياني بالصعود التلقائي فور تسجيل المفتشين لأولى المعاينات الميدانية لليوم'
+                          : 'Prêt pour l\'enregistrement : Le graphique s\'animera dès la première visite terrain.',
+                      style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 11),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // Animated Dual Bars Container
-          if (dailyTrend.isEmpty)
-            Container(
-              height: 160,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A0A20),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF3B1A40)),
-              ),
-              child: Center(
-                child: Text(
-                  isArabic
-                      ? 'جاري تحديث واسترجاع مؤشرات التدخلات الرقابية...'
-                      : 'Chargement des indicateurs de contrôle...',
-                  style: TextStyle(fontFamily: 'Tajawal', color: Colors.grey.shade400, fontSize: 13),
-                ),
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A0A20),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF3B1A40)),
-              ),
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 215,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: List.generate(dailyTrend.length, (idx) {
-                                final day = dailyTrend[idx];
-                                final int visits = (day['visits'] as num?)?.toInt() ?? 0;
-                                final int violations = (day['violations'] as num?)?.toInt() ?? 0;
-                                final String rawDate = day['date']?.toString() ?? '';
-                                final double seizures = (day['seizures'] as num?)?.toDouble() ?? 0.0;
-                                final bool isHovered = _hoveredBarIndex == idx;
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A0A20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF3B1A40)),
+            ),
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 200,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: List.generate(chartData.length, (idx) {
+                              final day = chartData[idx];
+                              final int visits = (day['visits'] as num?)?.toInt() ?? 0;
+                              final int violations = (day['violations'] as num?)?.toInt() ?? 0;
+                              final String rawDate = day['date']?.toString() ?? '';
+                              final double seizures = (day['seizures'] as num?)?.toDouble() ?? 0.0;
+                              final bool isHovered = _hoveredBarIndex == idx;
 
-                                String shortDate = rawDate;
-                                if (rawDate.contains('-')) {
-                                  final parts = rawDate.split('-');
-                                  if (parts.length == 3) shortDate = '${parts[2]}/${parts[1]}';
-                                }
+                              String shortDate = rawDate;
+                              if (rawDate.contains('-')) {
+                                final parts = rawDate.split('-');
+                                if (parts.length == 3) shortDate = '${parts[2]}/${parts[1]}';
+                              }
 
-                                final double targetVisitsHeight = (visits / maxVisits) * 105.0;
-                                final double targetViolationsHeight = (violations / maxVisits) * 105.0;
+                              final double targetVisitsHeight = visits > 0 ? (visits / maxVisits) * 105.0 : 6.0;
+                              final double targetViolationsHeight = violations > 0 ? (violations / maxVisits) * 105.0 : (visits > 0 ? 0.0 : 6.0);
 
                                 return MouseRegion(
                                   onEnter: (_) => setState(() => _hoveredBarIndex = idx),

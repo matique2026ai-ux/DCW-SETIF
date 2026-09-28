@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:drh_setif_tracker/services/auth_service.dart';
@@ -23,19 +24,32 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   DateTime _selectedDate = DateTime.now();
   String _selectedFilter = 'absent'; // 'all', 'present', 'absent'
   bool _isLoading = true;
+  Timer? _silentPollTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    // Silent real-time live polling every 15 seconds
+    _silentPollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted) _load(silent: true);
+    });
   }
 
-  Future<void> _load({DateTime? targetDate}) async {
+  @override
+  void dispose() {
+    _silentPollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load({DateTime? targetDate, bool silent = false}) async {
     final date = targetDate ?? _selectedDate;
-    setState(() {
-      _isLoading = true;
-      _selectedDate = date;
-    });
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _selectedDate = date;
+      });
+    }
     try {
       final api = context.read<AuthService>().api;
       final dateStr = DateFormat('yyyy-MM-dd').format(date);
@@ -58,7 +72,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted && !silent) setState(() => _isLoading = false);
     }
   }
 
@@ -1096,6 +1110,25 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                         ? '${e['NomAr']} ${e['PrenomAr'] ?? ''}'.trim()
                         : '${e['Nom']} ${e['Prenom'] ?? ''}'.trim();
 
+                    final isOut = attRecord?['IsCheckedOut'] == true || attRecord?['IsCheckedOut'] == 1 || attRecord?['CheckOutTime'] != null;
+                    final checkOutTime = attRecord?['CheckOutTime'] != null ? _formatTime(attRecord!['CheckOutTime']) : '';
+                    final lateMin = (attRecord?['LateMinutes'] as num?)?.toInt() ?? 0;
+
+                    Color statusColor = AppTheme.DangerColor;
+                    IconData statusIcon = Icons.person_off;
+                    if (isPresent) {
+                      if (isOut) {
+                        statusColor = const Color(0xFF94A3B8);
+                        statusIcon = Icons.exit_to_app;
+                      } else if (lateMin > 0) {
+                        statusColor = const Color(0xFFF59E0B);
+                        statusIcon = Icons.access_time_filled;
+                      } else {
+                        statusColor = AppTheme.SuccessColor;
+                        statusIcon = Icons.check_circle;
+                      }
+                    }
+
                     return GestureDetector(
                       onTap: () {
                         if (isPresent) {
@@ -1112,7 +1145,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isPresent
-                                ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                                ? statusColor.withValues(alpha: 0.4)
                                 : AppTheme.BorderColor.withValues(alpha: 0.3),
                           ),
                         ),
@@ -1122,13 +1155,12 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               width: 42,
                               height: 42,
                               decoration: BoxDecoration(
-                                color: (isPresent ? AppTheme.SuccessColor : AppTheme.DangerColor)
-                                    .withValues(alpha: 0.15),
+                                color: statusColor.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
-                                isPresent ? Icons.check_circle : Icons.person_off,
-                                color: isPresent ? AppTheme.SuccessColor : AppTheme.DangerColor,
+                                statusIcon,
+                                color: statusColor,
                                 size: 20,
                               ),
                             ),
@@ -1150,23 +1182,60 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                         ),
                                       ),
                                       if (isPresent)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(6),
-                                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
-                                          ),
-                                          child: Text(
-                                            '🟢 حاضر: $checkInTime',
-                                            style: const TextStyle(
-                                              fontFamily: 'Tajawal',
-                                              fontSize: 10.5,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF10B981),
+                                        if (isOut)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF64748B).withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: const Color(0xFF64748B).withValues(alpha: 0.4)),
                                             ),
-                                          ),
-                                        )
+                                            child: Text(
+                                              '⚪ منصرف: $checkOutTime (دخول: $checkInTime)',
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFFCBD5E1),
+                                              ),
+                                            ),
+                                          )
+                                        else if (lateMin > 0)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                                            ),
+                                            child: Text(
+                                              '🟡 متأخر: $checkInTime (+$lateMin د)',
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFFFBBF24),
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(6),
+                                              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                            ),
+                                            child: Text(
+                                              '🟢 حاضر: $checkInTime',
+                                              style: const TextStyle(
+                                                fontFamily: 'Tajawal',
+                                                fontSize: 10.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFF10B981),
+                                              ),
+                                            ),
+                                          )
                                       else
                                         Container(
                                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -1919,6 +1988,16 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                           ? (loc.isArabic ? 'تأخر صباحي مسجل' : 'Retard matinal enregistré')
                           : (loc.isArabic ? 'حضور منضبط ومثبت رسمياً ✅' : 'Présence ponctuelle et confirmée ✅'),
                     ),
+                    if (att?['CheckOutTime'] != null) ...[
+                      const SizedBox(height: 8),
+                      _proofTile(
+                        icon: Icons.exit_to_app,
+                        title: loc.isArabic ? 'توقيت تسجيل الانصراف' : 'Heure de sortie',
+                        status: loc.isArabic
+                            ? 'تم الانصراف في: ${_formatTime(att!['CheckOutTime'])}${att['EarlyReason'] != null ? " [المبرر: ${att['EarlyReason']}]" : ""}'
+                            : 'Sortie enregistrée à : ${_formatTime(att!['CheckOutTime'])}',
+                      ),
+                    ],
                   ],
                 ),
               ),
