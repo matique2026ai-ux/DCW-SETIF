@@ -112,6 +112,7 @@ class _MandatorySecuritySetupDialogState extends State<MandatorySecuritySetupDia
           borderRadius: BorderRadius.circular(20),
           side: const BorderSide(color: Color(0xFFD4AF37), width: 1.8),
         ),
+        scrollable: true,
         title: Column(
           children: [
             Container(

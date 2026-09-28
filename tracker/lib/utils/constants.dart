@@ -69,7 +69,7 @@ class AppConstants {
   // Main Directorate HQ (مقر مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف — حي المعبودة، شارع جودي حمو)
   static const double hqLatitude = 36.1900575;
   static const double hqLongitude = 5.3990134;
-  static const double hqRadiusMeters = 250.0;
+  static const double hqRadiusMeters = 600.0;
 
   // Regional Inspectorates, Airport Border Inspectorate & Commercial Annexes of Setif Province (Default baseline)
   static const List<InspectorateHQ> defaultInspectorates = [
@@ -79,7 +79,7 @@ class AppConstants {
       nameFr: 'Siège de la Direction de Wilaya (Sétif - El Maabouda)',
       latitude: 36.1900575,
       longitude: 5.3990134,
-      radiusMeters: 250.0,
+      radiusMeters: 600.0,
       isMainDirectorate: true,
     ),
     InspectorateHQ(
