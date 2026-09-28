@@ -17,7 +17,7 @@ import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/screens/inspector/inspector_inquiries_sheet.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
-
+import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog.dart';
 
 class InspectorScreen extends StatefulWidget {
   const InspectorScreen({super.key});
@@ -52,6 +52,13 @@ class _InspectorScreenState extends State<InspectorScreen> {
       if (mounted) {
         _loadStatus();
         _loadActiveProgram();
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final auth = context.read<AuthService>();
+      if (auth.currentUser?.mustChangeCredentials == true) {
+        await MandatorySecuritySetupDialog.show(context);
       }
     });
   }

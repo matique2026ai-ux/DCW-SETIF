@@ -43,7 +43,7 @@
 6. **🔐 منظومة التفعيل الأمني الإلزامي ودورة حياة الـ PIN (Mandatory Setup & PIN Lifecycle):**
    * **الـ PIN شخصي لكل مستخدم** — كل حساب قيادي (المدير، الرؤساء، مدير النظام) له `MasterPin` مستقل في عمود `UtilisateursSysteme.MasterPin`.
    * **إجبار تغيير الـ PIN عند أول دخول**: إذا كان الـ PIN لا يزال `202600` (الافتراضي) أو `MustChangeCredentials=true` أو أول دخول على الإطلاق — تظهر نافذة `MandatorySecuritySetupDialog` إلزامياً ولا يمكن إغلاقها.
-   * هذا الإجبار مفعّل في: `DirectorScreen`, `HeadScreen`, `BureauScreen`, **و`AdminScreen`** (أُضيف 27 سبتمبر 2026).
+   * هذا الإجبار مفعّل في كافة الشاشات: `DirectorScreen`, `HeadScreen`, `BureauScreen`, `AdminScreen`, و**`InspectorScreen`** (تم تعميمه ليشمل المفتشين الميدانيين في السيرفر والتطبيق 28 سبتمبر 2026).
    * **`tracker_admin` مستثنى سيادياً** — لا يُجبر على تغيير الـ PIN أبداً (`isTrackerAdmin` check في `auth.js`).
    * **إخفاء الـ PIN من الواجهة**: حُذف نص "الرمز الافتراضي: 202600" من شاشة الدخول — لا يرى أي مستخدم الـ PIN على الشاشة.
    * **حفظ الجهاز الموثوق**: بعد أول دخول ناجح بالـ PIN من المتصفح، يُحفظ في `localStorage` — لا يُطلب مجدداً على نفس المتصفح/الجهاز.
