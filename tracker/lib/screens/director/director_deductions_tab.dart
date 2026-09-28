@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -24,11 +25,35 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   String _archiveDecisionFilter = 'all'; // 'all', 'justified', 'warning', 'deduction'
   String _archiveSearchQuery = '';
   bool _isPrintingReport = false;
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _pollTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+      if (mounted) _silentRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _silentRefresh() async {
+    try {
+      final api = context.read<AuthService>().api;
+      final inqs = await api.getInquiries();
+      final delays = await api.getDelaysSummary(graceTime: _morningGraceTime);
+      if (mounted) {
+        setState(() {
+          _inquiries = inqs;
+          _delaysSummary = delays;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -95,6 +120,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     String? defaultSubject,
     String? defaultDetails,
     String? violationType,
+    int? lateMinutes,
   }) {
     final loc = AppLocalizations.of(context);
     final name = '${employee['NomAr'] ?? employee['Nom'] ?? ''} ${employee['PrenomAr'] ?? employee['Prenom'] ?? ''}'.trim();
@@ -190,6 +216,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   'type': violationType ?? 'unjustified_absence',
                   'subject': subjectCtrl.text.trim(),
                   'details': detailsCtrl.text.trim(),
+                  'lateMinutes': lateMinutes ?? 0,
                   'sentBy': userId,
                 });
                 if (dlgCtx.mounted) Navigator.pop(dlgCtx);
@@ -445,6 +472,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     color: Colors.white,
                   ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 20),
+                tooltip: loc.isArabic ? 'تحديث لحظي' : 'Actualiser',
+                onPressed: _load,
               ),
             ],
           ),
@@ -876,8 +908,27 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     );
   }
 
-  void _showInquiryDossier(Map<String, dynamic> inq) {
+  Future<void> _showInquiryDossier(Map<String, dynamic> initialInq) async {
     final loc = AppLocalizations.of(context);
+    Map<String, dynamic> inq = initialInq;
+    try {
+      final api = context.read<AuthService>().api;
+      final freshInqs = await api.getInquiries();
+      final targetId = initialInq['Id'] ?? initialInq['id'];
+      final found = freshInqs.firstWhere(
+        (i) => (i['Id'] ?? i['id']) == targetId,
+        orElse: () => initialInq,
+      );
+      inq = found;
+      if (mounted) {
+        setState(() {
+          _inquiries = freshInqs;
+        });
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
+
     final nomAr = inq['NomAr'] ?? inq['nomar'] ?? inq['Nom'] ?? inq['nom'] ?? inq['name'] ?? inq['employeeName'] ?? '';
     final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
     final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
@@ -1783,6 +1834,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                           defaultSubject: subject,
                           defaultDetails: details,
                           violationType: isLate ? 'late_arrival' : 'unjustified_absence',
+                          lateMinutes: isLate ? lateMinutes : 0,
                         );
                       },
                       icon: const Icon(Icons.gavel, size: 14, color: Colors.black),
