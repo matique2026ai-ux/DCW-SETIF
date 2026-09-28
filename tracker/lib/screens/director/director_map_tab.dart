@@ -10,6 +10,7 @@ import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/common/qr_code_screen.dart';
+import 'package:drh_setif_tracker/services/inspectorate_service.dart';
 
 class DirectorMapTab extends StatefulWidget {
   const DirectorMapTab({super.key});
@@ -48,6 +49,9 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   Future<void> _loadData({bool silent = false}) async {
     try {
       final api = context.read<AuthService>().api;
+      if (!silent) {
+        await InspectorateService.instance.loadInspectorates(api: api);
+      }
       final data = await api.getMapData();
       final cleanData = data.where((e) {
         final name = (e['name'] ?? '').toString();

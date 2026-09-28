@@ -1,6 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
+import 'package:drh_setif_tracker/screens/director/director_screen.dart';
+import 'package:drh_setif_tracker/screens/head/head_screen.dart';
+import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
+import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
+import 'package:drh_setif_tracker/screens/admin/admin_screen.dart';
 import 'package:drh_setif_tracker/widgets/golden_emblem_coin.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -45,13 +53,49 @@ class _SplashScreenState extends State<SplashScreen>
     if (!mounted) return;
     _fadeController.forward();
 
-    await Future.delayed(const Duration(milliseconds: 2400));
+    // 🛡️ Persistent Session Restoration: Check auto-login while splash animates
+    final auth = context.read<AuthService>();
+    final bool autoLoggedIn = await auth.tryAutoLogin();
+
+    await Future.delayed(const Duration(milliseconds: 1400));
+    if (!mounted) return;
+
+    Widget nextScreen = const LoginScreen();
+    if (autoLoggedIn && auth.currentUser != null) {
+      final role = auth.currentUser!.role;
+      // Enforce web ban: inspectors on web cannot auto-login
+      if (kIsWeb && role == 'inspector') {
+        await auth.logout();
+        nextScreen = const LoginScreen();
+      } else {
+        switch (role) {
+          case 'admin':
+            nextScreen = const AdminScreen();
+            break;
+          case 'director':
+            nextScreen = const DirectorScreen();
+            break;
+          case 'head_of_department':
+            nextScreen = const HeadScreen();
+            break;
+          case 'bureau_chief':
+            nextScreen = const BureauScreen();
+            break;
+          case 'inspector':
+            nextScreen = const InspectorScreen();
+            break;
+          default:
+            nextScreen = const LoginScreen();
+        }
+      }
+    }
+
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 700),
-        pageBuilder: (_, __, ___) => const LoginScreen(),
+        pageBuilder: (_, __, ___) => nextScreen,
         transitionsBuilder: (_, anim, __, child) {
           return FadeTransition(
             opacity: CurvedAnimation(parent: anim, curve: Curves.easeInOut),
