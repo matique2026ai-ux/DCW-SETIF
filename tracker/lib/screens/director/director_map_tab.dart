@@ -19,7 +19,8 @@ class DirectorMapTab extends StatefulWidget {
   State<DirectorMapTab> createState() => _DirectorMapTabState();
 }
 
-class _DirectorMapTabState extends State<DirectorMapTab> {
+class _DirectorMapTabState extends State<DirectorMapTab>
+    with SingleTickerProviderStateMixin {
   List<Map<String, dynamic>> _mapData = [];
   bool _isLoading = true;
   bool _isLocating = false;
@@ -27,12 +28,24 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
   Timer? _liveRefreshTimer;
   final MapController _mapController = MapController();
   String _selectedMapStyle = 'satellite'; // 'satellite', 'osm'
+  bool _isLegendExpanded = false;
+
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
 
   static const LatLng _setifCenter = LatLng(AppConstants.hqLatitude, AppConstants.hqLongitude);
 
   @override
   void initState() {
     super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.9, end: 1.3).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     _loadData();
     // Live Auto-Refresh every 12 seconds
     _liveRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
@@ -42,6 +55,7 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
 
   @override
   void dispose() {
+    _pulseController.dispose();
     _liveRefreshTimer?.cancel();
     super.dispose();
   }
@@ -361,64 +375,99 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                           : (double.tryParse(emp['longitude']?.toString() ?? '') ?? 0.0);
                       final isOut = emp['isCheckedOut'] == true;
                       final int vCount = (emp['visitsCount'] as num?)?.toInt() ?? 0;
+                      final int lateMinutes = (emp['lateMinutes'] as num?)?.toInt() ?? 0;
+                      final bool isLate = lateMinutes > 0;
+                      final bool isInField = emp['locationType'] == 'in_field' || vCount > 0;
+
+                      Color markerColor;
+                      if (isOut) {
+                        markerColor = const Color(0xFF64748B);
+                      } else if (isLate) {
+                        markerColor = const Color(0xFFF59E0B);
+                      } else if (isInField) {
+                        markerColor = const Color(0xFF38BDF8);
+                      } else {
+                        markerColor = const Color(0xFF10B981);
+                      }
 
                       return Marker(
                         point: LatLng(lat, lng),
-                        width: 48,
-                        height: 48,
+                        width: 58,
+                        height: 58,
                         child: GestureDetector(
                           onTap: () => _showInspectorModal(emp),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: isOut
-                                      ? const Color(0xFF64748B)
-                                      : AppTheme.SuccessColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2.5),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (isOut
-                                              ? const Color(0xFF64748B)
-                                              : AppTheme.SuccessColor)
-                                          .withValues(alpha: 0.6),
-                                      blurRadius: 10,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              if (vCount > 0)
-                                Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: AppTheme.AccentColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      '$vCount',
-                                      style: const TextStyle(
-                                        fontFamily: 'Tajawal',
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
+                          child: AnimatedBuilder(
+                            animation: _pulseAnimation,
+                            builder: (context, _) {
+                              final pVal = isOut ? 1.0 : _pulseAnimation.value;
+                              return Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  if (!isOut)
+                                    Container(
+                                      width: 44 * pVal,
+                                      height: 44 * pVal,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: markerColor.withValues(alpha: 0.22 * (1.35 - (pVal - 0.9))),
+                                        border: Border.all(
+                                          color: markerColor.withValues(alpha: 0.65 * (1.35 - (pVal - 0.9))),
+                                          width: 1.6,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: markerColor.withValues(alpha: 0.35 * (1.35 - (pVal - 0.9))),
+                                            blurRadius: 10 * pVal,
+                                            spreadRadius: 2,
+                                          ),
+                                        ],
                                       ),
                                     ),
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: markerColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2.2),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: markerColor.withValues(alpha: 0.6),
+                                          blurRadius: 8,
+                                          spreadRadius: 1.5,
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.white,
+                                      size: 22,
+                                    ),
                                   ),
-                                ),
-                            ],
+                                  if (vCount > 0)
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: AppTheme.AccentColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Text(
+                                          '$vCount',
+                                          style: const TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                       );
@@ -556,6 +605,114 @@ class _DirectorMapTabState extends State<DirectorMapTab> {
                 highlightColor: AppTheme.AccentColor,
               ),
             ],
+          ),
+        ),
+
+        // Map Legend (مفتاح رموز الخريطة الرقابي)
+        Positioned(
+          bottom: 24,
+          right: 16,
+          child: _buildMapLegend(loc),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMapLegend(AppLocalizations loc) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E0B26).withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.7), width: 1.2),
+          boxShadow: const [
+            BoxShadow(color: Colors.black54, blurRadius: 10, offset: Offset(0, 3)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              onTap: () => setState(() => _isLegendExpanded = !_isLegendExpanded),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.palette_outlined, color: Color(0xFFD4AF37), size: 16),
+                    const SizedBox(width: 8),
+                    Text(
+                      loc.isArabic ? 'مفتاح الخريطة' : 'Légende',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      _isLegendExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
+                      color: const Color(0xFFD4AF37),
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_isLegendExpanded)
+              Container(
+                constraints: const BoxConstraints(maxWidth: 220),
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Divider(color: Colors.white12, height: 8),
+                    _legendItem(const Color(0xFF10B981), loc.isArabic ? 'حضور منضبط بالمقر' : 'Présent à l\'heure (siège)'),
+                    const SizedBox(height: 5),
+                    _legendItem(const Color(0xFFF59E0B), loc.isArabic ? 'حاضر مع تأخر صباحي' : 'Présent avec retard'),
+                    const SizedBox(height: 5),
+                    _legendItem(const Color(0xFF38BDF8), loc.isArabic ? 'نشط في الميدان' : 'Actif sur le terrain'),
+                    const SizedBox(height: 5),
+                    _legendItem(const Color(0xFFD4AF37), loc.isArabic ? 'معاينة / محل تجاري' : 'Visite / commerce'),
+                    const SizedBox(height: 5),
+                    _legendItem(const Color(0xFF64748B), loc.isArabic ? 'منصرف (أنهى الدوام)' : 'Sorti (fin de shift)'),
+                    const SizedBox(height: 5),
+                    _legendItem(
+                      const Color(0xFFD4AF37),
+                      loc.isArabic ? 'نطاق البصمة (المقرات)' : 'Périmètre GPS officiel',
+                      isCircle: true,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _legendItem(Color color, String label, {bool isCircle = false}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: isCircle ? color.withValues(alpha: 0.25) : color,
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: isCircle ? 1.5 : 1.0),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
           ),
         ),
       ],

@@ -88,19 +88,28 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     }
   }
 
-  void _showDirectorOrderModal(Map<String, dynamic> employee) {
+  final Set<int> _dismissedEmployeeIds = {};
+
+  void _showDirectorOrderModal(
+    Map<String, dynamic> employee, {
+    String? defaultSubject,
+    String? defaultDetails,
+    String? violationType,
+  }) {
     final loc = AppLocalizations.of(context);
-    final name = '${employee['NomAr'] ?? employee['Nom'] ?? ''} ${employee['PrenomAr'] ?? employee['Prenom'] ?? ''}';
-    final empId = employee['Id'] ?? employee['id'];
+    final name = '${employee['NomAr'] ?? employee['Nom'] ?? ''} ${employee['PrenomAr'] ?? employee['Prenom'] ?? ''}'.trim();
+    final empId = employee['Id'] ?? employee['id'] ?? employee['employeeId'];
     final subjectCtrl = TextEditingController(
-      text: loc.isArabic
-          ? 'استفسار وأمر بالانضباط حول الحضور والمردودية'
-          : 'Demande d\'explications et ordre de discipline',
+      text: defaultSubject ??
+          (loc.isArabic
+              ? 'استفسار وأمر بالانضباط حول الحضور والمردودية'
+              : 'Demande d\'explications et ordre de discipline'),
     );
     final detailsCtrl = TextEditingController(
-      text: loc.isArabic
-          ? 'بناءً على المعطيات الرقابية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف المذكور مع منحه 48 ساعة للرد.'
-          : 'Sur la base des données de contrôle, le bureau du personnel est chargé d\'adresser une demande d\'explications officielle à l\'agent concerné (délai de réponse: 48h).',
+      text: defaultDetails ??
+          (loc.isArabic
+              ? 'بناءً على المعطيات الرقابية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف المذكور مع منحه 48 ساعة للرد.'
+              : 'Sur la base des données de contrôle, le bureau du personnel est chargé d\'adresser une demande d\'explications officielle à l\'agent concerné (délai de réponse: 48h).'),
     );
 
     showDialog(
@@ -178,7 +187,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 final userId = auth.currentUser?.id ?? 1;
                 await auth.api.createInquiry({
                   'employeeId': empId,
-                  'type': 'unjustified_absence',
+                  'type': violationType ?? 'unjustified_absence',
                   'subject': subjectCtrl.text.trim(),
                   'details': detailsCtrl.text.trim(),
                   'sentBy': userId,
@@ -389,52 +398,30 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
           const SizedBox(height: 12),
 
-          // Overview of accumulated delays
-          if (_delaysSummary.any((d) => ((d['lateDaysCount'] as num?)?.toInt() ?? 0) > 0)) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppTheme.WarningColor.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.analytics_outlined, color: AppTheme.WarningColor, size: 20),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      loc.isArabic
-                          ? 'سجل النظام ${_delaysSummary.where((d) => ((d['lateDaysCount'] as num?)?.toInt() ?? 0) > 0).length} موظفين تجاوزوا موعد التسامح ($_morningGraceTime) هذا الشهر.'
-                          : 'Le système enregistre ${_delaysSummary.where((d) => ((d['lateDaysCount'] as num?)?.toInt() ?? 0) > 0).length} agent(s) ayant dépassé la tolérance ($_morningGraceTime) ce mois-ci.',
-                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-          ],
+          // 2. Intelligent Auto-Detection Section (الرصد الآلي لمخالفي الحضور ومقترحو الاستفسار)
+          _buildAutoFlaggedViolationsSection(loc),
 
-          // 2. Button: Issue Inquiry Order
+          const SizedBox(height: 10),
+
+          // 3. Button: Issue Inquiry Order for Other General Reasons
           SizedBox(
             width: double.infinity,
-            child: ElevatedButton.icon(
+            child: OutlinedButton.icon(
               onPressed: () => _showEmployeePicker(),
-              icon: const Icon(Icons.person_search, color: Colors.black),
+              icon: const Icon(Icons.person_search, color: Color(0xFFD4AF37), size: 18),
               label: Text(
-                loc.isArabic ? 'طلب توجيه استفسار كتابي لموظف محدد' : "Ordonner une demande d'explications",
+                loc.isArabic ? 'طلب توجيه استفسار يدوي لموظف محدد (أسباب مهنية أخرى)' : "Ordonner manuellement pour autres motifs",
                 style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: Colors.black,
+                  fontSize: 13,
+                  color: Color(0xFFD4AF37),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
-                padding: const EdgeInsets.all(14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0x66D4AF37), width: 1.2),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -1490,6 +1477,334 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAutoFlaggedViolationsSection(AppLocalizations loc) {
+    final List<Map<String, dynamic>> flaggedList = [];
+
+    for (final d in _delaysSummary) {
+      final name = (d['name'] ?? '').toString();
+      final empId = (d['employeeId'] as num?)?.toInt() ?? 0;
+      if (empId <= 0) continue;
+      if (name.contains('المدير الولائي')) continue;
+      if (_dismissedEmployeeIds.contains(empId)) continue;
+
+      final hasActiveInquiry = _inquiries.any((inq) =>
+          ((inq['EmployeeId'] as num?)?.toInt() == empId ||
+           (inq['employeeId'] as num?)?.toInt() == empId) &&
+          inq['Status'] == 'sent');
+      if (hasActiveInquiry) continue;
+
+      final lateMinutes = (d['totalLateMinutes'] as num?)?.toInt() ?? 0;
+      final attendedDays = (d['attendedDaysCount'] as num?)?.toInt() ?? 0;
+      final lateDays = (d['lateDaysCount'] as num?)?.toInt() ?? 0;
+      final lateDetails = (d['lateDetails'] as List<dynamic>?) ?? [];
+      final lastCheckInTime = lateDetails.isNotEmpty ? (lateDetails.last['checkInTime'] ?? '').toString() : '';
+
+      if (lateMinutes > 0 || lateDays > 0) {
+        flaggedList.add({
+          'employeeId': empId,
+          'name': name,
+          'service': d['service'] ?? 'المصالح الرقابية',
+          'grade': d['grade'] ?? 'مفتش',
+          'violationType': 'late',
+          'lateMinutes': lateMinutes,
+          'checkInTime': lastCheckInTime,
+          'summary': 'تأخر صباحي: $lateMinutes دقيقة (سجل الدخول: $lastCheckInTime)',
+        });
+      } else if (attendedDays == 0) {
+        flaggedList.add({
+          'employeeId': empId,
+          'name': name,
+          'service': d['service'] ?? 'المصالح الرقابية',
+          'grade': d['grade'] ?? 'مفتش',
+          'violationType': 'absent',
+          'lateMinutes': 0,
+          'checkInTime': '',
+          'summary': 'غياب كلي عن تسجيل البصمة الصباحية لليوم',
+        });
+      }
+    }
+
+    if (flaggedList.isEmpty) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.SuccessColor.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.SuccessColor.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.verified, color: AppTheme.SuccessColor, size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                loc.isArabic
+                    ? '✨ الرصد الآلي: لا توجد أي مخالفات حضور مرصودة اليوم — جميع الموظفين في وضعية نظامية أو تم البت فيهم.'
+                    : '✨ Aucune infraction détectée aujourd\'hui — Tous les agents sont en règle.',
+                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12.5, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1B0B1E),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.6), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF881337).withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E1038),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              border: Border(bottom: BorderSide(color: const Color(0xFFD4AF37).withValues(alpha: 0.3))),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.policy_outlined, color: Color(0xFFD4AF37), size: 18),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            loc.isArabic
+                                ? '🚨 الرصد الآلي لمخالفي الحضور — مقترحو الاستفسار'
+                                : '🚨 Infractions détectées automatiquement — Demandes suggérées',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.5,
+                              color: Color(0xFFD4AF37),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade900,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              '${flaggedList.length}',
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        loc.isArabic
+                            ? 'فرز ذكي آلي للمخالفين اليوم لتوفير وقت المدير؛ يمكنك التغاضي أو توجيه الاستفسار بنقرة واحدة:'
+                            : 'Filtrage automatique des contrevenants. Traitez chaque cas (Ordre ou Tolérance) :',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: flaggedList.length,
+            separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+            itemBuilder: (context, idx) {
+              final item = flaggedList[idx];
+              final isLate = item['violationType'] == 'late';
+              final String name = (item['name'] ?? '').toString();
+              final String service = (item['service'] ?? '').toString();
+              final String grade = (item['grade'] ?? '').toString();
+              final int empId = (item['employeeId'] as num?)?.toInt() ?? 0;
+              final int lateMinutes = (item['lateMinutes'] as num?)?.toInt() ?? 0;
+              final String checkInTime = (item['checkInTime'] ?? '').toString();
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: isLate
+                          ? Colors.orange.withValues(alpha: 0.2)
+                          : Colors.red.withValues(alpha: 0.2),
+                      child: Icon(
+                        isLate ? Icons.access_time_filled : Icons.person_off,
+                        color: isLate ? Colors.orangeAccent : Colors.redAccent,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                name,
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isLate
+                                      ? Colors.orange.withValues(alpha: 0.15)
+                                      : Colors.red.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: isLate ? Colors.orangeAccent : Colors.redAccent,
+                                    width: 0.8,
+                                  ),
+                                ),
+                                child: Text(
+                                  isLate
+                                      ? (checkInTime.isNotEmpty
+                                          ? 'تأخر: $lateMinutes دقيقة (دخول: $checkInTime)'
+                                          : 'تأخر صباحي: $lateMinutes دقيقة')
+                                      : 'غياب كلي اليوم (لم يسجل)',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: isLate ? Colors.orangeAccent : Colors.redAccent,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$grade • $service',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              color: AppTheme.TextSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _dismissedEmployeeIds.add(empId);
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              loc.isArabic
+                                  ? '🤝 تم التغاضي عن مخالفة $name اليوم بقرار سيادي من المدير الولائي'
+                                  : '🤝 Infraction de $name tolérée par décision du Directeur',
+                              style: const TextStyle(fontFamily: 'Tajawal'),
+                            ),
+                            backgroundColor: const Color(0xFF475569),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.thumb_up_alt_outlined, size: 14, color: Colors.white70),
+                      label: Text(
+                        loc.isArabic ? 'تغاضي / عذر' : 'Tolérer',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.white24),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        final empObj = {
+                          'Id': empId,
+                          'NomAr': name,
+                          'PrenomAr': '',
+                          'Service': service,
+                          'Grade': grade,
+                        };
+                        final subject = isLate
+                            ? 'استفسار كتابي رسمي حول التأخر الصباحي عن العمل'
+                            : 'استفسار كتابي رسمي حول الغياب عن العمل وعدم تسجيل البصمة';
+                        final details = isLate
+                            ? 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تم تسجيل التحاقكم في تمام الساعة ($checkInTime) متجاوزين فترة التسامح الصباحية المعتمدة بمقدار ($lateMinutes دقيقة). يُطلب منكم تقديم توضيحاتكم وأسباب هذا التأخر خلال المهلة القانونية (48 ساعة).'
+                            : 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تبيّن عدم تسجيلكم للبصمة الصباحية أو التحاقكم بالدوام الرسمي حتى الآن. يُطلب منكم تقديم توضيحاتكم الإدارية ومبرراتكم الرسمية خلال مهلة 48 ساعة القانونية.';
+
+                        _showDirectorOrderModal(
+                          empObj,
+                          defaultSubject: subject,
+                          defaultDetails: details,
+                          violationType: isLate ? 'late_arrival' : 'unjustified_absence',
+                        );
+                      },
+                      icon: const Icon(Icons.gavel, size: 14, color: Colors.black),
+                      label: Text(
+                        loc.isArabic ? 'توجيه استفسار' : 'Demande d\'explications',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFD4AF37),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

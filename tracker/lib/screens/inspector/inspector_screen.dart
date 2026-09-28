@@ -74,6 +74,13 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final str = val.toString().trim();
     if (str.isEmpty || str == 'null') return '';
     try {
+      final dt = DateTime.tryParse(str);
+      if (dt != null) {
+        final local = dt.toLocal();
+        final hh = local.hour.toString().padLeft(2, '0');
+        final mm = local.minute.toString().padLeft(2, '0');
+        return '$hh:$mm';
+      }
       if (str.contains('T')) {
         final timePart = str.split('T')[1];
         if (timePart.length >= 5) return timePart.substring(0, 5);
