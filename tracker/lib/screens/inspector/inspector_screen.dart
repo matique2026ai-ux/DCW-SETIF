@@ -645,22 +645,24 @@ class _InspectorScreenState extends State<InspectorScreen> {
     }
 
     final now = DateTime.now();
-    // نافذة السماح المسائية (Evening Grace Tolerance): ابتداءً من 16:00 أو بعد إتمام الدوام القانوني
-    final bool isWithinToleranceOrEndShift = now.hour >= 16 || elapsedMinutes >= 420;
+    final bool isBefore1600 = now.hour < 16;
     final bool isVeryShortShift = elapsedMinutes < 30;
     final bool isHalfShiftWithoutVisits = elapsedMinutes < 240 && _visitCount == 0;
 
     if (isVeryShortShift) {
       _showEarlyCheckOutDialog(
-        customNotice: '⛔ تنبيه أمني صارم: مضت $elapsedMinutes دقيقة فقط على تسجيل الحضور الصباحي!\nيُمنع الانصراف الفوري بعد دقائق معدودة من الدخول إلا في الحالات الاستعجالية القاهرة. يرجى توثيق المبرر الإداري الطارئ للمصادقة عليه.',
+        customNotice: '⛔ تنبيه أمني صارم: مضت $elapsedMinutes دقيقة فقط على تسجيل الحضور الصباحي!\nيُمنع الانصراف الفوري بعد دقائق معدودة من الدخول إلا في الحالات الاستعجالية القاهرة وفقاً للأمر 06-03.',
+      );
+    } else if (isBefore1600) {
+      final hoursLeft = 15 - now.hour;
+      final minutesLeft = 60 - now.minute;
+      final remainingStr = hoursLeft > 0 ? '$hoursLeft ساعة و $minutesLeft دقيقة' : '$minutesLeft دقيقة';
+      _showEarlyCheckOutDialog(
+        customNotice: '⚠️ تنبيه إداري وقانوني: الدوام الرسمي سارٍ (08:00 - 16:30).\nنافذة الانصراف القانوني تفتح ابتداءً من الساعة 16:00 (المتبقي: $remainingStr).\nأي خروج حالياً يُعد مغادرة استعجالية غير عادية تستوجب تعهداً قانونياً وإيداع المبرر الإداري بمكتب المستخدمين خلال 48 ساعة.',
       );
     } else if (isHalfShiftWithoutVisits) {
       _showEarlyCheckOutDialog(
-        customNotice: '⚠️ تنبيه إداري: لم تكتمل 4 ساعات من الدوام القانوني (مضت $elapsedMinutes دقيقة) ولم تسجل أي زيارات أو معاينات ميدانية اليوم. يتطلب الانصراف توثيق المبرر الإداري.',
-      );
-    } else if (!isWithinToleranceOrEndShift) {
-      _showEarlyCheckOutDialog(
-        customNotice: '⚠️ انصراف قبل نافذة السماح (تنتهي مهام الدوام في 16:30 مع نافذة سماح تبدأ من 16:00). يتطلب الانصراف توثيق المبرر الإداري أو المهمة المكلف بها.',
+        customNotice: '⚠️ تنبيه إداري: لم يتم تسجيل أي زيارات أو معاينات ميدانية اليوم. يتطلب الانصراف توثيق المبرر الإداري أو المهمة المكلف بها للمصادقة عليه.',
       );
     } else {
       _showNormalCheckOutConfirmDialog();
@@ -679,11 +681,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           title: Row(
             children: [
-              const Icon(Icons.exit_to_app, color: AppTheme.WarningColor, size: 24),
+              const Icon(Icons.exit_to_app, color: AppTheme.PrimaryGold, size: 24),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  loc.isArabic ? 'تأكيد تسجيل الانصراف الميداني' : 'Confirmation de fin de service',
+                  loc.isArabic ? 'تأكيد تسجيل الانصراف ونهاية الدوام الرسمي' : 'Confirmation de fin de service',
                   style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
@@ -776,7 +778,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
               icon: const Icon(Icons.check, size: 16),
               label: Text(loc.isArabic ? 'نعم، تأكيد الانصراف' : 'Confirmer le départ', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.WarningColor,
+                backgroundColor: AppTheme.PrimaryGold,
                 foregroundColor: Colors.black,
               ),
             ),
@@ -824,109 +826,219 @@ class _InspectorScreenState extends State<InspectorScreen> {
 
   void _showEarlyCheckOutDialog({String? customNotice}) {
     final reasonCtrl = TextEditingController();
-    String selectedReason = 'مهمة تفتيشية خارجية مسائية';
+    String selectedReason = 'حالة صحية طارئة / وعكة مفاجئة (تستوجب شهادة طبية)';
+    bool isPledged = false;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.CardColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: const Row(
-            children: [
-              Icon(Icons.schedule, color: AppTheme.WarningColor, size: 24),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'تنبيه الانصراف وضوابط الدوام',
-                  style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
+        builder: (context, setDialogState) {
+          final int textLen = reasonCtrl.text.trim().length;
+          final bool isTextValid = textLen >= 10;
+          final bool canSubmit = isPledged && isTextValid;
+
+          return AlertDialog(
+            backgroundColor: AppTheme.CardColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: AppTheme.WarningColor, width: 1.2),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.WarningColor.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.gavel_rounded, color: AppTheme.WarningColor, size: 22),
                 ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppTheme.WarningColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.3)),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'تصريح بمغادرة استعجالية اضطرارية',
+                        style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+                      ),
+                      Text(
+                        'الأمر 06-03 (قانون الوظيفة العمومية)',
+                        style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFCD34D)),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customNotice ??
-                          '⚠️ ينتهي الدوام الرسمي في الساعة 16:30. يتطلب الانصراف المبكر توثيق المبرر الإداري أو المهمة المكلف بها.',
-                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D), height: 1.4),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.WarningColor.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.WarningColor.withValues(alpha: 0.35)),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      '📌 تنبيه إداري وقانوني: التصريح بالوعكة الصحية أو الظرف الاستعجالي ليس إعفاءً تلقائياً؛ بل يُحفظ في النظام كوضعية معلقة، ويلزمك القانون بتقديم شهادة طبية رسمية أو مبرر ورقي لمكتب المستخدمين خلال مهلة أقصاها 48 ساعة وإلا عُدّ غياباً غير مبرر يخضع للاقتطاع من الراتب طبقاً للأمر 06-03.',
-                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          customNotice ??
+                              '⚠️ ينتهي الدوام الرسمي في الساعة 16:30 ونافذة الانصراف تبدأ من 16:00. أي خروج قبل ذلك يخضع للرقابة الإدارية الصارمة.',
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Color(0xFFFCD34D), height: 1.4, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '📌 المادتان 40 و41 من الأمر 06-03 وقانون المحاسبة العمومية 90-21:\nالتصريح بالخروج الاضطراري ليس إعفاءً تلقائياً؛ بل يُقيد كوضعية معلقة بانتظار إيداع المبرر الرسمي أو الشهادة الطبية بمكتب المستخدمين خلال مهلة أقصاها 48 ساعة، وإلا تم إدراج الغياب غير المبرر والاقتطاع المباشر من الراتب وإحالة الملف للمسؤول المباشر.',
+                          style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                'نوع المبرر الإداري / الاستعجالي:',
-                style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<String>(
-                initialValue: selectedReason,
-                isExpanded: true,
-                dropdownColor: AppTheme.CardColor,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'مهمة تفتيشية خارجية مسائية', child: Text('مهمة تفتيشية خارجية مسائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                  DropdownMenuItem(value: 'حالة اضطرارية شخصية / وعكة صحية', child: Text('حالة اضطرارية شخصية / وعكة صحية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                  DropdownMenuItem(value: 'إذن خروج رسمي من رئيس المصلحة', child: Text('إذن خروج رسمي من رئيس المصلحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                  DropdownMenuItem(value: 'مرافقة لجنة ولائية مشتركة', child: Text('مرافقة لجنة ولائية مشتركة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'نوع المبرر الإداري / الاستعجالي:',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                  ),
+                  const SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedReason,
+                    isExpanded: true,
+                    dropdownColor: AppTheme.CardColor,
+                    decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'حالة صحية طارئة / وعكة مفاجئة (تستوجب شهادة طبية)',
+                        child: Text('حالة صحية طارئة / وعكة مفاجئة (تستوجب شهادة طبية)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'مهمة رسمية خارجية بتكليف مسبق من الإدارة',
+                        child: Text('مهمة رسمية خارجية بتكليف مسبق من الإدارة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'ظرف عائلي قاهر / طارئ استثنائي',
+                        child: Text('ظرف عائلي قاهر / طارئ استثنائي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'إذن خروج رسمي كتابي مرخص به من رئيس المصلحة',
+                        child: Text('إذن خروج رسمي كتابي مرخص به من رئيس المصلحة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                      DropdownMenuItem(
+                        value: 'مرافقة لجنة ولائية / جهوية مشتركة',
+                        child: Text('مرافقة لجنة ولائية / جهوية مشتركة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                      ),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setDialogState(() => selectedReason = val);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonCtrl,
+                    maxLines: 2,
+                    onChanged: (_) => setDialogState(() {}),
+                    decoration: InputDecoration(
+                      labelText: 'تفاصيل وظروف المغادرة الاضطرارية (إلزامي - 10 أحرف على الأقل)*',
+                      labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70),
+                      helperText: !isTextValid
+                          ? 'المتبقي: ${10 - textLen} حرف لاكتمال النصاب القانوني'
+                          : '✓ النصاب مستوفٍ ($textLen حرف)',
+                      helperStyle: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        color: isTextValid ? AppTheme.SuccessColor : const Color(0xFFFCD34D),
+                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: isTextValid ? AppTheme.SuccessColor : Colors.white24,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppTheme.PrimaryGold, width: 1.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: () {
+                      setDialogState(() => isPledged = !isPledged);
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: isPledged ? AppTheme.PrimaryGold.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isPledged ? AppTheme.PrimaryGold : Colors.white24,
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Checkbox(
+                            value: isPledged,
+                            activeColor: AppTheme.PrimaryGold,
+                            checkColor: Colors.black,
+                            onChanged: (val) {
+                              setDialogState(() => isPledged = val ?? false);
+                            },
+                          ),
+                          const Expanded(
+                            child: Text(
+                              'أصرح بشرفي بصحة البيانات أعلاه وأتعهد بتقديم المبرر الإداري أو الشهادة الطبية الرسمية لمكتب المستخدمين خلال 48 ساعة، وأتحمل كامل المسؤولية التأديبية والمالية وفقاً للأمر 06-03 في حال ثبوت عدم صحة الظرف.',
+                              style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white, height: 1.4),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
-                onChanged: (val) {
-                  if (val != null) setDialogState(() => selectedReason = val);
-                },
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: reasonCtrl,
-                decoration: InputDecoration(
-                  labelText: 'تفاصيل وملاحظات إضافية (مطلوبة للتوثيق)',
-                  labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('تراجع واستمرار الدوام', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
+              ),
+              ElevatedButton.icon(
+                onPressed: canSubmit
+                    ? () {
+                        final noteExtra = reasonCtrl.text.trim();
+                        final fullReason = '$selectedReason — $noteExtra [تعهد قانوني مسجل]';
+                        Navigator.pop(ctx);
+                        _executeCheckOut(notes: fullReason, earlyReason: fullReason);
+                      }
+                    : null,
+                icon: const Icon(Icons.send_rounded, size: 16),
+                label: const Text('إيداع التصريح الاستعجالي', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.WarningColor,
+                  foregroundColor: Colors.black,
+                  disabledBackgroundColor: Colors.white12,
+                  disabledForegroundColor: Colors.white38,
                 ),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('إلغاء والتراجع (ضغطت خطأ)', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                final noteExtra = reasonCtrl.text.trim();
-                final fullReason = noteExtra.isNotEmpty ? '$selectedReason — $noteExtra' : selectedReason;
-                Navigator.pop(ctx);
-                _executeCheckOut(notes: fullReason, earlyReason: fullReason);
-              },
-              icon: const Icon(Icons.check, size: 16),
-              label: const Text('تأكيد الانصراف بالمبرر', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.WarningColor,
-                foregroundColor: Colors.black,
-              ),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -2405,47 +2517,156 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _handleSmartCheckOut,
-                          icon: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
+                      Builder(
+                        builder: (context) {
+                          final now = DateTime.now();
+                          final isNormalCheckoutWindow = now.hour >= 16;
+                          final hoursLeft = 15 - now.hour;
+                          final minutesLeft = 60 - now.minute;
+                          final remainingStr = hoursLeft > 0 ? '$hoursLeft س و $minutesLeft د' : '$minutesLeft د';
+
+                          if (isNormalCheckoutWindow) {
+                            return SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton.icon(
+                                onPressed: _isLoading ? null : _handleSmartCheckOut,
+                                icon: _isLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.black,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.exit_to_app, color: Colors.black),
+                                label: const Text(
+                                  'تسجيل الانصراف الرسمي ونهاية الدوام',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    color: Colors.black,
                                   ),
-                                )
-                              : const Icon(Icons.exit_to_app, color: AppTheme.WarningColor),
-                          label: const Text(
-                            'تسجيل الانصراف الرسمي',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: AppTheme.WarningColor,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppTheme.WarningColor, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.PrimaryGold,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF2A1535),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: AppTheme.PrimaryGold.withValues(alpha: 0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.PrimaryGold.withValues(alpha: 0.15),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.access_time_filled,
+                                        color: AppTheme.PrimaryGold,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text(
+                                            'الدوام الرسمي سارٍ (08:00 - 16:30)',
+                                            style: TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'نافذة الانصراف القانوني تُفتح في 16:00 (المتبقي: $remainingStr)',
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 11,
+                                              color: Color(0xFFFCD34D),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: OutlinedButton.icon(
+                                  onPressed: _isLoading ? null : _handleSmartCheckOut,
+                                  icon: _isLoading
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            color: AppTheme.WarningColor,
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.emergency_outlined, color: AppTheme.WarningColor, size: 20),
+                                  label: const Text(
+                                    'تصريح بمغادرة استعجالية اضطرارية',
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 13,
+                                      color: AppTheme.WarningColor,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: AppTheme.WarningColor.withValues(alpha: 0.8),
+                                      width: 1.2,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    backgroundColor: AppTheme.WarningColor.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ] else if (_isCheckedOut) ...[
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                          color: AppTheme.PrimaryGold.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.35),
+                            color: AppTheme.PrimaryGold.withValues(alpha: 0.35),
                           ),
                         ),
                         child: Column(
@@ -2454,7 +2675,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               children: [
                                 Icon(
                                   Icons.verified,
-                                  color: Color(0xFF818CF8),
+                                  color: AppTheme.PrimaryGold,
                                   size: 24,
                                 ),
                                 SizedBox(width: 10),
@@ -2464,7 +2685,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                     style: TextStyle(
                                       fontFamily: 'Tajawal',
                                       fontWeight: FontWeight.bold,
-                                      color: Color(0xFFA5B4FC),
+                                      color: AppTheme.PrimaryGold,
                                       fontSize: 13,
                                     ),
                                   ),
@@ -2502,18 +2723,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               width: double.infinity,
                               child: OutlinedButton.icon(
                                 onPressed: _isLoading ? null : _cancelCheckOut,
-                                icon: const Icon(Icons.replay, size: 16, color: Color(0xFF818CF8)),
+                                icon: const Icon(Icons.replay, size: 16, color: AppTheme.PrimaryGold),
                                 label: const Text(
                                   'استئناف الدوام (إلغاء الانصراف بالخطأ)',
                                   style: TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
-                                    color: Color(0xFFA5B4FC),
+                                    color: AppTheme.PrimaryGold,
                                   ),
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: Color(0xFF818CF8), width: 1.2),
+                                  side: const BorderSide(color: AppTheme.PrimaryGold, width: 1.2),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(10),
                                   ),

@@ -4,6 +4,7 @@ class AppTheme {
   static const PrimaryColor = Color(0xFF881337);
   static const PrimaryLightColor = Color(0xFF9F1239);
   static const AccentColor = Color(0xFFD4AF37);
+  static const PrimaryGold = Color(0xFFD4AF37);
   static const AccentLightColor = Color(0xFFFDE68A);
   static const SidebarColor = Color(0xFF4C0519);
   static const BackgroundColor = Color(0xFF1A0A1F);
