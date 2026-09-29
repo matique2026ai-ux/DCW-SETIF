@@ -7,6 +7,7 @@ import 'package:drh_setif_tracker/services/pdf_report_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
+import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
 
 class DirectorDeductionsTab extends StatefulWidget {
   const DirectorDeductionsTab({super.key});
@@ -19,6 +20,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   List<Map<String, dynamic>> _employees = [];
   List<Map<String, dynamic>> _inquiries = [];
   List<Map<String, dynamic>> _delaysSummary = [];
+  List<Map<String, dynamic>> _pendingJustifications = [];
   String _morningGraceTime = '08:45';
   bool _isLoading = true;
   String _archiveTimeFilter = 'all'; // 'today', 'week', 'month', 'all'
@@ -47,10 +49,15 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       final api = context.read<AuthService>().api;
       final inqs = await api.getInquiries();
       final delays = await api.getDelaysSummary(graceTime: _morningGraceTime);
+      List<Map<String, dynamic>> justs = [];
+      try {
+        justs = await api.getJustifications(status: 'pending');
+      } catch (_) {}
       if (mounted) {
         setState(() {
           _inquiries = inqs;
           _delaysSummary = delays;
+          _pendingJustifications = justs;
         });
       }
     } catch (_) {}
@@ -69,6 +76,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       final settings = await api.getSettings();
       final grace = (settings['morning_grace_time'] ?? '08:45').toString();
       final delays = await api.getDelaysSummary(graceTime: grace);
+      List<Map<String, dynamic>> justs = [];
+      try {
+        justs = await api.getJustifications(status: 'pending');
+      } catch (_) {}
 
       if (mounted) {
         setState(() {
@@ -76,6 +87,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           _inquiries = inqs;
           _morningGraceTime = grace;
           _delaysSummary = delays;
+          _pendingJustifications = justs;
           _isLoading = false;
         });
       }
@@ -290,9 +302,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     }
     final loc = AppLocalizations.of(context);
 
-    final answeredInquiries = _inquiries.where((i) => i['Status'] == 'answered').toList();
-    final rawDecided = _inquiries.where((i) => ['justified', 'warning', 'deduction_ordered', 'executed'].contains(i['Status'])).toList();
-    final sentInquiries = _inquiries.where((i) => i['Status'] == 'sent').toList();
+    final answeredInquiries = _inquiries.where((i) => ((i['Status'] ?? i['status'])?.toString().toLowerCase()) == 'answered').toList();
+    final rawDecided = _inquiries.where((i) => ['justified', 'warning', 'deduction_ordered', 'executed'].contains((i['Status'] ?? i['status'])?.toString().toLowerCase())).toList();
+    final sentInquiries = _inquiries.where((i) => ((i['Status'] ?? i['status'])?.toString().toLowerCase()) == 'sent').toList();
 
     final now = DateTime.now();
     final todayStr = DateFormat('yyyy-MM-dd').format(now);
@@ -430,27 +442,68 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
           const SizedBox(height: 10),
 
-          // 3. Button: Issue Inquiry Order for Other General Reasons
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _showEmployeePicker(),
-              icon: const Icon(Icons.person_search, color: Color(0xFFD4AF37), size: 18),
-              label: Text(
-                loc.isArabic ? 'طلب توجيه استفسار يدوي لموظف محدد (أسباب مهنية أخرى)' : "Ordonner manuellement pour autres motifs",
-                style: const TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Color(0xFFD4AF37),
+          // 3. Action Buttons & Justifications Review
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _showEmployeePicker(),
+                  icon: const Icon(Icons.person_search, color: Color(0xFFD4AF37), size: 18),
+                  label: Text(
+                    loc.isArabic ? 'استفسار يدوي لموظف' : "Ordre manuel",
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0x66D4AF37), width: 1.2),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ),
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0x66D4AF37), width: 1.2),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const JustificationsReviewScreen()),
+                    );
+                    if (mounted) _load();
+                  },
+                  icon: Badge(
+                    isLabelVisible: _pendingJustifications.isNotEmpty,
+                    label: Text('${_pendingJustifications.length}', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                    backgroundColor: AppTheme.DangerColor,
+                    child: const Icon(Icons.assignment_turned_in_outlined, color: Colors.white, size: 18),
+                  ),
+                  label: Text(
+                    loc.isArabic
+                        ? 'مبررات الغياب والانصراف (${_pendingJustifications.length})'
+                        : 'Justifications (${_pendingJustifications.length})',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _pendingJustifications.isNotEmpty ? const Color(0xFF881337) : const Color(0xFF2A1535),
+                    side: BorderSide(
+                      color: _pendingJustifications.isNotEmpty ? AppTheme.DangerColor : const Color(0xFFD4AF37),
+                      width: 1.2,
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
 
           const SizedBox(height: 18),
@@ -458,7 +511,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           // 3. Urgent: Answered Inquiries Awaiting Director Sovereign Decision
           Row(
             children: [
-              const Icon(Icons.rate_review, color: Colors.cyanAccent, size: 22),
+              const Icon(Icons.rate_review, color: Color(0xFFD4AF37), size: 22),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -797,7 +850,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     Color statusColor = AppTheme.WarningColor;
     String statusText = loc.isArabic ? 'بانتظار رد الموظف' : 'En attente de réponse';
     if (status == 'answered') {
-      statusColor = Colors.cyan;
+      statusColor = const Color(0xFFD4AF37);
       statusText = loc.isArabic ? 'ورد الرد — بانتظار الفصل والقرار' : 'Réponse reçue — En attente d\'arbitrage';
     } else if (status == 'justified') {
       statusColor = AppTheme.SuccessColor;
@@ -824,14 +877,14 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isActionable
-                ? Colors.cyan.withValues(alpha: 0.6)
+                ? const Color(0xFFD4AF37).withValues(alpha: 0.6)
                 : AppTheme.BorderColor.withValues(alpha: 0.3),
             width: isActionable ? 1.5 : 1,
           ),
           boxShadow: [
             if (isActionable)
               BoxShadow(
-                color: Colors.cyan.withValues(alpha: 0.1),
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                 blurRadius: 10,
                 spreadRadius: 1,
               ),

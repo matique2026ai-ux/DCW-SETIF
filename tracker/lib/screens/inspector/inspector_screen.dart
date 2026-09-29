@@ -2607,18 +2607,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
                             final empId = user?.employeeId ?? 1;
                             InspectorInquiriesSheet.show(context, empId);
                           },
-                          icon: const Icon(Icons.mail_outline, color: Colors.cyanAccent, size: 18),
+                          icon: const Icon(Icons.mail_outline, color: Color(0xFFD4AF37), size: 18),
                           label: const Text(
                             'الاستفسارات الإدارية الواردة والردود (Demandes d\'Explications)',
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 12,
-                              color: Colors.cyanAccent,
+                              color: Color(0xFFD4AF37),
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.cyanAccent, width: 1.2),
+                            side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),

@@ -54,11 +54,15 @@ class _DirectorScreenState extends State<DirectorScreen>
     try {
       final api = context.read<AuthService>().api;
       final inqs = await api.getInquiries();
-      final answered = inqs.where((i) => i['Status'] == 'answered').length;
-      final sent = inqs.where((i) => i['Status'] == 'sent').length;
+      final answered = inqs.where((i) => ((i['Status'] ?? i['status'])?.toString().toLowerCase()) == 'answered').length;
+      final sent = inqs.where((i) => ((i['Status'] ?? i['status'])?.toString().toLowerCase()) == 'sent').length;
+      List<Map<String, dynamic>> justs = [];
+      try {
+        justs = await api.getJustifications(status: 'pending');
+      } catch (_) {}
       if (mounted) {
         setState(() {
-          _pendingDecisionsCount = answered;
+          _pendingDecisionsCount = answered + justs.length;
           _activeSentInquiriesCount = sent;
         });
       }

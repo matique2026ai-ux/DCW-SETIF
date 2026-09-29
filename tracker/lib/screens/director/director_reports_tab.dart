@@ -124,10 +124,10 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.assignment, color: Color(0xFF38BDF8), size: 22),
+              child: const Icon(Icons.assignment, color: Color(0xFFD4AF37), size: 22),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -396,7 +396,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.groups, size: 14, color: Color(0xFF38BDF8)),
+                                          const Icon(Icons.groups, size: 14, color: Color(0xFFD4AF37)),
                                           const SizedBox(width: 6),
                                           Expanded(
                                             child: Text(
@@ -407,7 +407,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                                 fontFamily: 'Tajawal',
                                                 fontSize: 11,
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFF38BDF8),
+                                                color: Color(0xFFD4AF37),
                                               ),
                                             ),
                                           ),
@@ -973,7 +973,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E3A8A),
+                    backgroundColor: const Color(0xFF881337),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -983,18 +983,18 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () => JustificationsReviewScreen.show(context),
-                  icon: const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFF38BDF8), size: 16),
+                  icon: const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFFD4AF37), size: 16),
                   label: Text(
                     loc.isArabic ? 'مبررات الغياب' : 'Justifications',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
                       fontSize: 11,
-                      color: Color(0xFF38BDF8),
+                      color: Color(0xFFD4AF37),
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF38BDF8), width: 1.2),
+                    side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),

@@ -1792,7 +1792,7 @@ class _BureauScreenState extends State<BureauScreen>
           // 5. Active Inquiries Section
           Row(
             children: [
-              const Icon(Icons.mail, color: Colors.cyanAccent, size: 20),
+              const Icon(Icons.mail, color: Color(0xFFD4AF37), size: 20),
               const SizedBox(width: 8),
               Text(
                 'سجل الاستفسارات الإدارية ومتابعة الردود (${_inquiries.length})',
@@ -1837,7 +1837,7 @@ class _BureauScreenState extends State<BureauScreen>
               Color stCol = AppTheme.WarningColor;
               String stTxt = 'مرسل بانتظار رد الموظف';
               if (status == 'answered') {
-                stCol = Colors.cyan;
+                stCol = const Color(0xFFD4AF37);
                 stTxt = 'تم الرد — بانتظار قرار المدير';
               } else if (status == 'justified') {
                 stCol = AppTheme.SuccessColor;
@@ -1906,7 +1906,7 @@ class _BureauScreenState extends State<BureauScreen>
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
                                 'رد الموظف: $reply',
-                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.cyanAccent),
+                                style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
                               ),
                             ),
                         ],

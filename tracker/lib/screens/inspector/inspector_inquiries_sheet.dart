@@ -270,7 +270,7 @@ class _InspectorInquiriesSheetState extends State<InspectorInquiriesSheet> {
                           Color statusColor = AppTheme.WarningColor;
                           String statusText = 'بانتظار ردك (48 ساعة)';
                           if (status == 'answered') {
-                            statusColor = Colors.cyan;
+                            statusColor = const Color(0xFFD4AF37);
                             statusText = 'تم إرسال ردك — قيد دراسة المدير';
                           } else if (status == 'justified') {
                             statusColor = AppTheme.SuccessColor;
