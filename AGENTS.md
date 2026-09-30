@@ -9,7 +9,7 @@
 > **رابط المنصة الحية (Render Web App)**: [dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)
 > **السيرفر السحابي الحي (Render Backend API)**: `https://drh-setif-api.onrender.com/api`
 > **آخر إصدار مُنشور**: `v3.6.0-authentic-only` | آخر Commit: `112b2d5`
-> **عداد إصدارات APK للتطبيقات الميدانية**: الإصدار الحالي المبني والمُسلَّم: `v1.0.13+14` | الملف المباشر المعتمد: `DCW-SETIF-TRACKER.apk`
+> **عداد إصدارات APK للتطبيقات الميدانية**: الإصدار الحالي المبني والمُسلَّم: `v1.0.14+15` (موقع رسمياً بشهادة إنتاج Production Keystore - RSA 2048-bit للمديرية) | الملف المباشر المعتمد: `DCW-SETIF-TRACKER.apk`
 
 ---
 
