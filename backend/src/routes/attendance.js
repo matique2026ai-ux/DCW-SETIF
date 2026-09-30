@@ -587,6 +587,43 @@ router.get('/map-data', async (req, res) => {
       };
     });
 
+    // 🛰️ Cross-Brigade Split Detection (رصد انشطار الفرقة الرقابية وافتراق العضوين لحظياً)
+    try {
+      const activeBrigadeMembers = {};
+      for (const item of result) {
+        if (item.brigadeName && item.hasCheckedIn && !item.isCheckedOut && item.latitude && item.longitude) {
+          const bKey = item.brigadeName.trim();
+          if (!activeBrigadeMembers[bKey]) activeBrigadeMembers[bKey] = [];
+          activeBrigadeMembers[bKey].push(item);
+        }
+      }
+
+      for (const bKey of Object.keys(activeBrigadeMembers)) {
+        const members = activeBrigadeMembers[bKey];
+        if (members.length >= 2) {
+          for (let i = 0; i < members.length; i++) {
+            for (let j = i + 1; j < members.length; j++) {
+              const m1 = members[i];
+              const m2 = members[j];
+              const dist = calculateDistanceMeters(m1.latitude, m1.longitude, m2.latitude, m2.longitude);
+              if (dist > 400) {
+                m1.isBrigadeSplit = true;
+                m1.brigadeSplitDistanceMeters = Math.round(dist);
+                m1.brigadePartnerName = m2.name;
+                m2.isBrigadeSplit = true;
+                m2.brigadeSplitDistanceMeters = Math.round(dist);
+                m2.brigadePartnerName = m1.name;
+                m1.trackingStatus = `${m1.trackingStatus} | ⚠️ شبهة انشطار فرقة (${Math.round(dist)}م عن ${m2.name})`;
+                m2.trackingStatus = `${m2.trackingStatus} | ⚠️ شبهة انشطار فرقة (${Math.round(dist)}م عن ${m1.name})`;
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Brigade split detection warning:', e.message);
+    }
+
     res.json(result);
   } catch (err) {
     console.error('Map data error:', err.message);
@@ -855,7 +892,39 @@ router.post('/checkout', async (req, res) => {
       });
     }
 
-    // 4.3 Field Proof Location (موقع انتهاء المهمة الميدانية)
+    // 4.5 Afternoon Field Activity Interlock (قفل الانصراف الميداني المسائي بعد 15:00)
+    // اشتراط إثبات نشاط رقابي مسائي (معاينة بعد 13:30) للاستفادة من ميزة الانصراف المباشر نحو المنزل
+    const nearestHQForCheckout = (latitude && longitude) ? findNearestHQ(latitude, longitude) : null;
+    const isAtHQForCheckout = nearestHQForCheckout && nearestHQForCheckout.distanceMeters <= (nearestHQForCheckout.radiusMeters || 600);
+
+    if (algeriaHour >= 15 && !isAtHQForCheckout && !finalEarlyReason) {
+      const afternoonVisits = await db.query(
+        pg
+          ? `SELECT COUNT(*) as count FROM "TrackerVisits" 
+             WHERE "EmployeeId" = $1 AND "Date" = $2 
+               AND (
+                 COALESCE("VisitTime"::time, "CreatedAt"::time, '00:00:00'::time) >= '13:30:00'
+               )`
+          : `SELECT COUNT(*) as count FROM TrackerVisits 
+             WHERE EmployeeId = ? AND Date = ? 
+               AND (
+                 CAST(ISNULL(VisitTime, CreatedAt) AS TIME) >= '13:30:00'
+               )`,
+        [employeeId, today]
+      );
+      const afternoonCount = parseInt(afternoonVisits[0]?.count || afternoonVisits[0]?.Count || 0);
+
+      if (afternoonCount === 0) {
+        return res.status(400).json({
+          error: `⚠️ قفل أمني للانصراف الميداني: للاستفادة من ميزة الانصراف المباشر من الميدان نحو المنزل، يشترط النظام إثبات استمرار النشاط الرقابي بتسجيل محضر معاينة ميداني واحد على الأقل بعد الساعة 13:30 ظهراً. في حال عدم وجود معاينات مسائية، يرجى إما تسجيل الانصراف حضورياً من أحد المقرات الإدارية الثمانية الرسمية أو تقديم تبرير إداري استعجالي.`,
+          isAfternoonInterlock: true,
+          afternoonVisitsCount: afternoonCount,
+          requiresReason: true,
+        });
+      }
+    }
+
+    // 4.6 Field Proof Location (موقع انتهاء المهمة الميدانية)
     let resolvedCheckoutLocation = location || 'موقع الانصراف الميداني';
     if (latitude && longitude) {
       const nearestHQ = findNearestHQ(latitude, longitude);
