@@ -1234,7 +1234,7 @@ app.get('/api/health', (req, res) => {
   } catch (_) {}
   res.json({
     status: 'ok',
-    version: 'v3.6.0-authentic-only',
+    version: 'v3.6.1-trail',
     dbHost: dbHost,
     timezone: 'Africa/Algiers (UTC+1)',
     algeriaDate: getTodayAlgeria(),
