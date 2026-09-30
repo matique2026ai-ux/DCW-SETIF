@@ -115,6 +115,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF240D2D),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
           side: const BorderSide(color: Color(0xFF4A2050)),
@@ -138,7 +139,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                     loc.isArabic ? 'البرامج الرقابية وأوامر المهمة السارية' : 'Programmes et ordres de mission',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
-                      fontSize: 15,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -175,54 +176,102 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: _programs.map((p) {
-                      final title = p['Title']?.toString() ?? (loc.isArabic ? 'برنامج رقابي' : 'Programme de contrôle');
-                      final service = p['ServiceName']?.toString() ?? (loc.isArabic ? 'مصلحة الرقابة' : 'Service de contrôle');
-                      final targetArea = p['TargetArea']?.toString() ?? (loc.isArabic ? 'ولاية سطيف' : 'Wilaya de Sétif');
-                      final focus = p['FocusPoints']?.toString() ?? '';
+                      final rawTitle = (p['Title'] ?? p['title'] ?? (loc.isArabic ? 'برنامج رقابي' : 'Programme de contrôle')).toString();
+                      final service = (p['ServiceName'] ?? p['serviceName'] ?? (loc.isArabic ? 'مصلحة حماية المستهلك' : 'Service de contrôle')).toString();
+                      final targetArea = (p['TargetArea'] ?? p['targetArea'] ?? (loc.isArabic ? 'ولاية سطيف' : 'Wilaya de Sétif')).toString();
+                      final focus = (p['FocusPoints'] ?? p['focusPoints'] ?? '').toString();
                       final isConcurrence = service.contains('المنافسة') || service.toLowerCase().contains('concurrence');
 
+                      // 1. Sanitize title and extract clean tags
+                      final sanitized = rawTitle
+                          .replaceAll(RegExp(r'\[رئيس المهمة:\s*tracker_admin\]\s*', caseSensitive: false), '')
+                          .replaceAll(RegExp(r'tracker_admin', caseSensitive: false), '')
+                          .trim();
+
+                      final tagMatches = RegExp(r'\[([^\]]+)\]').allMatches(sanitized);
+                      final tags = <String>[];
+                      for (final m in tagMatches) {
+                        final t = m.group(1)?.trim() ?? '';
+                        if (t.isNotEmpty &&
+                            !t.toLowerCase().contains('tracker_admin') &&
+                            t != 'الإدارة المركزية' &&
+                            t != 'فرقة: الإدارة المركزية') {
+                          tags.add(t);
+                        }
+                      }
+
+                      String cleanTopic = sanitized.replaceAll(RegExp(r'\[[^\]]+\]'), '').trim();
+                      if (cleanTopic.isEmpty) {
+                        cleanTopic = sanitized.isNotEmpty ? sanitized : (loc.isArabic ? 'برنامج رقابي وتفتيش ميداني' : 'Programme de contrôle');
+                      }
+
+                      final bool hasSpecificBrigade = tags.any((t) => t.contains('فرقة') && !t.contains('كافة فرق'));
+
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: const Color(0xFF1E0B26),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: isConcurrence
-                                ? const Color(0xFFD4AF37).withValues(alpha: 0.4)
-                                : const Color(0xFF10B981).withValues(alpha: 0.4),
+                                ? const Color(0xFFD4AF37).withValues(alpha: 0.45)
+                                : const Color(0xFF10B981).withValues(alpha: 0.45),
+                            width: 1.2,
                           ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            // Responsive Header: Service Badge + Valid Badge + Cancel Button
                             Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: (isConcurrence ? const Color(0xFFD4AF37) : const Color(0xFF10B981))
-                                        .withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Text(
-                                    service,
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: isConcurrence ? const Color(0xFFD4AF37) : const Color(0xFF34D399),
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: (isConcurrence ? const Color(0xFFD4AF37) : const Color(0xFF10B981))
+                                          .withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      service,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 10.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isConcurrence ? const Color(0xFFD4AF37) : const Color(0xFF34D399),
+                                      ),
                                     ),
                                   ),
                                 ),
-                                const Spacer(),
-                                const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 14),
-                                const SizedBox(width: 4),
-                                Text(
-                                  loc.isArabic ? 'أمر مهمة ساري' : 'Ordre valide',
-                                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981)),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 12),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        loc.isArabic ? 'ساري' : 'Valide',
+                                        style: const TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF10B981),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 6),
                                 InkWell(
                                   onTap: () async {
                                     final api = context.read<AuthService>().api;
@@ -291,7 +340,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                     }
                                   },
                                   child: Container(
-                                    padding: const EdgeInsets.all(4),
+                                    padding: const EdgeInsets.all(5),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(6),
@@ -302,16 +351,66 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               ],
                             ),
                             const SizedBox(height: 8),
+
+                            // Tags chips (Program Category, Brigade, Leader)
+                            if (tags.isNotEmpty) ...[
+                              Wrap(
+                                spacing: 5,
+                                runSpacing: 4,
+                                children: tags.map((t) {
+                                  final isCat = t.contains('برنامج') || t.contains('Programme');
+                                  final isLeader = t.contains('رئيس') || t.contains('Chef');
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                                    decoration: BoxDecoration(
+                                      color: isLeader
+                                          ? const Color(0xFFD4AF37).withValues(alpha: 0.18)
+                                          : isCat
+                                              ? const Color(0xFF10B981).withValues(alpha: 0.15)
+                                              : Colors.white.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: isLeader
+                                            ? const Color(0xFFD4AF37).withValues(alpha: 0.4)
+                                            : isCat
+                                                ? const Color(0xFF10B981).withValues(alpha: 0.35)
+                                                : Colors.white24,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      t,
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: isLeader
+                                            ? const Color(0xFFFDE68A)
+                                            : isCat
+                                                ? const Color(0xFF6EE7B7)
+                                                : Colors.white70,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                              const SizedBox(height: 6),
+                            ],
+
+                            // Main Program Title
                             Text(
-                              title,
+                              cleanTopic,
                               style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontSize: 13,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
+                                height: 1.35,
                               ),
                             ),
                             const SizedBox(height: 6),
+
+                            // Target Geographical Sector
                             Row(
                               children: [
                                 const Icon(Icons.location_on, size: 13, color: Color(0xFFD4AF37)),
@@ -341,12 +440,16 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                               ),
                             ],
                             const SizedBox(height: 10),
-                            // Inspectors working on this department/program
+
+                            // Legal & Administrative Inspection Force Card
                             Builder(
                               builder: (_) {
                                 final targetS = service.toLowerCase();
                                 var deptInspectors = _employees.where((e) {
                                   final s = (e['Service'] ?? '').toString().toLowerCase();
+                                  final n = (e['NomAr'] ?? e['Nom'] ?? '').toString().toLowerCase();
+                                  if (n.contains('admin') || n.contains('مدير')) return false;
+
                                   if (targetS.contains('مستهلك') || targetS.contains('غش') || targetS.contains('consommation') || targetS.contains('fraude')) {
                                     return s.contains('مستهلك') || s.contains('غش') || s.contains('consommation');
                                   }
@@ -356,30 +459,11 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                   return s.contains(targetS) || targetS.contains(s);
                                 }).toList();
 
-                                // If generic or empty, show sample active field inspectors
                                 if (deptInspectors.isEmpty && _employees.isNotEmpty) {
-                                  deptInspectors = _employees.take(6).toList();
-                                }
-
-                                if (deptInspectors.isEmpty) {
-                                  return Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.amber.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.info_outline, size: 14, color: Colors.amber),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          loc.isArabic ? 'برنامج عام لم يتم تخصيص فرقة محددة له بعد' : 'Programme général (brigade non assignée)',
-                                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.amber),
-                                        ),
-                                      ],
-                                    ),
-                                  );
+                                  deptInspectors = _employees.where((e) {
+                                    final nom = (e['NomAr'] ?? e['Nom'] ?? '').toString().toLowerCase();
+                                    return !nom.contains('admin') && !nom.contains('مدير');
+                                  }).take(6).toList();
                                 }
 
                                 final attendedCount = deptInspectors.where((emp) => checkedInIds.contains(emp['Id'])).length;
@@ -396,13 +480,15 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                     children: [
                                       Row(
                                         children: [
-                                          const Icon(Icons.groups, size: 14, color: Color(0xFFD4AF37)),
+                                          const Icon(Icons.shield_outlined, size: 14, color: Color(0xFFD4AF37)),
                                           const SizedBox(width: 6),
                                           Expanded(
                                             child: Text(
-                                              loc.isArabic
-                                                  ? 'الفرق المفتشية المكلفة بالمهمة (${deptInspectors.length} مفتشاً):'
-                                                  : 'Brigades affectées (${deptInspectors.length} inspecteurs) :',
+                                              hasSpecificBrigade
+                                                  ? (loc.isArabic ? 'الفرقة الرقابية المكلفة بالتنفيذ:' : 'Brigade opérationnelle assignée :')
+                                                  : (loc.isArabic
+                                                      ? 'القوة الرقابية المسخرة (تعميم ولائي):'
+                                                      : 'Force de contrôle mobilisée (Wilaya) :'),
                                               style: const TextStyle(
                                                 fontFamily: 'Tajawal',
                                                 fontSize: 11,
@@ -429,51 +515,66 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 8),
-                                      Wrap(
-                                        spacing: 6,
-                                        runSpacing: 6,
-                                        children: deptInspectors.take(8).map((emp) {
-                                          final isAttended = checkedInIds.contains(emp['Id']);
-                                          final name = loc.isArabic
-                                              ? '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim()
-                                              : '${emp['Nom'] ?? emp['NomAr'] ?? ''} ${emp['Prenom'] ?? emp['PrenomAr'] ?? ''}'.trim();
-                                          return Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: isAttended
-                                                  ? const Color(0xFF10B981).withValues(alpha: 0.2)
-                                                  : Colors.white.withValues(alpha: 0.05),
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(
-                                                color: isAttended
-                                                    ? const Color(0xFF10B981).withValues(alpha: 0.6)
-                                                    : Colors.white12,
-                                              ),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  isAttended ? Icons.check_circle : Icons.circle_outlined,
-                                                  size: 11,
-                                                  color: isAttended ? const Color(0xFF10B981) : Colors.white38,
-                                                ),
-                                                const SizedBox(width: 5),
-                                                Text(
-                                                  name.isNotEmpty ? name : 'مفتش #${emp['Id']}',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Tajawal',
-                                                    fontSize: 11,
-                                                    color: isAttended ? Colors.white : Colors.white60,
-                                                    fontWeight: isAttended ? FontWeight.bold : FontWeight.normal,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-                                        }).toList(),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        hasSpecificBrigade
+                                            ? (loc.isArabic ? 'أمر مهمة خاص بالفرقة المحددة' : 'Ordre de mission spécifique')
+                                            : (loc.isArabic
+                                                ? 'برنامج ولائي سارٍ على فرق المصلحة (تنظيم ثنائي Binômes طبقاً للأمر 09-03):'
+                                                : 'Programme applicable aux brigades (en binômes) :'),
+                                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white54),
                                       ),
+                                      const SizedBox(height: 8),
+                                      if (deptInspectors.isEmpty)
+                                        Text(
+                                          loc.isArabic ? 'لا يوجد أعوان مسجلون في هذه المصلحة حالياً' : 'Aucun inspecteur dans ce service',
+                                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white38),
+                                        )
+                                      else
+                                        Wrap(
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: deptInspectors.map((emp) {
+                                            final isAttended = checkedInIds.contains(emp['Id']);
+                                            final name = loc.isArabic
+                                                ? '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim()
+                                                : '${emp['Nom'] ?? emp['NomAr'] ?? ''} ${emp['Prenom'] ?? emp['PrenomAr'] ?? ''}'.trim();
+                                            return Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: isAttended
+                                                    ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                                                    : Colors.white.withValues(alpha: 0.05),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(
+                                                  color: isAttended
+                                                      ? const Color(0xFF10B981).withValues(alpha: 0.6)
+                                                      : Colors.white12,
+                                                ),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(
+                                                    isAttended ? Icons.check_circle : Icons.circle_outlined,
+                                                    size: 11,
+                                                    color: isAttended ? const Color(0xFF10B981) : Colors.white38,
+                                                  ),
+                                                  const SizedBox(width: 5),
+                                                  Text(
+                                                    name.isNotEmpty ? name : 'مفتش #${emp['Id']}',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Tajawal',
+                                                      fontSize: 11,
+                                                      color: isAttended ? Colors.white : Colors.white60,
+                                                      fontWeight: isAttended ? FontWeight.bold : FontWeight.normal,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+                                        ),
                                     ],
                                   ),
                                 );
@@ -486,26 +587,43 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   ),
                 ),
         ),
-
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.isArabic ? 'إغلاق' : 'Fermer', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70)),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showNewProgramDialog();
-            },
-            icon: const Icon(Icons.add_task, size: 16),
-            label: Text(
-              loc.isArabic ? '+ تسطير برنامج ولائي جديد' : '+ Nouveau programme',
-              style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD4AF37),
-              foregroundColor: const Color(0xFF1E0B26),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white24),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                  child: Text(loc.isArabic ? 'إغلاق' : 'Fermer', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _showNewProgramDialog();
+                  },
+                  icon: const Icon(Icons.add_task, size: 16),
+                  label: Text(
+                    loc.isArabic ? 'تسطير برنامج ولائي' : 'Nouveau programme',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: const Color(0xFF1E0B26),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 11),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -591,6 +709,34 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                     },
                   ),
                   const SizedBox(height: 12),
+                  Text(
+                    loc.isArabic ? 'نطاق التكليف الإداري والتنفيذ:' : 'Portée administrative de la mission :',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E0B26),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.public, color: Color(0xFFD4AF37), size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            loc.isArabic
+                                ? 'تعميم ولائي شامل: يسري على كافة فرق ومفتشي المصلحة (تنظيم ثنائي Binômes)'
+                                : 'Généralisation : applicable à toutes les brigades du service (binômes)',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFDE68A)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   TextField(
                     controller: titleCtrl,
                     textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
@@ -653,8 +799,9 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                 try {
                   final api = context.read<AuthService>().api;
                   final user = context.read<AuthService>().currentUser;
+                  final cleanTitle = title.startsWith('[') ? title : '[تعميم ولائي شامل] $title';
                   await api.createProgram(
-                    title: title,
+                    title: cleanTitle,
                     targetArea: area,
                     focusPoints: focus,
                     serviceName: selectedService,

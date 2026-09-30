@@ -170,6 +170,9 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           final id = int.tryParse('${emp['Id'] ?? emp['id'] ?? 0}') ?? 0;
           final liveInfo = mapLookup[id];
           final fullName = '${emp['NomAr'] ?? emp['Nom'] ?? ''} ${emp['PrenomAr'] ?? emp['Prenom'] ?? ''}'.trim();
+          final nomLower = fullName.toLowerCase();
+          final mat = (emp['NumeroMatricule'] ?? '').toString().toLowerCase();
+          if (nomLower.contains('admin') || mat.contains('admin') || nomLower.contains('مدير النظام')) continue;
 
           deptList.add({
             'id': id,
