@@ -608,11 +608,15 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header & PDF Print Button
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                // Header & PDF Print Button (Responsive for Mobile & Desktop)
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 10,
+                  runSpacing: 8,
                   children: [
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.history_edu, color: Color(0xFFD4AF37), size: 22),
                         const SizedBox(width: 8),
@@ -1264,7 +1268,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 4,
                         children: [
                           Text(
                             loc.isArabic
@@ -1273,11 +1280,10 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontWeight: FontWeight.bold,
-                              fontSize: 13.5,
+                              fontSize: 13,
                               color: Color(0xFFD4AF37),
                             ),
                           ),
-                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
@@ -1324,155 +1330,233 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               final int lateMinutes = (item['lateMinutes'] as num?)?.toInt() ?? 0;
               final String checkInTime = (item['checkInTime'] ?? '').toString();
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: isLate
-                          ? Colors.orange.withValues(alpha: 0.2)
-                          : Colors.red.withValues(alpha: 0.2),
-                      child: Icon(
-                        isLate ? Icons.access_time_filled : Icons.person_off,
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < 620;
+
+                  final avatarWidget = CircleAvatar(
+                    radius: 17,
+                    backgroundColor: isLate
+                        ? Colors.orange.withValues(alpha: 0.2)
+                        : Colors.red.withValues(alpha: 0.2),
+                    child: Icon(
+                      isLate ? Icons.access_time_filled : Icons.person_off,
+                      color: isLate ? Colors.orangeAccent : Colors.redAccent,
+                      size: 17,
+                    ),
+                  );
+
+                  final badgeWidget = Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                    decoration: BoxDecoration(
+                      color: isLate
+                          ? Colors.orange.withValues(alpha: 0.15)
+                          : Colors.red.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
                         color: isLate ? Colors.orangeAccent : Colors.redAccent,
-                        size: 18,
+                        width: 0.8,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    child: Text(
+                      isLate
+                          ? (checkInTime.isNotEmpty
+                              ? 'تأخر: $lateMinutes دقيقة (دخول: $checkInTime)'
+                              : 'تأخر صباحي: $lateMinutes دقيقة')
+                          : 'غياب كلي اليوم (لم يسجل)',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isLate ? Colors.orangeAccent : Colors.redAccent,
+                      ),
+                    ),
+                  );
+
+                  final tolerateBtn = OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _dismissedEmployeeIds.add(empId);
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            loc.isArabic
+                                ? '🤝 تم التغاضي عن مخالفة $name اليوم بقرار سيادي من المدير الولائي'
+                                : '🤝 Infraction de $name tolérée par décision du Directeur',
+                            style: const TextStyle(fontFamily: 'Tajawal'),
+                          ),
+                          backgroundColor: const Color(0xFF475569),
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.thumb_up_alt_outlined, size: 14, color: Colors.white70),
+                    label: Text(
+                      loc.isArabic ? 'تغاضي / عذر' : 'Tolérer',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white24),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  );
+
+                  final inquireBtn = ElevatedButton.icon(
+                    onPressed: () {
+                      final empObj = {
+                        'Id': empId,
+                        'NomAr': name,
+                        'PrenomAr': '',
+                        'Service': service,
+                        'Grade': grade,
+                      };
+                      final subject = isLate
+                          ? 'استفسار كتابي رسمي حول التأخر الصباحي عن العمل'
+                          : 'استفسار كتابي رسمي حول الغياب عن العمل وعدم تسجيل البصمة';
+                      final details = isLate
+                          ? 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تم تسجيل التحاقكم في تمام الساعة ($checkInTime) متجاوزين فترة التسامح الصباحية المعتمدة بمقدار ($lateMinutes دقيقة). يُطلب منكم تقديم توضيحاتكم وأسباب هذا التأخر خلال المهلة القانونية (48 ساعة).'
+                          : 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تبيّن عدم تسجيلكم للبصمة الصباحية أو التحاقكم بالدوام الرسمي حتى الآن. يُطلب منكم تقديم توضيحاتكم الإدارية ومبرراتكم الرسمية خلال مهلة 48 ساعة القانونية.';
+
+                      _showDirectorOrderModal(
+                        empObj,
+                        defaultSubject: subject,
+                        defaultDetails: details,
+                        violationType: isLate ? 'late_arrival' : 'unjustified_absence',
+                        lateMinutes: isLate ? lateMinutes : 0,
+                      );
+                    },
+                    icon: const Icon(Icons.gavel, size: 14, color: Colors.black),
+                    label: Text(
+                      loc.isArabic ? 'توجيه استفسار' : 'Demande d\'explications',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  );
+
+                  if (isCompact) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                name,
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isLate
-                                      ? Colors.orange.withValues(alpha: 0.15)
-                                      : Colors.red.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: isLate ? Colors.orangeAccent : Colors.redAccent,
-                                    width: 0.8,
-                                  ),
-                                ),
-                                child: Text(
-                                  isLate
-                                      ? (checkInTime.isNotEmpty
-                                          ? 'تأخر: $lateMinutes دقيقة (دخول: $checkInTime)'
-                                          : 'تأخر صباحي: $lateMinutes دقيقة')
-                                      : 'غياب كلي اليوم (لم يسجل)',
-                                  style: TextStyle(
-                                    fontFamily: 'Tajawal',
-                                    fontSize: 10.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: isLate ? Colors.orangeAccent : Colors.redAccent,
-                                  ),
+                              avatarWidget,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      children: [
+                                        Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontSize: 13.5,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        badgeWidget,
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '$grade • $service',
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 11,
+                                        color: AppTheme.TextSecondary,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$grade • $service',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 11,
-                              color: AppTheme.TextSecondary,
-                            ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(child: tolerateBtn),
+                              const SizedBox(width: 8),
+                              Expanded(child: inquireBtn),
+                            ],
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _dismissedEmployeeIds.add(empId);
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              loc.isArabic
-                                  ? '🤝 تم التغاضي عن مخالفة $name اليوم بقرار سيادي من المدير الولائي'
-                                  : '🤝 Infraction de $name tolérée par décision du Directeur',
-                              style: const TextStyle(fontFamily: 'Tajawal'),
-                            ),
-                            backgroundColor: const Color(0xFF475569),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.thumb_up_alt_outlined, size: 14, color: Colors.white70),
-                      label: Text(
-                        loc.isArabic ? 'تغاضي / عذر' : 'Tolérer',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 11,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white24),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        final empObj = {
-                          'Id': empId,
-                          'NomAr': name,
-                          'PrenomAr': '',
-                          'Service': service,
-                          'Grade': grade,
-                        };
-                        final subject = isLate
-                            ? 'استفسار كتابي رسمي حول التأخر الصباحي عن العمل'
-                            : 'استفسار كتابي رسمي حول الغياب عن العمل وعدم تسجيل البصمة';
-                        final details = isLate
-                            ? 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تم تسجيل التحاقكم في تمام الساعة ($checkInTime) متجاوزين فترة التسامح الصباحية المعتمدة بمقدار ($lateMinutes دقيقة). يُطلب منكم تقديم توضيحاتكم وأسباب هذا التأخر خلال المهلة القانونية (48 ساعة).'
-                            : 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تبيّن عدم تسجيلكم للبصمة الصباحية أو التحاقكم بالدوام الرسمي حتى الآن. يُطلب منكم تقديم توضيحاتكم الإدارية ومبرراتكم الرسمية خلال مهلة 48 ساعة القانونية.';
+                    );
+                  }
 
-                        _showDirectorOrderModal(
-                          empObj,
-                          defaultSubject: subject,
-                          defaultDetails: details,
-                          violationType: isLate ? 'late_arrival' : 'unjustified_absence',
-                          lateMinutes: isLate ? lateMinutes : 0,
-                        );
-                      },
-                      icon: const Icon(Icons.gavel, size: 14, color: Colors.black),
-                      label: Text(
-                        loc.isArabic ? 'توجيه استفسار' : 'Demande d\'explications',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                  // Desktop / Wide Layout:
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    child: Row(
+                      children: [
+                        avatarWidget,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  badgeWidget,
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '$grade • $service',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 11,
+                                  color: AppTheme.TextSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFD4AF37),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
+                        const SizedBox(width: 8),
+                        tolerateBtn,
+                        const SizedBox(width: 6),
+                        inquireBtn,
+                      ],
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             },
           ),
