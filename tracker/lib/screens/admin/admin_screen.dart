@@ -2042,11 +2042,39 @@ class _AdminScreenState extends State<AdminScreen>
           ),
           const SizedBox(height: 10),
 
-          // 5. Bureau Chief
+          // 5. Head of Market Regulation & Prices
           _buildPreviewCard(
             title: isAr
-                ? '5. شاشة رئيس مكتب المستخدمين (Bureau du Personnel)'
-                : '5. Écran Chef de Bureau du Personnel',
+                ? '5. شاشة رئيس مصلحة ملاحظة السوق وضبط التموين والأسعار (Régulation du Marché & Prix)'
+                : '5. Écran Chef de Service Régulation du Marché, Approvisionnement & Prix',
+            desc: isAr
+                ? 'المرصد الولائي للأسعار، مؤشرات الوفرة والاستقرار، الإنذار المبكر بالندرة وتوزيع التموين، وإعداد النشرة اليومية لضبط السوق.'
+                : 'Observatoire des prix, indices de disponibilité, alertes pénurie et publication du bulletin quotidien des marchés.',
+            icon: Icons.trending_up,
+            color: const Color(0xFFD4AF37),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة ملاحظة السوق وضبط التموين والأسعار'))),
+          ),
+          const SizedBox(height: 10),
+
+          // 6. Head of Litigation & Legal Affairs
+          _buildPreviewCard(
+            title: isAr
+                ? '6. شاشة رئيس مصلحة المنازعات والشؤون القانونية (Contentieux & Affaires Juridiques)'
+                : '6. Écran Chef de Service Contentieux & Affaires Juridiques',
+            desc: isAr
+                ? 'معالجة محاضر المخالفات، إعداد قرارات الغلق الإداري وإحالتها للمدير، ومتابعة قضايا الإحالة للعدالة والمصالحات والتحصيل.'
+                : 'Traitement des PV d\'infraction, arrêtés de fermeture administrative, suivi des dossiers judiciaires et transactions.',
+            icon: Icons.gavel,
+            color: const Color(0xFFEF4444),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة المنازعات والشؤون القانونية'))),
+          ),
+          const SizedBox(height: 10),
+
+          // 7. Bureau Chief
+          _buildPreviewCard(
+            title: isAr
+                ? '7. شاشة رئيس مكتب المستخدمين (Bureau du Personnel)'
+                : '7. Écran Chef de Bureau du Personnel',
             desc: isAr
                 ? 'السجلات الإدارية للموظفين الفعليين، متابعة الانضباط والتأخرات، توجيه الاستفسارات، وتنفيذ قرارات الخصم على كشف الراتب.'
                 : 'Registres du personnel, suivi de la discipline et retards, demandes d\'explication et exécution des retenues.',
@@ -2056,11 +2084,11 @@ class _AdminScreenState extends State<AdminScreen>
           ),
           const SizedBox(height: 10),
 
-          // 6. Field Inspector
+          // 8. Field Inspector
           _buildPreviewCard(
             title: isAr
-                ? '6. شاشة المفتش الميداني (Field Inspector View)'
-                : '6. Écran Inspecteur de Terrain (Field Inspector)',
+                ? '8. شاشة المفتش الميداني (Field Inspector View)'
+                : '8. Écran Inspecteur de Terrain (Field Inspector)',
             desc: isAr
                 ? 'تسجيل الحضور الصباحي بالبصمة الجغرافية GPS، توثيق المعاينات الميدانية والمخالفات، واستقبال أوامر المهمة.'
                 : 'Pointage matinal par géolocalisation GPS, enregistrement des visites et réceptions des ordres de mission.',

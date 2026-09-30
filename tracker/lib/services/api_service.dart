@@ -1593,6 +1593,180 @@ class ApiService {
       throw _handleNetworkException(e, 'فشل في إلغاء أمر المهمة');
     }
   }
+
+  // ==========================================
+  // MARKET REGULATION & SUPPLY (ملاحظة السوق وضبط التموين والأسعار)
+  // ==========================================
+
+  Future<List<Map<String, dynamic>>> getMarketPrices() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/market/prices'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeList(response.body);
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> addMarketPrice(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/market/prices'), headers: _headers, body: jsonEncode(data)).timeout(defaultTimeout);
+      if (response.statusCode == 200 || response.statusCode == 201) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل تسجيل سعر المادة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تسجيل سعر المادة');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateMarketPrice(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await http.put(Uri.parse('$baseUrl/market/prices/$id'), headers: _headers, body: jsonEncode(data)).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل تحديث سعر المادة'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تحديث سعر المادة');
+    }
+  }
+
+  Future<void> deleteMarketPrice(int id) async {
+    try {
+      await http.delete(Uri.parse('$baseUrl/market/prices/$id'), headers: _headers).timeout(defaultTimeout);
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل حذف المادة');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getSupplyAlerts() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/market/alerts'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeList(response.body);
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> createSupplyAlert(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/market/alerts'), headers: _headers, body: jsonEncode(data)).timeout(defaultTimeout);
+      if (response.statusCode == 200 || response.statusCode == 201) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل إصدار الإخطار التمويني'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إصدار الإخطار التمويني');
+    }
+  }
+
+  Future<void> updateSupplyAlertStatus(int id, String status) async {
+    try {
+      await http.put(Uri.parse('$baseUrl/market/alerts/$id/status'), headers: _headers, body: jsonEncode({'status': status})).timeout(defaultTimeout);
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تحديث الإخطار');
+    }
+  }
+
+  Future<Map<String, dynamic>> getMarketBulletin() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/market/bulletin'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  // ==========================================
+  // LEGAL & CONTENTIOUS (المنازعات والشؤون القانونية)
+  // ==========================================
+
+  Future<List<Map<String, dynamic>>> getContentieuxPvs() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/contentieux/pvs'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeList(response.body);
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getClosureOrders() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/contentieux/closures'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeList(response.body);
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> createClosureOrder(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/contentieux/closures'), headers: _headers, body: jsonEncode(data)).timeout(defaultTimeout);
+      if (response.statusCode == 200 || response.statusCode == 201) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل إعداد قرار الغلق'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إعداد قرار الغلق');
+    }
+  }
+
+  Future<Map<String, dynamic>> signClosureOrder(int id) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/contentieux/closures/$id/sign'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل توقيع قرار الغلق'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل توقيع قرار الغلق');
+    }
+  }
+
+  Future<Map<String, dynamic>> executeClosureOrder(int id, {String? notes}) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/contentieux/closures/$id/execute'), headers: _headers, body: jsonEncode({'executionNotes': notes})).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل تسجيل تنفيذ الغلق'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تسجيل تنفيذ الغلق');
+    }
+  }
+
+  Future<Map<String, dynamic>> reopenClosureOrder(int id) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/contentieux/closures/$id/reopen'), headers: _headers, body: jsonEncode({})).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل إعادة فتح المحل'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل إعادة فتح المحل');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getCourtCases() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/contentieux/courts'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeList(response.body);
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> createCourtCase(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/contentieux/courts'), headers: _headers, body: jsonEncode(data)).timeout(defaultTimeout);
+      if (response.statusCode == 200 || response.statusCode == 201) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل تسجيل الإحالة القضائية'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تسجيل الإحالة القضائية');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateCourtCase(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await http.put(Uri.parse('$baseUrl/contentieux/courts/$id'), headers: _headers, body: jsonEncode(data)).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل تحديث القضية'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تحديث القضية');
+    }
+  }
 }
 
 

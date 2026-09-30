@@ -11,6 +11,8 @@ import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog
 import 'package:drh_setif_tracker/screens/common/app_footer.dart';
 import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
+import 'package:drh_setif_tracker/screens/head/market_regulation_view.dart';
+import 'package:drh_setif_tracker/screens/head/contentieux_view.dart';
 
 class HeadScreen extends StatefulWidget {
   final String? initialDepartment;
@@ -49,6 +51,17 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
       _departmentName.contains('الإدارة') ||
       _departmentName.contains('الوسائل') ||
       context.read<AuthService>().currentUser?.username == 'chef_administration';
+
+  bool get _isMarketRegulation =>
+      _departmentName.contains('ملاحظة') ||
+      _departmentName.contains('السوق') ||
+      _departmentName.contains('التموين') ||
+      context.read<AuthService>().currentUser?.username == 'chef_marche';
+
+  bool get _isContentieux =>
+      _departmentName.contains('المنازعات') ||
+      _departmentName.contains('القانون') ||
+      context.read<AuthService>().currentUser?.username == 'chef_contentieux';
 
   @override
   void initState() {
@@ -96,6 +109,10 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           _departmentName = 'مصلحة الإدارة والوسائل';
         } else if (user?.username == 'chef_concurrence') {
           _departmentName = 'مصلحة المنافسة والتحقيقات الاقتصادية';
+        } else if (user?.username == 'chef_marche') {
+          _departmentName = 'مصلحة ملاحظة السوق وضبط التموين';
+        } else if (user?.username == 'chef_contentieux') {
+          _departmentName = 'مصلحة المنازعات والشؤون القانونية';
         } else {
           _departmentName = 'مصلحة حماية المستهلك وقمع الغش';
         }
@@ -4151,6 +4168,26 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                           ],
                         ),
                       ),
+                      PopupMenuItem(
+                        value: 'مصلحة ملاحظة السوق وضبط التموين',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.storefront, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'مصلحة ملاحظة السوق وضبط التموين والأسعار' : 'Régulation du Marché & Prix', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'مصلحة المنازعات والشؤون القانونية',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.gavel, color: Color(0xFFEF4444), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'مصلحة المنازعات والشؤون القانونية' : 'Contentieux & Affaires Juridiques', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(width: 3),
@@ -4200,11 +4237,23 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   ModernNavTabItem(icon: Icons.apartment_outlined, label: isAr ? 'المقرات والبصمة الجغرافية' : 'Sièges & Géolocalisation'),
                   ModernNavTabItem(icon: Icons.account_balance_wallet_outlined, label: isAr ? 'المحاسبة والرواتب' : 'Comptabilité & Salaires'),
                 ]
-              : [
-                  ModernNavTabItem(icon: Icons.assignment, label: isAr ? 'أوامر المهمة والبرامج' : 'Ordres de Mission'),
-                  ModernNavTabItem(icon: Icons.fact_check, label: isAr ? 'تأشير المعاينات' : 'Validation Visites'),
-                  ModernNavTabItem(icon: Icons.people_alt, label: isAr ? 'مفتشو المصلحة' : 'Inspecteurs'),
-                ],
+              : _isMarketRegulation
+                  ? [
+                      ModernNavTabItem(icon: Icons.storefront, label: isAr ? 'مرصد الأسعار وضبط السوق' : 'Observatoire Prix'),
+                      ModernNavTabItem(icon: Icons.crisis_alert, label: isAr ? 'إخطارات التموين والإنذار' : 'Alertes Appro'),
+                      ModernNavTabItem(icon: Icons.summarize, label: isAr ? 'النشرة اليومية لضبط السوق' : 'Bulletin Quotidien'),
+                    ]
+                  : _isContentieux
+                      ? [
+                          ModernNavTabItem(icon: Icons.gavel, label: isAr ? 'تدقيق محاضر المعاينة' : 'Contrôle des PVs'),
+                          ModernNavTabItem(icon: Icons.lock_clock, label: isAr ? 'قرارات الغلق الإداري' : 'Fermetures'),
+                          ModernNavTabItem(icon: Icons.account_balance, label: isAr ? 'المتابعة القضائية والمصالحة' : 'Contentieux & Justice'),
+                        ]
+                      : [
+                          ModernNavTabItem(icon: Icons.assignment, label: isAr ? 'أوامر المهمة والبرامج' : 'Ordres de Mission'),
+                          ModernNavTabItem(icon: Icons.fact_check, label: isAr ? 'تأشير المعاينات' : 'Validation Visites'),
+                          ModernNavTabItem(icon: Icons.people_alt, label: isAr ? 'مفتشو المصلحة' : 'Inspecteurs'),
+                        ],
           additionalActions: const [],
           onRefresh: _loadAllData,
           onPasswordChange: () => ChangePasswordDialog.show(context),
@@ -4217,20 +4266,32 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
         floatingActionButton: null,
         body: _isLoading
             ? const Center(child: CircularProgressIndicator(color: AppTheme.AccentColor))
-            : TabBarView(
-                controller: _tabController,
-                children: _isAdministration
-                    ? [
-                        _buildAdministrationPersonnelTab(),
-                        _buildAdministrationMeansTab(),
-                        _buildAdministrationFinanceTab(),
-                      ]
-                    : [
-                        _buildMissionsTab(),
-                        _buildVisitsValidationTab(),
-                        _buildInspectorsPresenceTab(),
-                      ],
-              ),
+            : _isMarketRegulation
+                ? MarketRegulationView(
+                    departmentName: _departmentName,
+                    onRefresh: _loadAllData,
+                    tabController: _tabController,
+                  )
+                : _isContentieux
+                    ? ContentieuxView(
+                        departmentName: _departmentName,
+                        onRefresh: _loadAllData,
+                        tabController: _tabController,
+                      )
+                    : TabBarView(
+                        controller: _tabController,
+                        children: _isAdministration
+                            ? [
+                                _buildAdministrationPersonnelTab(),
+                                _buildAdministrationMeansTab(),
+                                _buildAdministrationFinanceTab(),
+                              ]
+                            : [
+                                _buildMissionsTab(),
+                                _buildVisitsValidationTab(),
+                                _buildInspectorsPresenceTab(),
+                              ],
+                      ),
       ),
     );
   }
