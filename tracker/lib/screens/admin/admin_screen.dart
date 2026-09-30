@@ -4,10 +4,6 @@ import 'package:drh_setif_tracker/services/auth_service.dart';
 import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/providers/language_provider.dart';
 import 'package:drh_setif_tracker/screens/auth/login_screen.dart';
-import 'package:drh_setif_tracker/screens/director/director_screen.dart';
-import 'package:drh_setif_tracker/screens/head/head_screen.dart';
-import 'package:drh_setif_tracker/screens/bureau/bureau_screen.dart';
-import 'package:drh_setif_tracker/screens/inspector/inspector_screen.dart';
 import 'package:drh_setif_tracker/screens/common/change_password_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/change_master_pin_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/mandatory_security_setup_dialog.dart';
@@ -40,7 +36,7 @@ class _AdminScreenState extends State<AdminScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
@@ -1227,7 +1223,6 @@ class _AdminScreenState extends State<AdminScreen>
             ModernNavTabItem(icon: Icons.people_alt, label: isAr ? 'المستخدمين والحسابات' : 'Utilisateurs & Comptes'),
             ModernNavTabItem(icon: Icons.location_on, label: isAr ? 'المقرات والبصمة الجغرافية' : 'Sièges & Géolocalisation'),
             ModernNavTabItem(icon: Icons.dns, label: isAr ? 'حالة النظام والسيرفر' : 'État du Système & Serveur'),
-            ModernNavTabItem(icon: Icons.preview, label: isAr ? 'معاينة شاشات الأدوار' : 'Aperçu des Rôles'),
           ],
           onRefresh: _loadData,
           onPasswordChange: () => ChangePasswordDialog.show(context),
@@ -1246,7 +1241,6 @@ class _AdminScreenState extends State<AdminScreen>
             _buildUsersTab(isAr),
             _buildInspectoratesTab(isAr),
             _buildSystemHealthTab(isAr),
-            _buildRolePreviewTab(isAr),
           ],
         ),
       ),
@@ -2096,176 +2090,6 @@ class _AdminScreenState extends State<AdminScreen>
     );
   }
 
-  Widget _buildRolePreviewTab(bool isAr) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.preview, color: Color(0xFFD4AF37), size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  isAr
-                      ? 'معاينة الشاشات بمختلف الأدوار والصلاحيات (Role Previews):'
-                      : 'Aperçu des Écrans selon les Rôles et Permissions (Role Previews):',
-                  style: const TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            isAr
-                ? 'تتيح لك هذه الميزة تجربة أي واجهة في المنظومة بكل صلاحياتها الحقيقية لمعاينة تسلسل وسير العمل (Workflow):'
-                : 'Cette fonctionnalité vous permet de prévisualiser chaque interface avec ses autorisations réelles pour tester le workflow:',
-            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white70),
-          ),
-          const SizedBox(height: 14),
-
-          // Hierarchy & Workflow Info Banner
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1E0B26),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.account_tree, color: Color(0xFFD4AF37), size: 22),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    isAr
-                        ? 'تسلسل الأدوار الإدارية: المفتش الميداني يوثق المهمة والمعاينة ⬅️ رئيس المصلحة المعني يؤشر ويصادق ⬅️ رئيس مصلحة الإدارة والوسائل يتابع تعداد الموظفين واللوجستيك ⬅️ المدير الولائي يشرف على كامل الولاية ويعتمد الخصومات كآمر بالصرف الوحيد.'
-                        : 'Hiérarchie administrative: L\'inspecteur documente la mission ⬅️ Le chef de service vise et valide ⬅️ Le chef de service administration suit les effectifs ⬅️ Le Directeur de Wilaya supervise et valide les déductions.',
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // 1. Director
-          _buildPreviewCard(
-            title: isAr ? '1. شاشة المدير الولائي (Director View)' : '1. Écran du Directeur de Wilaya (Director View)',
-            desc: isAr
-                ? 'القيادة الإشرافية العامة، الخريطة الحية للمفتشين، إحصائيات المعاينات، وجداول الخصم المالي (الآمر بالصرف الوحيد).'
-                : 'Supervision générale, carte en direct des inspecteurs, statistiques des visites et retenues sur salaire (Ordonnateur unique).',
-            icon: Icons.shield_outlined,
-            color: const Color(0xFFD4AF37),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DirectorScreen())),
-          ),
-          const SizedBox(height: 10),
-
-          // 2. Head of Administration & Means
-          _buildPreviewCard(
-            title: isAr
-                ? '2. شاشة رئيس مصلحة الإدارة والوسائل (Administration & Moyens)'
-                : '2. Écran Chef de Service Administration & Moyens',
-            desc: isAr
-                ? 'تسيير وتعداد الموظفين المسجلين، الانضباط والحضور، متابعة المقرات والمفتشيات الثمانية، والرواتب طبقاً للأمر 06-03.'
-                : 'Gestion des effectifs, présence et discipline, suivi des 8 sièges et contrôle de la paie selon l\'ordonnance 06-03.',
-            icon: Icons.badge_outlined,
-            color: const Color(0xFF10B981),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة الإدارة والوسائل'))),
-          ),
-          const SizedBox(height: 10),
-
-          // 3. Head of Consumer Protection & Fraud
-          _buildPreviewCard(
-            title: isAr
-                ? '3. شاشة رئيس مصلحة قمع الغش وحماية المستهلك (Fraude & Consommation)'
-                : '3. Écran Chef de Service Repression des Fraudes & Consommation',
-            desc: isAr
-                ? 'إصدار أوامر المهمة الرقابية، تأشير ومصادقة محاضر المعاينة والمحجوزات وسحب العينات، ومتابعة فرق الرقابة الصحية.'
-                : 'Ordres de mission, validation des procès-verbaux, saisies, prélèvements d\'échantillons et contrôle sanitaire.',
-            icon: Icons.health_and_safety_outlined,
-            color: const Color(0xFFE11D48),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة حماية المستهلك وقمع الغش'))),
-          ),
-          const SizedBox(height: 10),
-
-          // 4. Head of Competition & Economic Inquiries
-          _buildPreviewCard(
-            title: isAr
-                ? '4. شاشة رئيس مصلحة المنافسة والتحقيقات (Concurrence & Enquêtes)'
-                : '4. Écran Chef de Service Concurrence & Enquêtes Économiques',
-            desc: isAr
-                ? 'برامج مراقبة الأسعار المقننة، تتبع سلاسل التوزيع، فواتير التوزيع والبيع، ومكافحة المضاربة غير المشروعة وتفريغ المخازن.'
-                : 'Contrôle des prix réglementés, suivi de la distribution, facturation, lutte contre la spéculation et vérification des stocks.',
-            icon: Icons.query_stats,
-            color: const Color(0xFFD4AF37),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة المنافسة والتحقيقات الاقتصادية'))),
-          ),
-          const SizedBox(height: 10),
-
-          // 5. Head of Market Regulation & Prices
-          _buildPreviewCard(
-            title: isAr
-                ? '5. شاشة رئيس مصلحة ملاحظة السوق وضبط التموين والأسعار (Régulation du Marché & Prix)'
-                : '5. Écran Chef de Service Régulation du Marché, Approvisionnement & Prix',
-            desc: isAr
-                ? 'المرصد الولائي للأسعار، مؤشرات الوفرة والاستقرار، الإنذار المبكر بالندرة وتوزيع التموين، وإعداد النشرة اليومية لضبط السوق.'
-                : 'Observatoire des prix, indices de disponibilité, alertes pénurie et publication du bulletin quotidien des marchés.',
-            icon: Icons.trending_up,
-            color: const Color(0xFFD4AF37),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة ملاحظة السوق وضبط التموين والأسعار'))),
-          ),
-          const SizedBox(height: 10),
-
-          // 6. Head of Litigation & Legal Affairs
-          _buildPreviewCard(
-            title: isAr
-                ? '6. شاشة رئيس مصلحة المنازعات والشؤون القانونية (Contentieux & Affaires Juridiques)'
-                : '6. Écran Chef de Service Contentieux & Affaires Juridiques',
-            desc: isAr
-                ? 'معالجة محاضر المخالفات، إعداد قرارات الغلق الإداري وإحالتها للمدير، ومتابعة قضايا الإحالة للعدالة والمصالحات والتحصيل.'
-                : 'Traitement des PV d\'infraction, arrêtés de fermeture administrative, suivi des dossiers judiciaires et transactions.',
-            icon: Icons.gavel,
-            color: const Color(0xFFEF4444),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HeadScreen(initialDepartment: 'مصلحة المنازعات والشؤون القانونية'))),
-          ),
-          const SizedBox(height: 10),
-
-          // 7. Bureau Chief
-          _buildPreviewCard(
-            title: isAr
-                ? '7. شاشة رئيس مكتب المستخدمين (Bureau du Personnel)'
-                : '7. Écran Chef de Bureau du Personnel',
-            desc: isAr
-                ? 'السجلات الإدارية للموظفين الفعليين، متابعة الانضباط والتأخرات، توجيه الاستفسارات، وتنفيذ قرارات الخصم على كشف الراتب.'
-                : 'Registres du personnel, suivi de la discipline et retards, demandes d\'explication et exécution des retenues.',
-            icon: Icons.folder_shared_outlined,
-            color: const Color(0xFF8B5CF6),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BureauScreen())),
-          ),
-          const SizedBox(height: 10),
-
-          // 8. Field Inspector
-          _buildPreviewCard(
-            title: isAr
-                ? '8. شاشة المفتش الميداني (Field Inspector View)'
-                : '8. Écran Inspecteur de Terrain (Field Inspector)',
-            desc: isAr
-                ? 'تسجيل الحضور الصباحي بالبصمة الجغرافية GPS، توثيق المعاينات الميدانية والمخالفات، واستقبال أوامر المهمة.'
-                : 'Pointage matinal par géolocalisation GPS, enregistrement des visites et réceptions des ordres de mission.',
-            icon: Icons.explore,
-            color: const Color(0xFFF59E0B),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const InspectorScreen())),
-          ),
-          const SizedBox(height: 24),
-          const AppFooter(),
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
     return Container(
       constraints: const BoxConstraints(minWidth: 160),
@@ -2323,57 +2147,7 @@ class _AdminScreenState extends State<AdminScreen>
     );
   }
 
-  Widget _buildPreviewCard({
-    required String title,
-    required String desc,
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFF240D2D),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: 0.2),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    desc,
-                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.arrow_forward_ios, size: 16, color: color),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   String _formatRole(dynamic role) {
     switch (role) {
