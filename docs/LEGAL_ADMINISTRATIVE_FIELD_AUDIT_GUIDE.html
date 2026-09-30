@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>الدليل الإداري والقانوني والتقني الشامل لمكافحة التحايل في الرقابة الميدانية — استراتيجية الميزانية الصفرية</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 12mm 16mm 12mm;
+      @bottom-right {
+        content: "صفحة " counter(page) " من " counter(pages);
+        font-family: 'Cairo', sans-serif;
+        font-size: 9pt;
+        color: #64748b;
+      }
+      @bottom-left {
+        content: "مديرية التجارة الداخلية وضبط السوق الوطنية — ولاية سطيف";
+        font-family: 'Cairo', sans-serif;
+        font-size: 9pt;
+        color: #64748b;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #0f172a;
+      background: #ffffff;
+      line-height: 1.6;
+      font-size: 11pt;
+    }
+
+    .header-official {
+      text-align: center;
+      border-bottom: 2.5px solid #d4af37;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+
+    .republic-title {
+      font-family: 'Amiri', serif;
+      font-size: 15pt;
+      font-weight: bold;
+      color: #1e293b;
+      margin: 0 0 4px 0;
+    }
+
+    .ministry-title {
+      font-family: 'Cairo', sans-serif;
+      font-size: 12pt;
+      font-weight: 700;
+      color: #881337;
+      margin: 0 0 2px 0;
+    }
+
+    .direction-title {
+      font-family: 'Cairo', sans-serif;
+      font-size: 11pt;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0;
+    }
+
+    .doc-badge-container {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9pt;
+      color: #475569;
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 5px;
+    }
+
+    .main-title-box {
+      background: linear-gradient(135deg, #1b0b1e 0%, #3b0764 50%, #4c0519 100%);
+      color: #ffffff;
+      padding: 16px 22px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 20px;
+      border: 1.5px solid #d4af37;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .main-title-box h1 {
+      font-family: 'Cairo', sans-serif;
+      font-size: 15.5pt;
+      font-weight: 900;
+      margin: 0 0 6px 0;
+      color: #fef08a;
+    }
+
+    .main-title-box p {
+      font-size: 10pt;
+      margin: 0;
+      color: #f1f5f9;
+    }
+
+    .section-card {
+      margin-bottom: 18px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+      page-break-inside: avoid;
+    }
+
+    .section-header {
+      background: #f8fafc;
+      border-bottom: 1.5px solid #e2e8f0;
+      padding: 9px 15px;
+      border-radius: 10px 10px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-icon {
+      width: 26px;
+      height: 26px;
+      background: #d4af37;
+      color: #000000;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 11pt;
+    }
+
+    .section-header h2 {
+      font-family: 'Cairo', sans-serif;
+      font-size: 12pt;
+      font-weight: 800;
+      margin: 0;
+      color: #1e1b4b;
+    }
+
+    .section-body {
+      padding: 12px 16px;
+    }
+
+    .law-quote {
+      background: #fffbeb;
+      border-right: 4px solid #d4af37;
+      padding: 9px 13px;
+      margin: 9px 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 9.5pt;
+      color: #78350f;
+    }
+
+    .danger-box {
+      background: #fef2f2;
+      border-right: 4px solid #ef4444;
+      padding: 9px 13px;
+      margin: 9px 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 9.5pt;
+      color: #991b1b;
+    }
+
+    .success-box {
+      background: #f0fdf4;
+      border-right: 4px solid #10b981;
+      padding: 9px 13px;
+      margin: 9px 0;
+      border-radius: 0 6px 6px 0;
+      font-size: 9.5pt;
+      color: #065f46;
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0;
+    }
+
+    .comp-card {
+      border-radius: 8px;
+      padding: 12px;
+      border: 1.5px solid;
+    }
+
+    .comp-paper {
+      background: #fff7ed;
+      border-color: #ea580c;
+    }
+
+    .comp-digital {
+      background: #ecfdf5;
+      border-color: #059669;
+    }
+
+    .comp-title {
+      font-family: 'Cairo', sans-serif;
+      font-weight: 800;
+      font-size: 11pt;
+      margin-bottom: 6px;
+    }
+
+    .mechanism-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .mechanism-item {
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: #fafafa;
+    }
+
+    .mechanism-item h4 {
+      font-family: 'Cairo', sans-serif;
+      font-size: 10.5pt;
+      font-weight: 700;
+      margin: 0 0 3px 0;
+      color: #881337;
+    }
+
+    .mechanism-item p {
+      font-size: 9pt;
+      margin: 0;
+      color: #334155;
+    }
+
+    table.official-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 9pt;
+    }
+
+    table.official-table th {
+      background: #1e1b4b;
+      color: #fef08a;
+      font-family: 'Cairo', sans-serif;
+      font-weight: 700;
+      padding: 7px 9px;
+      border: 1px solid #475569;
+      text-align: right;
+    }
+
+    table.official-table td {
+      padding: 7px 9px;
+      border: 1px solid #cbd5e1;
+      color: #1e293b;
+    }
+
+    table.official-table tr:nth-child(even) {
+      background: #f8fafc;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 2px dashed #cbd5e1;
+      text-align: center;
+      page-break-inside: avoid;
+    }
+
+    .sig-box {
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 6px;
+      background: #fdfdfd;
+    }
+
+    .sig-title {
+      font-family: 'Cairo', sans-serif;
+      font-size: 9.5pt;
+      font-weight: 700;
+      color: #881337;
+      margin-bottom: 2px;
+    }
+
+    .sig-name {
+      font-family: 'Cairo', sans-serif;
+      font-size: 10.5pt;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 20px;
+    }
+
+    .sig-status {
+      font-size: 8pt;
+      color: #64748b;
+      font-style: italic;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Official Header -->
+  <div class="header-official">
+    <div class="republic-title">الجمهورية الجزائرية الديمقراطية الشعبية</div>
+    <div class="ministry-title">وزارة التجارة الداخلية وضبط السوق الوطنية</div>
+    <div class="direction-title">مديرية التجارة لولاية سطيف — مصلحة الإدارة والوسائل ومكتب المستخدمين</div>
+    <div class="doc-badge-container">
+      <span><strong>الرقم المرجعي:</strong> د.ت.س/استراتيجية-رقمنة/2026-09</span>
+      <span><strong>الحالة:</strong> خطة تنفيذية بالميزانية الصفرية (Zero-Budget Strategy)</span>
+      <span><strong>تاريخ الاعتماد:</strong> 30 سبتمبر 2026</span>
+    </div>
+  </div>
+
+  <!-- Main Title -->
+  <div class="main-title-box">
+    <h1>الدليل الإداري والقانوني والتقني الشامل لمكافحة التحايل في الرقابة الميدانية</h1>
+    <p>استراتيجية تفعيل الرقابة الرقمية عبر الهواتف الشخصية دون اقتناء لوحات إلكترونية ودون خرق الأمر 06-03 والقانون 18-07</p>
+  </div>
+
+  <!-- Section 1 -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-icon">1</div>
+      <h2>واقع عجز الميزانية: لماذا يجب أن ننجح دون شراء أجهزة؟</h2>
+    </div>
+    <div class="section-body">
+      <p>
+        في ظل ترشيد النفقات العمومية وتجميد ميزانيات التسيير المخصصة لاقتناء التجهيزات الإعلامية والمحمولة، <strong>يستحيل على المديرية اقتناء لوحات إلكترونية (Tablettes) أو هواتف خدمة لكافة الفرق</strong>. 
+      </p>
+      <p>
+        هذا المعطى يضع الإدارة أمام تحدٍّ حاسم: <strong>كيف نلزم المفتش باستخدام هاتفه الشخصي في الرقابة الميدانية دون أن نمنحه ذريعة الاحتجاج بالمادة 30 من الأمر 06-03؟</strong>
+      </p>
+      <div class="law-quote">
+        <strong>المادة 30 من الأمر 06-03:</strong> «من واجب الإدارة تزويد الموظف بوسائل العمل الضرورية لأداء مهامه».<br>
+        <strong>القاعدة الإدارية:</strong> الإدارة لا تستطيع "إجبار" الموظف على استخدام هاتفه الشخصي بأمر إداري مباشر، ولكنها تملك الحق المطلق في <strong>تحديد شروط وضوابط الاستفادة من التسهيلات الميدانية</strong>!
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2 -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-icon">2</div>
+      <h2>الحيلة الإدارية العبقرية: "قلب المعادلة" عبر البروتوكول المزدوج (Le Double Protocole)</h2>
+    </div>
+    <div class="section-body">
+      <p>
+        الحل لا يكون بإجبار الموظف على تنصيب التطبيق، بل بجعل <strong>البديل الورقي شاقاً ومقيداً للغاية</strong>، وجعل <strong>التطبيق الرقمي امتيازاً مريحاً</strong> يسعى الموظف لتثبيته طواعية:
+      </p>
+
+      <div class="comparison-grid">
+        <div class="comp-card comp-paper">
+          <div class="comp-title" style="color: #c2410c;">📋 الخيار (أ): البروتوكول الورقي الصارم لمن يرفض التطبيق</div>
+          <ul style="font-size: 9pt; padding-right: 18px; margin: 0; color: #7c2d12;">
+            <li><strong>الحضور الشخصي بالمقر 3 مرات يومياً:</strong><br>
+              - توقيع السجل بالمديرية على 08:00 صباحاً.<br>
+              - <strong>العودة الإلزامية للمقر على 12:30</strong> لتأشير استراحة الغداء وإيداع محاضر الصباح.<br>
+              - <strong>العودة الإلزامية للمقر على 16:00</strong> لتوقيع الانصراف بالدفتر الورقي.
+            </li>
+            <li>كتابة كافة محاضر المعاينة يدوياً بالورق والكربون وإيداعها يومياً قبل 16:30 بأمانة المصلحة.</li>
+            <li>حظر الانصراف المباشر من الميدان نحو المنزل.</li>
+          </ul>
+        </div>
+
+        <div class="comp-card comp-digital">
+          <div class="comp-title" style="color: #047857;">📱 الخيار (ب): البروتوكول الرقمي المرن لمستخدمي المنصة</div>
+          <ul style="font-size: 9pt; padding-right: 18px; margin: 0; color: #064e3b;">
+            <li><strong>الانصراف الميداني المباشر نحو المنزل:</strong> لا يحتاج المفتش للرجوع لمقر المديرية بحي المعبودة أو قطع عشرات الكيلومترات في المساء؛ يسجل انصرافه من نقطة المعاينة الأخيرة مباشرة!</li>
+            <li><strong>إعفاء تام من العودة في منتصف النهار:</strong> حرية التنقل وتناول الغداء في قطاع التفتيش.</li>
+            <li><strong>توليد التقارير والمحاضر آلياً (PDF):</strong> بنقرة زر واحدة دون كتابة يدوية مرهقة.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="success-box">
+        <strong>النتيجة الميدانية الحتمية (سيكولوجية الموظف):</strong><br>
+        المفتش الذي كان يحتج برفض التطبيق، عندما يعلم أنه مجبر على ركوب سيارته والعودة للمقر 3 مرات يومياً لتوقيع الدفتر وكتابة الأوراق، <strong>سيأتي راكضاً لمكتب المستخدمين ويطلب تثبيت التطبيق على هاتفه فوراً</strong> طمعاً في ميزة الانصراف الميداني نحو البيت!
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Section 3 -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-icon">3</div>
+      <h2>سقوط حيلة "ترك الهاتف عند التاجر أو في البيت": السيكولوجيا والتقنية معاً!</h2>
+    </div>
+    <div class="section-body">
+      <p>
+        عندما يُصطب التطبيق على <strong>الهاتف الشخصي اليومي للمفتش</strong>، تحدث نقلة نوعية في معادلة مكافحة التحايل:
+      </p>
+
+      <table class="official-table">
+        <thead>
+          <tr>
+            <th>حيلة المفتش المحتملة</th>
+            <th>العائق النفسي والشخصي</th>
+            <th>الفخ التقني الذكي في السيرفر</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ترك الهاتف عند صاحب المحل</strong></td>
+            <td><strong>مستحيل نفسياً:</strong> الهاتف الشخصي يضم صوره العائلية، محادثات الواتساب، والاتصالات الخاصة. لا يوجد موظف يترك هاتفه الخاص لدى تاجر غريب لعدة ساعات!</td>
+            <td><strong>قفل النشاط المسائي:</strong> الانصراف الميداني يتطلب إيداع معاينة حقيقية بعد الساعة 13:30، والتاجر لا يستطيع فحص محلات منافسيه.</td>
+          </tr>
+          <tr>
+            <td><strong>ترك الهاتف في البيت مع الزوجة أو الابن</strong></td>
+            <td>الزوجة أو الابن لا يستطيعون الانتقال إلى وسط المدينة أو المحلات لإجراء تفتيش ميداني.</td>
+            <td><strong>خوارزمية انشطار الفرقة:</strong> هاتف زميله المرافق في الميدان بينما هاتفه في البيت (فارق مسافة 8 كم) -> يُطلق السيرفر فوراً إنذار انشطار فرقة رقابية!</td>
+          </tr>
+          <tr>
+            <td><strong>تخصيص هاتف ثانوي رخيص (Burner Phone)</strong></td>
+            <td>مكلف للمفتش ويضطر لشراء هاتف وشريحة خصيصاً للتلاعب.</td>
+            <td><strong>الاتصال المباشر الفجائي + كاشف الركود:</strong> الهاتف الثانوي الموضوع على مكتب بالبيت يعطي قراءة تسارع 0.00G، والاتصال به يجيب عنه شخص آخر أو يكون مغلقاً فيثبت الغياب فوراً!</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Section 4 -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-icon">4</div>
+      <h2>الآليات التقنية الذكية المبرمجة بالسيرفر (صفر أعباء / صفر تكلفة)</h2>
+    </div>
+    <div class="section-body">
+      <div class="mechanism-grid">
+        <div class="mechanism-item">
+          <h4>🔒 1. قفل الانصراف المسائي الإلزامي</h4>
+          <p>
+            يرفض السيرفر تسجيل الانصراف الميداني بعد 15:00 ما لم يكن المفتش قد سجل <strong>محضر معاينة حقيقي بعد 13:30</strong>، أو انصرف حضورياً من أحد المقرات الإدارية الثمانية الرسمية.
+          </p>
+        </div>
+
+        <div class="mechanism-item">
+          <h4>📡 2. خوارزمية انشطار الفرقة (Cross-Brigade)</h4>
+          <p>
+            تتبع المسافة بين هاتفي رئيس الفرقة والعون المرافق. إذا زادت المسافة بينهما عن 300 متر لأكثر من 15 دقيقة، يُسجل السيرفر إنذاراً للمدير: <strong>"شبهة انشطار فرقة وغياب أحد العضوين"</strong>.
+          </p>
+        </div>
+
+        <div class="mechanism-item">
+          <h4>📉 3. كاشف ركود الهاتف والجمود الحركي</h4>
+          <p>
+            قراءة مستشعر التسارع (Accelerometer). إذا سجل الهاتف سكوناً تاماً (0.00G) لأكثر من ساعتين في نفس المكان بعد الظهر، يُطلق النظام تنبيه <strong>"هاتف مهجور / غير محمول"</strong>.
+          </p>
+        </div>
+
+        <div class="mechanism-item">
+          <h4>⚡ 4. التكليف التفتيشي الطارئ الفجائي</h4>
+          <p>
+            يملك المدير أو رئيس المصلحة زراً لإرسال أمر تدخل فوري في الساعة 14:45 مع مهلة 25 دقيقة لتسجيل أول محضر. يستحيل على الشخص غير المؤهل المتواجد مع الهاتف تنفيذ المهمة.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Legal Form -->
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-icon">5</div>
+      <h2>استمارة الانخراط الطوعي للمفتش (نموذج الحماية القانونية للإدارة)</h2>
+    </div>
+    <div class="section-body">
+      <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 12px 16px; font-size: 9.5pt;">
+        <div style="text-align: center; font-weight: bold; margin-bottom: 8px; font-family: 'Cairo', sans-serif; color: #881337;">
+          استمارة اختيار نظام العمل الميداني الرقمي المرن
+        </div>
+        <p>
+          أنا الموقع أسفله: ................................................ الرتبة: ....................................... المصلحة: ....................................<br>
+          أصرح برغبتي الشخصية والطوعية الكاملة في اعتماد المنصة الرقمية الرسمية (DCW-SETIF-TRACKER) على هاتفي النقال، وذلك للاستفادة من الامتيازات والتسهيلات الإدارية التالية:
+        </p>
+        <ol style="margin-bottom: 8px; padding-right: 20px;">
+          <li>الاستفادة من ميزة الانصراف الميداني المباشر نحو مقر السكن دون إلزامية العودة لمقر المديرية مساءً.</li>
+          <li>الإعفاء من الحضور الشخصي في منتصف النهار لتأشير السجلات الورقية.</li>
+          <li>التوليد الآلي للمحاضر والتقارير الرقابية الرسمية دون الحاجة للكتابة اليدوية.</li>
+        </ol>
+        <p style="margin: 0; font-size: 8.5pt; color: #64748b;">
+          * ملاحظة: هذا الاختيار طوعي ويسقط أي مطالبة بتجهيزات إضافية، مع الالتزام التام بضوابط الانضباط ومواقيت العمل المحددة في الأمر 06-03.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Signatures Section -->
+  <div class="signature-grid">
+    <div class="sig-box">
+      <div class="sig-title">رئيس مكتب المستخدمين</div>
+      <div class="sig-name">عصماني سعاد</div>
+      <div class="sig-status">متابعة الانضباط واستمارات الاختيار</div>
+    </div>
+
+    <div class="sig-box">
+      <div class="sig-title">رئيس مصلحة الإدارة والوسائل</div>
+      <div class="sig-name">لعلامي كمال</div>
+      <div class="sig-status">الوصاية الإدارية وتنظيم المرفق العام</div>
+    </div>
+
+    <div class="sig-box">
+      <div class="sig-title">المدير الولائي للتجارة</div>
+      <div class="sig-name">حمادي رشيد</div>
+      <div class="sig-status">الآمر بالصرف والمسؤول الأول</div>
+    </div>
+  </div>
+
+</body>
+</html>
