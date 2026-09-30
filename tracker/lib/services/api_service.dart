@@ -928,6 +928,54 @@ class ApiService {
     } catch (_) {}
   }
 
+  /// 🛰️ تسجيل نقطة GPS دورية للمفتش (كل 5 دقائق أثناء الحضور)
+  Future<void> recordLocation({
+    required int employeeId,
+    required double latitude,
+    required double longitude,
+    double accuracy = 0,
+    double speed = 0,
+  }) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/attendance/location'),
+        headers: _headers,
+        body: jsonEncode({
+          'employeeId': employeeId,
+          'latitude': latitude,
+          'longitude': longitude,
+          'accuracy': accuracy,
+          'speed': speed,
+        }),
+      ).timeout(const Duration(seconds: 8));
+    } catch (_) {
+      // صامت — لا نوقف التطبيق بسبب فشل تسجيل نقطة GPS
+    }
+  }
+
+  /// 🗺️ استرجاع مسار GPS الكامل لمفتش محدد (للخريطة الحية)
+  Future<List<Map<String, dynamic>>> getInspectorTrail(
+    int employeeId, {
+    String? date,
+  }) async {
+    try {
+      final params = <String, String>{};
+      if (date != null) params['date'] = date;
+      final uri = Uri.parse('$baseUrl/attendance/trail/$employeeId')
+          .replace(queryParameters: params.isEmpty ? null : params);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        return (body['trail'] as List? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> getAttendance({
     String? date,
     int? employeeId,

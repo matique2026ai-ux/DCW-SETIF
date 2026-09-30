@@ -1612,6 +1612,27 @@ async function ensureTables() {
       Notes NTEXT NULL,
       CreatedAt DATETIME DEFAULT GETDATE()
     )`,
+
+    // 18. TrackerLocationHistory (مسار GPS الدوري للمفتشين الميدانيين — كل 5 دقائق)
+    pg ? `CREATE TABLE IF NOT EXISTS "TrackerLocationHistory" (
+      "Id" SERIAL PRIMARY KEY,
+      "EmployeeId" INT NOT NULL,
+      "Latitude" DECIMAL(10,7) NOT NULL,
+      "Longitude" DECIMAL(10,7) NOT NULL,
+      "Accuracy" DECIMAL(8,2) DEFAULT 0,
+      "Speed" DECIMAL(8,2) DEFAULT 0,
+      "Date" DATE DEFAULT CURRENT_DATE,
+      "RecordedAt" TIMESTAMP DEFAULT NOW()
+    )` : `CREATE TABLE IF NOT EXISTS TrackerLocationHistory (
+      Id INT IDENTITY(1,1) PRIMARY KEY,
+      EmployeeId INT NOT NULL,
+      Latitude DECIMAL(10,7) NOT NULL,
+      Longitude DECIMAL(10,7) NOT NULL,
+      Accuracy DECIMAL(8,2) DEFAULT 0,
+      Speed DECIMAL(8,2) DEFAULT 0,
+      Date DATE DEFAULT GETDATE(),
+      RecordedAt DATETIME DEFAULT GETDATE()
+    )`,
   ];
 
   for (const sql of tables) {
@@ -1653,6 +1674,9 @@ async function ensureTables() {
       await db.query(`ALTER TABLE "TrackerAttendance" ADD COLUMN IF NOT EXISTS "DeviceId" VARCHAR(150)`);
       await db.query(`ALTER TABLE "TrackerAttendance" ADD COLUMN IF NOT EXISTS "EarlyReason" TEXT`);
       await db.query(`ALTER TABLE "TrackerAttendance" ADD COLUMN IF NOT EXISTS "IsWithinGeofence" BOOLEAN DEFAULT true`);
+
+      // Index for fast trail queries
+      await db.query(`CREATE INDEX IF NOT EXISTS idx_location_history_emp_date ON "TrackerLocationHistory" ("EmployeeId", "Date", "RecordedAt")`);
     } catch (e) {
       console.log('Postgres columns migration check:', e.message);
     }

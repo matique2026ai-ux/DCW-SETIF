@@ -1126,4 +1126,141 @@ router.delete('/employee/:empId', async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────
+// 🛰️ مسار GPS الدوري — تسجيل موقع المفتش كل 5 دقائق لرسم مساره
+// POST /api/attendance/location
+// ─────────────────────────────────────────────────────────────────
+router.post('/location', async (req, res) => {
+  try {
+    const db = await getConnection();
+    const pg = isPostgres();
+    const today = getTodayAlgeria();
+
+    const { employeeId, latitude, longitude, accuracy, speed } = req.body;
+    if (!employeeId || latitude == null || longitude == null) {
+      return res.status(400).json({ error: 'employeeId, latitude, longitude مطلوبة' });
+    }
+
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    const acc = parseFloat(accuracy || 0);
+    const spd = parseFloat(speed || 0);
+
+    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+      return res.status(400).json({ error: 'إحداثيات GPS غير صالحة' });
+    }
+
+    // تحقق أن المفتش سجل حضوره اليوم ولم ينصرف بعد
+    const attCheck = await db.query(
+      pg
+        ? `SELECT "Id", "IsCheckedOut" FROM "TrackerAttendance" WHERE "EmployeeId" = $1 AND "Date" = $2 LIMIT 1`
+        : `SELECT TOP 1 Id, IsCheckedOut FROM TrackerAttendance WHERE EmployeeId = ? AND Date = ?`,
+      [parseInt(employeeId), today]
+    );
+
+    if (!attCheck || attCheck.length === 0) {
+      return res.status(403).json({ error: 'لا يمكن تسجيل موقع GPS — المفتش لم يسجل حضوره بعد' });
+    }
+
+    const isOut = attCheck[0].IsCheckedOut === true || attCheck[0].IsCheckedOut === 1 ||
+                  attCheck[0].ischeckedout === true || attCheck[0].ischeckedout === 1;
+    if (isOut) {
+      return res.status(403).json({ error: 'المفتش منصرف — لا يمكن تسجيل مواقع جديدة' });
+    }
+
+    // ⚡ تجنب التكرار: لا تسجل نقطة إذا كانت المسافة عن آخر نقطة < 20 متر
+    const lastPt = await db.query(
+      pg
+        ? `SELECT "Latitude", "Longitude" FROM "TrackerLocationHistory" WHERE "EmployeeId" = $1 AND "Date" = $2 ORDER BY "RecordedAt" DESC LIMIT 1`
+        : `SELECT TOP 1 Latitude, Longitude FROM TrackerLocationHistory WHERE EmployeeId = ? AND Date = ? ORDER BY RecordedAt DESC`,
+      [parseInt(employeeId), today]
+    );
+
+    if (lastPt && lastPt.length > 0) {
+      const lLat = parseFloat(lastPt[0].Latitude || lastPt[0].latitude || 0);
+      const lLng = parseFloat(lastPt[0].Longitude || lastPt[0].longitude || 0);
+      if (lLat && lLng) {
+        // معادلة هافرسين السريعة
+        const R = 6371000;
+        const dLat = (lat - lLat) * Math.PI / 180;
+        const dLng = (lng - lLng) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lLat * Math.PI/180) * Math.cos(lat * Math.PI/180) * Math.sin(dLng/2)**2;
+        const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        if (dist < 20) {
+          return res.json({ success: true, skipped: true, message: 'نقطة مكررة — المسافة < 20م' });
+        }
+      }
+    }
+
+    await db.query(
+      pg
+        ? `INSERT INTO "TrackerLocationHistory" ("EmployeeId","Latitude","Longitude","Accuracy","Speed","Date","RecordedAt") VALUES ($1,$2,$3,$4,$5,$6,NOW())`
+        : `INSERT INTO TrackerLocationHistory (EmployeeId,Latitude,Longitude,Accuracy,Speed,Date,RecordedAt) VALUES (?,?,?,?,?,?,GETDATE())`,
+      [parseInt(employeeId), lat, lng, acc, spd, today]
+    );
+
+    res.json({ success: true, message: 'تم تسجيل نقطة GPS بنجاح ✅' });
+  } catch (err) {
+    console.error('Location record error:', err.message);
+    res.status(500).json({ error: 'خطأ في تسجيل موقع GPS: ' + err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────
+// 🗺️ استرجاع مسار GPS الكامل لمفتش محدد (لخريطة المدير)
+// GET /api/attendance/trail/:employeeId?date=YYYY-MM-DD
+// ─────────────────────────────────────────────────────────────────
+router.get('/trail/:employeeId', async (req, res) => {
+  try {
+    const db = await getConnection();
+    const pg = isPostgres();
+    const empId = parseInt(req.params.employeeId, 10);
+    const date = req.query.date || getTodayAlgeria();
+
+    if (isNaN(empId)) {
+      return res.status(400).json({ error: 'معرف المفتش غير صالح' });
+    }
+
+    const rows = await db.query(
+      pg
+        ? `SELECT "Latitude", "Longitude", "Accuracy", "Speed", "RecordedAt"
+           FROM "TrackerLocationHistory"
+           WHERE "EmployeeId" = $1 AND "Date" = $2
+           ORDER BY "RecordedAt" ASC`
+        : `SELECT Latitude, Longitude, Accuracy, Speed, RecordedAt
+           FROM TrackerLocationHistory
+           WHERE EmployeeId = ? AND Date = ?
+           ORDER BY RecordedAt ASC`,
+      [empId, date]
+    );
+
+    const trail = (rows || []).map(r => ({
+      latitude: parseFloat(r.Latitude || r.latitude),
+      longitude: parseFloat(r.Longitude || r.longitude),
+      accuracy: parseFloat(r.Accuracy || r.accuracy || 0),
+      speed: parseFloat(r.Speed || r.speed || 0),
+      recordedAt: r.RecordedAt || r.recordedat,
+    }));
+
+    res.json({ employeeId: empId, date, count: trail.length, trail });
+  } catch (err) {
+    console.error('Trail fetch error:', err.message);
+    res.status(500).json({ error: 'خطأ في استرجاع مسار GPS: ' + err.message });
+  }
+});
+
+// Admin: Delete attendance by employeeId
+router.delete('/employee/:empId', async (req, res) => {
+  try {
+    const empId = parseInt(req.params.empId, 10);
+    const db = await getConnection();
+    const pg = isPostgres();
+    await db.query(pg ? 'DELETE FROM "TrackerAttendance" WHERE "EmployeeId" = $1' : 'DELETE FROM TrackerAttendance WHERE EmployeeId = ?', [empId]);
+    res.json({ success: true, message: 'تم حذف سجلات الحضور للموظف بنجاح ✅' });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في حذف سجلات الحضور: ' + err.message });
+  }
+});
+
 module.exports = router;
+

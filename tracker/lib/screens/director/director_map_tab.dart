@@ -29,6 +29,9 @@ class _DirectorMapTabState extends State<DirectorMapTab>
   final MapController _mapController = MapController();
   String _selectedMapStyle = 'satellite'; // 'satellite', 'osm'
   bool _isLegendExpanded = false;
+  Map<String, dynamic>? _selectedInspectorForTrack;
+  // 🛰️ كاش نقاط GPS الدورية لكل مفتش (employeeId → قائمة نقاط)
+  final Map<int, List<Map<String, dynamic>>> _locationTrailCache = {};
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -77,11 +80,39 @@ class _DirectorMapTabState extends State<DirectorMapTab>
         setState(() {
           _mapData = cleanData;
           _isLoading = false;
+          if (_selectedInspectorForTrack != null) {
+            final trackId = _selectedInspectorForTrack!['employeeId'] ??
+                _selectedInspectorForTrack!['Id'] ??
+                _selectedInspectorForTrack!['id'];
+            try {
+              _selectedInspectorForTrack = cleanData.firstWhere(
+                (e) => (e['employeeId'] ?? e['Id'] ?? e['id']) == trackId,
+              );
+            } catch (_) {}
+            // 🛰️ تحديث مسار GPS المفتش المحدد عند كل دورة
+            if (silent && trackId != null) {
+              _loadInspectorTrail(trackId is int ? trackId : int.tryParse(trackId.toString()) ?? 0);
+            }
+          }
         });
       }
     } catch (e) {
       if (mounted && !silent) setState(() => _isLoading = false);
     }
+  }
+
+  /// 🛰️ تحميل مسار GPS الدوري لمفتش محدد وتخزينه في الكاش
+  Future<void> _loadInspectorTrail(int employeeId) async {
+    if (employeeId <= 0) return;
+    try {
+      final api = context.read<AuthService>().api;
+      final trail = await api.getInspectorTrail(employeeId);
+      if (mounted) {
+        setState(() {
+          _locationTrailCache[employeeId] = trail;
+        });
+      }
+    } catch (_) {}
   }
 
   void _zoomIn() {
@@ -241,6 +272,10 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       }
     }
 
+    final List<LatLng> activeTrackPoints = _selectedInspectorForTrack != null
+        ? _getTrackPoints(_selectedInspectorForTrack!)
+        : const <LatLng>[];
+
     return Stack(
       children: [
         FlutterMap(
@@ -282,6 +317,32 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 );
               }).toList(),
             ),
+
+            // 🗺️ Trajectory Route for Selected Inspector (On-Demand only)
+            if (_selectedInspectorForTrack != null && activeTrackPoints.length >= 2) ...[
+              PolylineLayer(
+                polylines: [
+                  // Outer Glow Line
+                  Polyline(
+                    points: activeTrackPoints,
+                    strokeWidth: 6.5,
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                  ),
+                  // Sharp Core Route
+                  Polyline(
+                    points: activeTrackPoints,
+                    strokeWidth: 3.5,
+                    color: const Color(0xFFD4AF37),
+                  ),
+                ],
+              ),
+            ],
+
+            // Chronological Waypoint Badges for Selected Inspector
+            if (_selectedInspectorForTrack != null)
+              MarkerLayer(
+                markers: _buildTrackWaypointMarkers(_selectedInspectorForTrack!, loc),
+              ),
 
             MarkerLayer(
               markers: [
@@ -389,12 +450,22 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                         markerColor = const Color(0xFF10B981);
                       }
 
+                      final isSelectedForTrack = _selectedInspectorForTrack != null &&
+                          (_selectedInspectorForTrack!['employeeId'] ?? _selectedInspectorForTrack!['Id'] ?? _selectedInspectorForTrack!['id']) ==
+                              (emp['employeeId'] ?? emp['Id'] ?? emp['id']);
+
                       return Marker(
                         point: LatLng(lat, lng),
                         width: 58,
                         height: 58,
                         child: GestureDetector(
-                          onTap: () => _showInspectorModal(emp),
+                          onTap: () {
+                            if (isSelectedForTrack) {
+                              _showInspectorModal(emp);
+                            } else {
+                              _focusOnInspectorTrack(emp);
+                            }
+                          },
                           child: AnimatedBuilder(
                             animation: _pulseAnimation,
                             builder: (context, _) {
@@ -402,22 +473,25 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                               return Stack(
                                 alignment: Alignment.center,
                                 children: [
-                                  if (!isOut)
+                                  if (!isOut || isSelectedForTrack)
                                     Container(
-                                      width: 44 * pVal,
-                                      height: 44 * pVal,
+                                      width: (isSelectedForTrack ? 48 : 44) * pVal,
+                                      height: (isSelectedForTrack ? 48 : 44) * pVal,
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: markerColor.withValues(alpha: 0.22 * (1.35 - (pVal - 0.9))),
+                                        color: (isSelectedForTrack ? const Color(0xFFD4AF37) : markerColor)
+                                            .withValues(alpha: 0.25 * (1.35 - (pVal - 0.9))),
                                         border: Border.all(
-                                          color: markerColor.withValues(alpha: 0.65 * (1.35 - (pVal - 0.9))),
-                                          width: 1.6,
+                                          color: (isSelectedForTrack ? const Color(0xFFD4AF37) : markerColor)
+                                              .withValues(alpha: 0.7 * (1.35 - (pVal - 0.9))),
+                                          width: isSelectedForTrack ? 2.2 : 1.6,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: markerColor.withValues(alpha: 0.35 * (1.35 - (pVal - 0.9))),
-                                            blurRadius: 10 * pVal,
-                                            spreadRadius: 2,
+                                            color: (isSelectedForTrack ? const Color(0xFFD4AF37) : markerColor)
+                                                .withValues(alpha: 0.4 * (1.35 - (pVal - 0.9))),
+                                            blurRadius: (isSelectedForTrack ? 14 : 10) * pVal,
+                                            spreadRadius: isSelectedForTrack ? 3 : 2,
                                           ),
                                         ],
                                       ),
@@ -426,20 +500,25 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                     width: 42,
                                     height: 42,
                                     decoration: BoxDecoration(
-                                      color: markerColor,
+                                      color: isSelectedForTrack ? const Color(0xFFD4AF37) : markerColor,
                                       shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 2.2),
+                                      border: Border.all(
+                                        color: isSelectedForTrack ? Colors.amberAccent : Colors.white,
+                                        width: isSelectedForTrack ? 3.0 : 2.2,
+                                      ),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: markerColor.withValues(alpha: 0.6),
-                                          blurRadius: 8,
-                                          spreadRadius: 1.5,
+                                          color: isSelectedForTrack
+                                              ? const Color(0xFFD4AF37).withValues(alpha: 0.8)
+                                              : markerColor.withValues(alpha: 0.6),
+                                          blurRadius: isSelectedForTrack ? 12 : 8,
+                                          spreadRadius: isSelectedForTrack ? 2.5 : 1.5,
                                         ),
                                       ],
                                     ),
                                     child: Icon(
-                                      isOut ? Icons.exit_to_app : Icons.person,
-                                      color: Colors.white,
+                                      isOut ? Icons.exit_to_app : (isSelectedForTrack ? Icons.route : Icons.person),
+                                      color: isSelectedForTrack ? Colors.black87 : Colors.white,
                                       size: isOut ? 20 : 22,
                                     ),
                                   ),
@@ -613,6 +692,17 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           right: 16,
           child: _buildMapLegend(loc),
         ),
+
+        // 🗺️ Floating Active Trajectory Tracking Pill (When an inspector is selected)
+        if (_selectedInspectorForTrack != null)
+          Positioned(
+            bottom: 84,
+            left: 16,
+            right: 16,
+            child: Center(
+              child: _buildActiveTrackPill(loc),
+            ),
+          ),
       ],
     );
   }
@@ -686,6 +776,11 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       const Color(0xFFD4AF37),
                       loc.isArabic ? 'نطاق البصمة (المقرات)' : 'Périmètre GPS officiel',
                       isCircle: true,
+                    ),
+                    const SizedBox(height: 5),
+                    _legendItem(
+                      const Color(0xFFD4AF37),
+                      loc.isArabic ? 'مسار المفتش (عند النقر)' : 'Itinéraire (sélection)',
                     ),
                   ],
                 ),
@@ -1020,12 +1115,11 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                       ElevatedButton.icon(
                                         onPressed: () {
                                           Navigator.pop(ctx);
-                                          _mapController.move(LatLng(lat, lng), 16.5);
-                                          _showInspectorModal(emp);
+                                          _focusOnInspectorTrack(emp);
                                         },
-                                        icon: const Icon(Icons.my_location, size: 14, color: Colors.black87),
+                                        icon: const Icon(Icons.route, size: 14, color: Colors.black87),
                                         label: Text(
-                                          loc.isArabic ? 'الخريطة 🗺️' : 'Carte 🗺️',
+                                          loc.isArabic ? 'رسم المسار 🗺️' : 'Itinéraire 🗺️',
                                           style: const TextStyle(
                                             fontFamily: 'Tajawal',
                                             fontSize: 11,
@@ -1155,6 +1249,445 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     }
   }
 
+  List<LatLng> _getTrackPoints(Map<String, dynamic> emp) {
+    final empId = emp['employeeId'] ?? emp['Id'] ?? emp['id'];
+    final int? resolvedId = empId is int ? empId : int.tryParse(empId?.toString() ?? '');
+
+    // 🛰️ نقاط GPS الدورية من الكاش (مرتبة زمنياً)
+    final List<Map<String, dynamic>> trailPts =
+        (resolvedId != null && _locationTrailCache.containsKey(resolvedId))
+            ? List<Map<String, dynamic>>.from(_locationTrailCache[resolvedId]!)
+            : [];
+
+    // نقاط المعاينات مرتبة زمنياً
+    final rawVisits = (emp['visits'] as List?) ?? [];
+    final List<Map<String, dynamic>> sortedVisits = [];
+    for (final v in rawVisits) {
+      if (v is Map) sortedVisits.add(Map<String, dynamic>.from(v));
+    }
+    sortedVisits.sort((a, b) {
+      final tA = a['time']?.toString() ?? '';
+      final tB = b['time']?.toString() ?? '';
+      return tA.compareTo(tB);
+    });
+
+    // دمج جميع النقاط في قائمة واحدة مرتبة زمنياً
+    final List<Map<String, dynamic>> allPoints = [];
+
+    // أ) نقطة انطلاق الحضور (CheckIn)
+    final double? cLat = (emp['checkInLatitude'] is num)
+        ? (emp['checkInLatitude'] as num).toDouble()
+        : double.tryParse(emp['checkInLatitude']?.toString() ?? '');
+    final double? cLng = (emp['checkInLongitude'] is num)
+        ? (emp['checkInLongitude'] as num).toDouble()
+        : double.tryParse(emp['checkInLongitude']?.toString() ?? '');
+    if (cLat != null && cLng != null && (cLat != 0 || cLng != 0)) {
+      allPoints.add({'lat': cLat, 'lng': cLng, 'time': emp['checkInTime']?.toString() ?? '00:00:00'});
+    }
+
+    // ب) نقاط GPS الدورية من locationHistory
+    for (final t in trailPts) {
+      final double? tLat = (t['latitude'] is num)
+          ? (t['latitude'] as num).toDouble()
+          : double.tryParse(t['latitude']?.toString() ?? '');
+      final double? tLng = (t['longitude'] is num)
+          ? (t['longitude'] as num).toDouble()
+          : double.tryParse(t['longitude']?.toString() ?? '');
+      if (tLat != null && tLng != null && (tLat != 0 || tLng != 0)) {
+        allPoints.add({'lat': tLat, 'lng': tLng, 'time': t['recordedAt']?.toString() ?? ''});
+      }
+    }
+
+    // ج) نقاط المعاينات الميدانية
+    for (final v in sortedVisits) {
+      final double? vLat = (v['latitude'] is num)
+          ? (v['latitude'] as num).toDouble()
+          : double.tryParse(v['latitude']?.toString() ?? '');
+      final double? vLng = (v['longitude'] is num)
+          ? (v['longitude'] as num).toDouble()
+          : double.tryParse(v['longitude']?.toString() ?? '');
+      if (vLat != null && vLng != null && (vLat != 0 || vLng != 0)) {
+        allPoints.add({'lat': vLat, 'lng': vLng, 'time': v['time']?.toString() ?? ''});
+      }
+    }
+
+    // د) نقطة الانصراف أو الموقع الحالي
+    final isOut = emp['isCheckedOut'] == true;
+    double? endLat;
+    double? endLng;
+    String endTime = '23:59:59';
+    if (isOut) {
+      endLat = (emp['checkOutLatitude'] is num)
+          ? (emp['checkOutLatitude'] as num).toDouble()
+          : double.tryParse(emp['checkOutLatitude']?.toString() ?? '');
+      endLng = (emp['checkOutLongitude'] is num)
+          ? (emp['checkOutLongitude'] as num).toDouble()
+          : double.tryParse(emp['checkOutLongitude']?.toString() ?? '');
+      endTime = emp['checkOutTime']?.toString() ?? '23:59:59';
+    } else {
+      endLat = (emp['latitude'] is num)
+          ? (emp['latitude'] as num).toDouble()
+          : double.tryParse(emp['latitude']?.toString() ?? '');
+      endLng = (emp['longitude'] is num)
+          ? (emp['longitude'] as num).toDouble()
+          : double.tryParse(emp['longitude']?.toString() ?? '');
+    }
+    if (endLat != null && endLng != null && (endLat != 0 || endLng != 0)) {
+      allPoints.add({'lat': endLat, 'lng': endLng, 'time': endTime});
+    }
+
+    // ترتيب جميع النقاط زمنياً
+    allPoints.sort((a, b) => (a['time'] as String).compareTo(b['time'] as String));
+
+    // تحويل إلى LatLng مع إزالة التكرارات (< 5 متر)
+    final List<LatLng> points = [];
+    for (final p in allPoints) {
+      final pt = LatLng(p['lat'] as double, p['lng'] as double);
+      if (points.isEmpty) {
+        points.add(pt);
+      } else {
+        final last = points.last;
+        final dLat = (last.latitude - pt.latitude).abs();
+        final dLng = (last.longitude - pt.longitude).abs();
+        // تجاهل النقاط المتقاربة جداً (< 5م)
+        if (dLat > 0.000045 || dLng > 0.000045) {
+          points.add(pt);
+        }
+      }
+    }
+
+    return points;
+  }
+
+  void _focusOnInspectorTrack(Map<String, dynamic> emp) {
+    final loc = AppLocalizations.of(context);
+    final name = (emp['name'] ?? (loc.isArabic ? 'المفتش' : 'Inspecteur')).toString();
+
+    // 🛰️ تحميل مسار GPS الدوري فوراً عند اختيار المفتش
+    final empId = emp['employeeId'] ?? emp['Id'] ?? emp['id'];
+    final int? resolvedId = empId is int ? empId : int.tryParse(empId?.toString() ?? '');
+    if (resolvedId != null && resolvedId > 0) {
+      _loadInspectorTrail(resolvedId);
+    }
+
+    setState(() {
+      _selectedInspectorForTrack = emp;
+    });
+
+    // نحسب النقاط الحالية لتحديد رسالة الربط (تحتسب بدون trail cache أولاً)
+    final points = _getTrackPoints(emp);
+
+    if (points.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: const Color(0xFF2D1035),
+          content: Row(
+            children: [
+              const Icon(Icons.info_outline, color: Color(0xFFD4AF37), size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  loc.isArabic
+                      ? 'العون ($name) لم يسجل حضوره اليوم بعد، لا تتوفر أي محطات مسجلة.'
+                      : 'L\'agent ($name) n\'a pas encore de points enregistrés aujourd\'hui.',
+                  style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (points.length == 1) {
+      _mapController.move(points.first, 16.0);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: const Color(0xFF1E0B26),
+          duration: const Duration(seconds: 3),
+          content: Text(
+            loc.isArabic
+                ? '📍 تم تحديد موقع انطلاق المفتش ($name) — محطة واحدة مسجلة (حضور بالمقر)'
+                : '📍 Point de départ de l\'agent ($name) localisé (1 station)',
+            style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+    } else {
+      try {
+        final bounds = LatLngBounds.fromPoints(points);
+        _mapController.fitCamera(
+          CameraFit.bounds(
+            bounds: bounds,
+            padding: const EdgeInsets.all(85),
+          ),
+        );
+      } catch (_) {
+        _mapController.move(points.last, 15.5);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: const Color(0xFF1E0B26),
+          duration: const Duration(seconds: 3),
+          content: Row(
+            children: [
+              const Icon(Icons.route, color: Color(0xFFD4AF37), size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  loc.isArabic
+                      ? '🗺️ تم رسم مسار الجولة الميدانية للمفتش ($name) — ${points.length} محطات'
+                      : '🗺️ Itinéraire terrain tracé pour ($name) — ${points.length} stations',
+                  style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+  }
+
+  List<Marker> _buildTrackWaypointMarkers(Map<String, dynamic> emp, AppLocalizations loc) {
+    final List<Marker> markers = [];
+    final name = (emp['name'] ?? (loc.isArabic ? 'المفتش' : 'Inspecteur')).toString();
+
+    // 1. Check-in Start Marker (Emerald Green #1)
+    final double? cLat = (emp['checkInLatitude'] is num)
+        ? (emp['checkInLatitude'] as num).toDouble()
+        : double.tryParse(emp['checkInLatitude']?.toString() ?? '');
+    final double? cLng = (emp['checkInLongitude'] is num)
+        ? (emp['checkInLongitude'] as num).toDouble()
+        : double.tryParse(emp['checkInLongitude']?.toString() ?? '');
+
+    if (cLat != null && cLng != null && (cLat != 0 || cLng != 0)) {
+      final checkInStr = emp['checkInTime'] != null ? _formatAttendanceTime(emp['checkInTime']) : '';
+      markers.add(
+        Marker(
+          point: LatLng(cLat, cLng),
+          width: 36,
+          height: 36,
+          child: Tooltip(
+            message: loc.isArabic ? 'المحطة 1: انطلاق بالمقر ($checkInStr)' : 'Étape 1: Départ ($checkInStr)',
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black54, blurRadius: 6, spreadRadius: 1),
+                ],
+              ),
+              child: const Center(
+                child: Text(
+                  '1',
+                  style: TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // 2. Visits Markers (Numbered 2, 3, 4...)
+    final rawVisits = (emp['visits'] as List?) ?? [];
+    final List<Map<String, dynamic>> sortedVisits = [];
+    for (final v in rawVisits) {
+      if (v is Map) {
+        sortedVisits.add(Map<String, dynamic>.from(v));
+      }
+    }
+    sortedVisits.sort((a, b) {
+      final tA = a['time']?.toString() ?? '';
+      final tB = b['time']?.toString() ?? '';
+      return tA.compareTo(tB);
+    });
+
+    for (int i = 0; i < sortedVisits.length; i++) {
+      final v = sortedVisits[i];
+      final double? vLat = (v['latitude'] is num)
+          ? (v['latitude'] as num).toDouble()
+          : double.tryParse(v['latitude']?.toString() ?? '');
+      final double? vLng = (v['longitude'] is num)
+          ? (v['longitude'] as num).toDouble()
+          : double.tryParse(v['longitude']?.toString() ?? '');
+      if (vLat == null || vLng == null || (vLat == 0 && vLng == 0)) continue;
+
+      final int stepNum = (markers.isNotEmpty ? 2 : 1) + i;
+      final String shop = (v['shopName'] ?? (loc.isArabic ? 'محل تجاري' : 'Commerce')).toString();
+      final bool hasViolation = v['violationFound'] == true || v['violationFound'] == 1;
+
+      markers.add(
+        Marker(
+          point: LatLng(vLat, vLng),
+          width: 36,
+          height: 36,
+          child: GestureDetector(
+            onTap: () => _showVisitDetailsModal(v, name),
+            child: Tooltip(
+              message: 'المحطة $stepNum: $shop',
+              child: Container(
+                decoration: BoxDecoration(
+                  color: hasViolation ? const Color(0xFFEF4444) : const Color(0xFFD4AF37),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black54, blurRadius: 6, spreadRadius: 1),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    '$stepNum',
+                    style: TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: hasViolation ? Colors.white : Colors.black,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return markers;
+  }
+
+  Widget _buildActiveTrackPill(AppLocalizations loc) {
+    if (_selectedInspectorForTrack == null) return const SizedBox.shrink();
+    final emp = _selectedInspectorForTrack!;
+    final name = (emp['name'] ?? (loc.isArabic ? 'المفتش' : 'Inspecteur')).toString();
+    final trackPts = _getTrackPoints(emp);
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 580),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF2E1038), Color(0xFF1E0B26)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: const Color(0xFFD4AF37),
+          width: 1.5,
+        ),
+        boxShadow: const [
+          BoxShadow(color: Colors.black87, blurRadius: 16, offset: Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(7),
+            decoration: const BoxDecoration(
+              color: Color(0xFFD4AF37),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.route, color: Colors.black, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      loc.isArabic ? 'مسار الجولة:' : 'Itinéraire:',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        color: Color(0xFFD4AF37),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  loc.isArabic
+                      ? '${trackPts.length} محطات مسجلة اليوم'
+                      : '${trackPts.length} stations enregistrées',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 11,
+                    color: AppTheme.TextSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.center_focus_strong, color: Color(0xFFD4AF37), size: 20),
+            tooltip: loc.isArabic ? 'التركيز على كامل المسار' : 'Recadrer',
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _focusOnInspectorTrack(emp),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => _showInspectorModal(emp),
+            icon: const Icon(Icons.info_outline, size: 14),
+            label: Text(
+              loc.isArabic ? 'التفاصيل والـ QR' : 'Détails & QR',
+              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFD4AF37),
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          const SizedBox(width: 4),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+            tooltip: loc.isArabic ? 'إخفاء المسار' : 'Masquer',
+            visualDensity: VisualDensity.compact,
+            onPressed: () {
+              setState(() => _selectedInspectorForTrack = null);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showInspectorModal(Map<String, dynamic> emp) {
     final loc = AppLocalizations.of(context);
     final String name = (emp['name'] ?? (loc.isArabic ? 'مفتش' : 'Agent')).toString();
@@ -1240,6 +1773,34 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _focusOnInspectorTrack(emp);
+                },
+                icon: const Icon(Icons.route, color: Colors.black87, size: 18),
+                label: Text(
+                  loc.isArabic
+                      ? 'رسم مسار الجولة الميدانية على الخريطة 🗺️'
+                      : 'Tracer l\'itinéraire de la tournée 🗺️',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.black87,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 2,
+                ),
+              ),
             ),
             if (emp['activeProgram'] != null) ...[
               const SizedBox(height: 12),
@@ -1870,8 +2431,6 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                             final bool hasCheckedIn = emp['hasCheckedIn'] == true;
                             final bool isCheckedOut = emp['isCheckedOut'] == true;
                             final visits = (emp['visits'] as List?) ?? [];
-                            final double? lat = (emp['latitude'] is num) ? (emp['latitude'] as num).toDouble() : double.tryParse(emp['latitude']?.toString() ?? '');
-                            final double? lng = (emp['longitude'] is num) ? (emp['longitude'] as num).toDouble() : double.tryParse(emp['longitude']?.toString() ?? '');
 
                             final statusStr = hasCheckedIn
                                 ? (isCheckedOut
@@ -1928,40 +2487,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                 ),
                                 onTap: () {
                                   Navigator.pop(ctx);
-                                  if (lat != null && lng != null && (lat != 0 || lng != 0)) {
-                                    _mapController.move(LatLng(lat, lng), 16);
-                                    _showInspectorModal(emp);
-                                  } else {
-                                    _showInspectorModal(emp);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        behavior: SnackBarBehavior.floating,
-                                        margin: const EdgeInsets.all(16),
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        backgroundColor: const Color(0xFF2D1035),
-                                        content: Row(
-                                          children: [
-                                            const Icon(Icons.info_outline, color: Color(0xFFD4AF37), size: 20),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                loc.isArabic
-                                                    ? 'العون ($name) لم يسجل حضوره اليوم بعد (لا تتوفر إحداثيات GPS مباشرة)'
-                                                    : 'L\'agent ($name) n\'a pas encore pointé aujourd\'hui',
-                                                style: const TextStyle(
-                                                  fontFamily: 'Tajawal',
-                                                  color: Colors.white,
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        duration: const Duration(seconds: 4),
-                                      ),
-                                    );
-                                  }
+                                  _focusOnInspectorTrack(emp);
                                 },
                               ),
                             );

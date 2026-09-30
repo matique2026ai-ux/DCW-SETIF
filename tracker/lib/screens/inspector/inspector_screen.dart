@@ -28,6 +28,7 @@ class InspectorScreen extends StatefulWidget {
 
 class _InspectorScreenState extends State<InspectorScreen> {
   Timer? _pollTimer;
+  Timer? _locationTimer; // 🛰️ مؤقت تسجيل GPS الدوري كل 5 دقائق
   bool _isCheckedIn = false;
   bool _isCheckedOut = false;
   bool _isLoading = false;
@@ -54,6 +55,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
         _loadActiveProgram();
       }
     });
+    // 🛰️ تسجيل GPS الدوري كل 5 دقائق (يبدأ فوراً ثم يتكرر)
+    _locationTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (mounted) _recordLiveLocation();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final auth = context.read<AuthService>();
@@ -66,7 +71,38 @@ class _InspectorScreenState extends State<InspectorScreen> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _locationTimer?.cancel(); // 🛰️ إيقاف مؤقت GPS عند الخروج
     super.dispose();
+  }
+
+  /// 🛰️ تسجيل موقع GPS الدوري — صامت تماماً، يعمل فقط عند الحضور
+  Future<void> _recordLiveLocation() async {
+    if (!_isCheckedIn || _isCheckedOut) return;
+    try {
+      final auth = context.read<AuthService>();
+      final user = auth.currentUser;
+      if (user == null) return;
+      final empId = user.employeeId ?? user.id;
+      if (empId == null) return;
+
+      final perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return;
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 6),
+      );
+
+      await auth.api.recordLocation(
+        employeeId: empId,
+        latitude: pos.latitude,
+        longitude: pos.longitude,
+        accuracy: pos.accuracy,
+        speed: pos.speed,
+      );
+    } catch (_) {
+      // صامت — لا نُظهر أي خطأ للمفتش
+    }
   }
 
   String _formatTime(dynamic val) {
