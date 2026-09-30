@@ -263,12 +263,28 @@ class _AdminScreenState extends State<AdminScreen>
                         child: Text('مصلحة المنافسة والتحقيقات الاقتصادية'),
                       ),
                       DropdownMenuItem(
+                        value: 'مصلحة ملاحظة السوق وضبط التموين والأسعار',
+                        child: Text('مصلحة ملاحظة السوق وضبط التموين والأسعار'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'مصلحة المنازعات والشؤون القانونية',
+                        child: Text('مصلحة المنازعات والشؤون القانونية'),
+                      ),
+                      DropdownMenuItem(
                         value: 'مصلحة الإدارة والوسائل',
                         child: Text('مصلحة الإدارة والوسائل'),
                       ),
                       DropdownMenuItem(
-                        value: 'الأمانة العامة / ديوان المدير',
-                        child: Text('الأمانة العامة / ديوان المدير'),
+                        value: 'مكتب المستخدمين',
+                        child: Text('مكتب المستخدمين'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'المديرية الولائية للتجارة',
+                        child: Text('المديرية الولائية للتجارة'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'الإدارة المركزية',
+                        child: Text('الإدارة المركزية'),
                       ),
                     ],
                     onChanged: (val) => setDialogState(() => selectedDepartment = val ?? 'مصلحة حماية المستهلك وقمع الغش'),
@@ -400,10 +416,20 @@ class _AdminScreenState extends State<AdminScreen>
                             if (empService.isNotEmpty) {
                               if (empService.contains('مستهلك') || empService.contains('غش')) {
                                 selectedDepartment = 'مصلحة حماية المستهلك وقمع الغش';
-                              } else if (empService.contains('منافسة') || empService.contains('ممارسات')) {
+                              } else if (empService.contains('منافسة') || empService.contains('تحقيقات') || empService.contains('ممارسات')) {
                                 selectedDepartment = 'مصلحة المنافسة والتحقيقات الاقتصادية';
-                              } else if (empService.contains('إدارة') || empService.contains('وسائل') || empService.contains('مستخدمين')) {
+                              } else if (empService.contains('سوق') || empService.contains('تموين') || empService.contains('أسعار') || empService.contains('ملاحظة')) {
+                                selectedDepartment = 'مصلحة ملاحظة السوق وضبط التموين والأسعار';
+                              } else if (empService.contains('منازعات') || empService.contains('قانونية')) {
+                                selectedDepartment = 'مصلحة المنازعات والشؤون القانونية';
+                              } else if (empService.contains('إدارة') || empService.contains('وسائل')) {
                                 selectedDepartment = 'مصلحة الإدارة والوسائل';
+                              } else if (empService.contains('مستخدمين') || empService.contains('موارد')) {
+                                selectedDepartment = 'مكتب المستخدمين';
+                              } else if (empService.contains('مديرية') || empService.contains('ولائية') || empService.contains('ديوان')) {
+                                selectedDepartment = 'المديرية الولائية للتجارة';
+                              } else {
+                                selectedDepartment = 'الإدارة المركزية';
                               }
                             }
 
@@ -490,8 +516,12 @@ class _AdminScreenState extends State<AdminScreen>
     const validDepts = [
       'مصلحة حماية المستهلك وقمع الغش',
       'مصلحة المنافسة والتحقيقات الاقتصادية',
+      'مصلحة ملاحظة السوق وضبط التموين والأسعار',
+      'مصلحة المنازعات والشؤون القانونية',
       'مصلحة الإدارة والوسائل',
-      'الأمانة العامة / ديوان المدير',
+      'مكتب المستخدمين',
+      'المديرية الولائية للتجارة',
+      'الإدارة المركزية',
     ];
     String selectedDepartment = validDepts.contains(userDept) ? userDept : 'مصلحة حماية المستهلك وقمع الغش';
     bool isActive = user['isActive'] == true;
@@ -586,12 +616,28 @@ class _AdminScreenState extends State<AdminScreen>
                         child: Text('مصلحة المنافسة والتحقيقات الاقتصادية'),
                       ),
                       DropdownMenuItem(
+                        value: 'مصلحة ملاحظة السوق وضبط التموين والأسعار',
+                        child: Text('مصلحة ملاحظة السوق وضبط التموين والأسعار'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'مصلحة المنازعات والشؤون القانونية',
+                        child: Text('مصلحة المنازعات والشؤون القانونية'),
+                      ),
+                      DropdownMenuItem(
                         value: 'مصلحة الإدارة والوسائل',
                         child: Text('مصلحة الإدارة والوسائل'),
                       ),
                       DropdownMenuItem(
-                        value: 'الأمانة العامة / ديوان المدير',
-                        child: Text('الأمانة العامة / ديوان المدير'),
+                        value: 'مكتب المستخدمين',
+                        child: Text('مكتب المستخدمين'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'المديرية الولائية للتجارة',
+                        child: Text('المديرية الولائية للتجارة'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'الإدارة المركزية',
+                        child: Text('الإدارة المركزية'),
                       ),
                     ],
                     onChanged: (val) => setDialogState(() => selectedDepartment = val ?? 'مصلحة حماية المستهلك وقمع الغش'),
