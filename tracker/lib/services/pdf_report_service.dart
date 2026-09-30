@@ -1,3 +1,4 @@
+// ignore_for_file: prefer_const_constructors
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -47,16 +48,22 @@ class PdfReportService {
       final prenom = (emp['Prenom'] ?? emp['prenom'] ?? '').toString().trim();
 
       if (nom.startsWith('chef_concurrence') || (nomAr == 'رئيس' && prenomAr.contains('المنافسة'))) {
-        return 'بلعيدي كريم';
+        return 'بعزيز مراد';
       }
       if (nom.startsWith('chef_consommation') || (nomAr == 'رئيس' && prenomAr.contains('المستهلك'))) {
-        return 'منصوري عبد الحكيم';
+        return 'مرير حسان';
       }
       if (nom.startsWith('chef_administration') || (nomAr == 'رئيس' && prenomAr.contains('الإدارة'))) {
-        return 'زروقي كمال';
+        return 'لعلامي كمال';
       }
       if (nom.startsWith('bureau_user') || (nomAr == 'رئيس' && prenomAr.contains('المستخدمين'))) {
-        return 'مباركي سفيان';
+        return 'عصماني سعاد';
+      }
+      if (nom.startsWith('chef_marche') || (nomAr == 'رئيس' && prenomAr.contains('السوق'))) {
+        return 'دخيلي خالد';
+      }
+      if (nom.startsWith('chef_contentieux') || (nomAr == 'رئيس' && prenomAr.contains('المنازعات'))) {
+        return 'غريب رشيد';
       }
       if (nomAr.isNotEmpty || prenomAr.isNotEmpty) {
         return '$nomAr $prenomAr'.trim();
@@ -117,17 +124,17 @@ class PdfReportService {
                     children: [
                       pw.Text(
                         'الجمهورية الجزائرية الديمقراطية الشعبية',
-                        style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                        style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
                       ),
                       pw.SizedBox(height: 2),
                       pw.Text(
                         'وزارة التجارة الداخلية وضبط السوق الوطنية',
-                        style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+                        style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                       ),
                       pw.SizedBox(height: 2),
                       pw.Text(
                         'مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف',
-                        style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
+                        style: pw.TextStyle(fontSize: 10, color: PdfColors.grey800),
                       ),
                       pw.SizedBox(height: 6),
                       pw.Container(
@@ -153,11 +160,11 @@ class PdfReportService {
               children: [
                 pw.Text(
                   'محضر المتابعة والرقابة اليومية — مديرية التجارة سطيف',
-                  style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
+                  style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
                 ),
                 pw.Text(
                   'التاريخ: $dateStr',
-                  style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
+                  style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
                 ),
               ],
             ),
@@ -175,11 +182,11 @@ class PdfReportService {
               children: [
                 pw.Text(
                   'منظومة المراقبة والتفتيش الميداني الرقمية (DCW-SETIF-TRACKER)',
-                  style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600),
+                  style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600),
                 ),
                 pw.Text(
                   'صفحة ${context.pageNumber} من ${context.pagesCount}',
-                  style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600),
+                  style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600),
                 ),
               ],
             ),
@@ -200,11 +207,11 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     'محضر المتابعة والرقابة اليومية الميدانية',
-                    style: const pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900),
+                    style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900),
                   ),
                   pw.Text(
                     'التاريخ: $dateStr | الساعة: $timeStr',
-                    style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey700),
+                    style: pw.TextStyle(fontSize: 9.5, color: PdfColors.grey700),
                   ),
                 ],
               ),
@@ -239,11 +246,11 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     '1. وضعية المفتشين الميدانيين الحاضرين اليوم (${presentInspectors.length})',
-                    style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900),
+                    style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfColors.green900),
                   ),
                   pw.Text(
                     'مقر المديرية والمفتشيات الإقليمية',
-                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                   ),
                 ],
               ),
@@ -254,7 +261,7 @@ class PdfReportService {
                     width: double.infinity,
                     padding: const pw.EdgeInsets.all(8),
                     decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
-                    child: pw.Center(child: pw.Text('لا يوجد مفتش ميداني سجل حضوره بعد لهذا اليوم', style: const pw.TextStyle(fontSize: 9))),
+                    child: pw.Center(child: pw.Text('لا يوجد مفتش ميداني سجل حضوره بعد لهذا اليوم', style: pw.TextStyle(fontSize: 9))),
                   )
                 : pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
@@ -334,11 +341,11 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     '2. التأطير الإشرافي ورؤساء المصالح والمكاتب بالمقر (${leadershipList.length})',
-                    style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+                    style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
                   ),
                   pw.Text(
                     'المهام الإدارية والإشراف على الفرق الميدانية',
-                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                    style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
                   ),
                 ],
               ),
@@ -349,7 +356,7 @@ class PdfReportService {
                     width: double.infinity,
                     padding: const pw.EdgeInsets.all(8),
                     decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
-                    child: pw.Center(child: pw.Text('لا توجد سجلات تأطير إداري مسجلة', style: const pw.TextStyle(fontSize: 9))),
+                    child: pw.Center(child: pw.Text('لا توجد سجلات تأطير إداري مسجلة', style: pw.TextStyle(fontSize: 9))),
                   )
                 : pw.Table(
                     border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
@@ -423,7 +430,7 @@ class PdfReportService {
                     child: pw.Center(
                       child: pw.Text(
                         '✅ جميع المفتشين الميدانيين سجلوا حضورهم الصباحي بنسبة 100% — لا توجد غيابات غير مبررة لهذا اليوم',
-                        style: const pw.TextStyle(fontSize: 9, color: PdfColors.green900, fontWeight: pw.FontWeight.bold),
+                        style: pw.TextStyle(fontSize: 9, color: PdfColors.green900, fontWeight: pw.FontWeight.bold),
                       ),
                     ),
                   )
@@ -471,17 +478,17 @@ class PdfReportService {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('رئيس مكتب المستخدمين', style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('رئيس مكتب المستخدمين', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 30),
-                    pw.Text('(التأشيرة والختم)', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600)),
+                    pw.Text('(التأشيرة والختم)', style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600)),
                   ],
                 ),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
-                    pw.Text('السيد المدير الولائي للتجارة وضبط السوق', style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('السيد المدير الولائي للتجارة وضبط السوق', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 30),
-                    pw.Text('(التوقيع والختم الرسمي)', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600)),
+                    pw.Text('(التوقيع والختم الرسمي)', style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey600)),
                   ],
                 ),
               ],
@@ -553,22 +560,22 @@ class PdfReportService {
                   children: [
                     pw.Text(
                       'الجمهورية الجزائرية الديمقراطية الشعبية',
-                      style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold),
                     ),
                     pw.SizedBox(height: 2),
                     pw.Text(
                       'وزارة التجارة الداخلية وضبط السوق الوطنية',
-                      style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                     ),
                     pw.SizedBox(height: 2),
                     pw.Text(
                       'مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف',
-                      style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey900),
+                      style: pw.TextStyle(fontSize: 10, color: PdfColors.grey900),
                     ),
                     pw.SizedBox(height: 1),
                     pw.Text(
                       'مصلحة الإدارة والوسائل — مكتب المستخدمين والتكوين',
-                      style: const pw.TextStyle(fontSize: 9.5, color: PdfColors.grey800),
+                      style: pw.TextStyle(fontSize: 9.5, color: PdfColors.grey800),
                     ),
                     pw.SizedBox(height: 6),
                     pw.Container(height: 1.2, width: 280, color: PdfColors.black),
@@ -581,8 +588,8 @@ class PdfReportService {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('الرقم: 2026/استفسار/$inqId', style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
-                    pw.Text('سطيف في: $dateStr', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text('الرقم: 2026/استفسار/$inqId', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('سطيف في: $dateStr', style: pw.TextStyle(fontSize: 10)),
                   ],
                 ),
                 pw.SizedBox(height: 14),
@@ -597,7 +604,7 @@ class PdfReportService {
                   ),
                   child: pw.Text(
                     'استمـارة استفسـار إداري كتـابي رسمـي',
-                    style: const pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
                   ),
                 ),
                 pw.SizedBox(height: 14),
@@ -613,16 +620,16 @@ class PdfReportService {
                     children: [
                       pw.Row(
                         children: [
-                          pw.Text('إلى السيد(ة): ', style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                          pw.Text(name, style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                          pw.Text('إلى السيد(ة): ', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                          pw.Text(name, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
                         ],
                       ),
                       pw.SizedBox(height: 3),
                       pw.Row(
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
-                          pw.Text('الرتبة: $grade', style: const pw.TextStyle(fontSize: 9.5)),
-                          pw.Text('المصلحة/الهيكل: $service', style: const pw.TextStyle(fontSize: 9.5)),
+                          pw.Text('الرتبة: $grade', style: pw.TextStyle(fontSize: 9.5)),
+                          pw.Text('المصلحة/الهيكل: $service', style: pw.TextStyle(fontSize: 9.5)),
                         ],
                       ),
                     ],
@@ -631,21 +638,21 @@ class PdfReportService {
                 pw.SizedBox(height: 10),
 
                 // Subject & Legal Reference
-                pw.Text('الموضوع: $subject', style: const pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                pw.Text('الموضوع: $subject', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 2),
-                pw.Text('المرجع: الأمر رقم 06-03 المؤرخ في 15 يوليو 2006 المتضمن القانون الأساسي العام للوظيفة العمومية.', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
+                pw.Text('المرجع: الأمر رقم 06-03 المؤرخ في 15 يوليو 2006 المتضمن القانون الأساسي العام للوظيفة العمومية.', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey800)),
                 pw.SizedBox(height: 10),
 
                 // Incident Details
                 pw.Text(
                   '$details\n${lateMins > 0 ? "وقد قُدِّر التأخر الفعلي المسجل عن توقيت العمل بـ: $lateMins دقيقة.\n" : ""}',
-                  style: const pw.TextStyle(fontSize: 10, lineSpacing: 3),
+                  style: pw.TextStyle(fontSize: 10, lineSpacing: 3),
                 ),
                 pw.SizedBox(height: 4),
 
                 pw.Text(
                   'وعليه، يُطلب منكم موافاة الإدارة ومكتب المستخدمين بتبريراتكم وأسباب ذلك كتابياً في أجل أقصاه 48 ساعة من تاريخ استلامكم هذا الاستفسار، حتى يتسنى للمدير الولائي اتخاذ الإجراءات الإدارية والقانونية المناسبة.',
-                  style: const pw.TextStyle(fontSize: 10, lineSpacing: 3),
+                  style: pw.TextStyle(fontSize: 10, lineSpacing: 3),
                 ),
                 pw.SizedBox(height: 12),
 
@@ -659,9 +666,9 @@ class PdfReportService {
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('رد وتبرير الموظف (المسجل رسمياً):', style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('رد وتبرير الموظف (المسجل رسمياً):', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
                         pw.SizedBox(height: 2),
-                        pw.Text('$reply', style: const pw.TextStyle(fontSize: 9.5)),
+                        pw.Text('$reply', style: pw.TextStyle(fontSize: 9.5)),
                       ],
                     ),
                   ),
@@ -679,7 +686,7 @@ class PdfReportService {
                     child: pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('قرار السيد المدير الولائي للتجارة:', style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('قرار السيد المدير الولائي للتجارة:', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
                         pw.SizedBox(height: 2),
                         pw.Text(
                           decision == 'justified'
@@ -687,10 +694,10 @@ class PdfReportService {
                               : decision == 'warning'
                                   ? 'توجيه تنبيه/إنذار إداري رسمي يسجل في الملف المهني.'
                                   : 'تثبيت الخصم المالي من الراتب بمقدار: ${inquiry['DeductionDays'] ?? 1} يوم.',
-                          style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold),
+                          style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold),
                         ),
                         if (directorNotes != null && directorNotes.toString().isNotEmpty)
-                          pw.Text('الملاحظات: $directorNotes', style: const pw.TextStyle(fontSize: 8.5)),
+                          pw.Text('الملاحظات: $directorNotes', style: pw.TextStyle(fontSize: 8.5)),
                       ],
                     ),
                   ),
@@ -707,17 +714,17 @@ class PdfReportService {
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Text('تأشيرة رئيس مكتب المستخدمين', style: const pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('تأشيرة رئيس مكتب المستخدمين', style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold)),
                         pw.SizedBox(height: 35),
-                        pw.Text('عـ/ المدير والآمر بالصرف', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                        pw.Text('عـ/ المدير والآمر بالصرف', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
                       ],
                     ),
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Text('المدير الولائي للتجارة', style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('المدير الولائي للتجارة', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
                         pw.SizedBox(height: 35),
-                        pw.Text('ولاية سطيف', style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
+                        pw.Text('ولاية سطيف', style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700)),
                       ],
                     ),
                   ],
@@ -746,7 +753,7 @@ class PdfReportService {
         ),
         child: pw.Column(
           children: [
-            pw.Text(label, style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700), textAlign: pw.TextAlign.center),
+            pw.Text(label, style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700), textAlign: pw.TextAlign.center),
             pw.SizedBox(height: 2),
             pw.Text(value, style: pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold, color: color)),
           ],
@@ -762,7 +769,7 @@ class PdfReportService {
       child: pw.Text(
         text,
         textAlign: pw.TextAlign.center,
-        style: const pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.black),
+        style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.black),
       ),
     );
   }
@@ -844,7 +851,7 @@ class PdfReportService {
       padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       color: PdfColors.brown800,
       child: pw.Text(text,
-          style: const pw.TextStyle(fontSize: 8, color: PdfColors.white),
+          style: pw.TextStyle(fontSize: 8, color: PdfColors.white),
           textAlign: pw.TextAlign.center),
     );
 
@@ -852,7 +859,7 @@ class PdfReportService {
     pw.Widget dCell(String text, {PdfColor? bg}) => pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 3),
       color: bg ?? PdfColors.white,
-      child: pw.Text(text, style: const pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.center),
+      child: pw.Text(text, style: pw.TextStyle(fontSize: 7.5), textAlign: pw.TextAlign.center),
     );
 
     // ── Page 1: Cover + Summary KPIs
@@ -866,13 +873,13 @@ class PdfReportService {
         pw.Center(
           child: pw.Column(children: [
             pw.Text('الجمهورية الجزائرية الديمقراطية الشعبية',
-                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 2),
             pw.Text('وزارة التجارة الداخلية وضبط السوق الوطنية',
-                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 2),
             pw.Text('مديرية التجارة الداخلية وضبط السوق الوطنية — ولاية سطيف',
-                style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
+                style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700)),
             pw.SizedBox(height: 6),
             pw.Container(height: 1.5, width: 300, color: PdfColors.amber800),
           ]),
@@ -890,13 +897,13 @@ class PdfReportService {
             ),
             child: pw.Column(children: [
               pw.Text('تقرير الإحصائيات الرقابية الشامل',
-                  style: const pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                  style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
               pw.SizedBox(height: 4),
               pw.Text('الفترة: من $periodStart إلى $periodEnd ($daysCount يوم)',
-                  style: const pw.TextStyle(fontSize: 10, color: PdfColors.brown700)),
+                  style: pw.TextStyle(fontSize: 10, color: PdfColors.brown700)),
               pw.SizedBox(height: 2),
               pw.Text('صادر بتاريخ: $dateStr | المدير الولائي: $directorName',
-                  style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
             ]),
           ),
         ),
@@ -904,7 +911,7 @@ class PdfReportService {
 
         // KPI summary table (clean, sovereign, professional)
         pw.Text('أولاً — المؤشرات العامة للرقابة الميدانية',
-            style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
         pw.SizedBox(height: 8),
         pw.Table(
           border: pw.TableBorder.all(color: PdfColors.amber800, width: 0.8),
@@ -932,7 +939,7 @@ class PdfReportService {
         // Department breakdown table
         if (deptList.isNotEmpty) ...[
           pw.Text('ثانياً — التوزيع حسب المصلحة الرقابية',
-              style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.Table(
             border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
@@ -973,7 +980,7 @@ class PdfReportService {
         // Daily trend table
         if (dailyTrend.isNotEmpty) ...[
           pw.Text('ثالثاً — التطور اليومي للمعاينات الميدانية',
-              style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
           pw.SizedBox(height: 6),
           pw.Table(
             border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
@@ -1018,9 +1025,9 @@ class PdfReportService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Text('تقرير الإحصاء الرقابي — مديرية التجارة سطيف',
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
               pw.Text('الفترة: $periodStart → $periodEnd',
-                  style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
             ],
           ),
         ),
@@ -1028,7 +1035,7 @@ class PdfReportService {
           // Inspector performance ranking
           if (inspectorList.isNotEmpty) ...[
             pw.Text('رابعاً — ترتيب أداء المفتشين الميدانيين',
-                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 6),
             pw.Table(
               border: pw.TableBorder.all(color: PdfColors.grey400, width: 0.5),
@@ -1079,11 +1086,11 @@ class PdfReportService {
           // GPS Attendance Archive
           if (attendanceGPS.isNotEmpty) ...[
             pw.Text('خامساً — أرشيف البصمة الجغرافية للحضور (GPS)',
-                style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
             pw.SizedBox(height: 4),
             pw.Text(
               'يوضح هذا الجدول توثيق الحضور بالإحداثيات الجغرافية الدقيقة لكل موظف في الفترة المحددة.',
-              style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
+              style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
             ),
             pw.SizedBox(height: 6),
             pw.Table(
@@ -1130,19 +1137,19 @@ class PdfReportService {
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.start, children: [
-                pw.Text('ختم المصلحة', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                pw.Text('ختم المصلحة', style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                 pw.SizedBox(height: 30),
                 pw.Container(width: 100, height: 0.5, color: PdfColors.grey400),
               ]),
               pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
-                pw.Text('سطيف في: $dateStr', style: const pw.TextStyle(fontSize: 9)),
+                pw.Text('سطيف في: $dateStr', style: pw.TextStyle(fontSize: 9)),
                 pw.SizedBox(height: 6),
-                pw.Text('المدير الولائي للتجارة', style: const pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                pw.Text('المدير الولائي للتجارة', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
                 pw.SizedBox(height: 2),
-                pw.Text(directorName, style: const pw.TextStyle(fontSize: 9, color: PdfColors.brown800)),
+                pw.Text(directorName, style: pw.TextStyle(fontSize: 9, color: PdfColors.brown800)),
                 pw.SizedBox(height: 24),
                 pw.Container(width: 120, height: 0.5, color: PdfColors.grey400),
-                pw.Text('التوقيع والختم', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+                pw.Text('التوقيع والختم', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
               ]),
             ],
           ),
@@ -1168,7 +1175,7 @@ class PdfReportService {
               style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: color)),
           pw.SizedBox(height: 3),
           pw.Text(label,
-              style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey800),
+              style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey800),
               textAlign: pw.TextAlign.center),
         ],
       ),
@@ -1224,16 +1231,16 @@ class PdfReportService {
                 // Header
                 pw.Text(
                   'الجمهورية الجزائرية الديمقراطية الشعبية',
-                  style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+                  style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
                 ),
                 pw.SizedBox(height: 2),
                 pw.Text(
                   'وزارة التجارة وترقية الصادرات — ولاية سطيف',
-                  style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
+                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
                 ),
                 pw.Text(
                   'مديرية التجارة الداخلية وضبط السوق الوطنية',
-                  style: const pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
+                  style: pw.TextStyle(fontSize: 8.5, color: PdfColors.grey700),
                 ),
                 pw.SizedBox(height: 8),
                 pw.Divider(color: PdfColors.amber800, thickness: 1),
@@ -1318,7 +1325,7 @@ class PdfReportService {
                   ),
                   child: pw.Text(
                     '🛡️ سند إثبات رسمي مستخرج آلياً من السيرفر المركزي لمديرية التجارة سطيف. يُعتبر هذا الوصل حجة قانونية قاطعة غير قابلة للتعديل أو الإنكار تثبت التواجد والانضباط الميداني لعون الرقابة وفقاً للأمر 06-03 المتضمن القانون الأساسي العام للوظيفة العمومية.',
-                    style: const pw.TextStyle(fontSize: 6.5, color: PdfColors.grey800, lineSpacing: 1.3),
+                    style: pw.TextStyle(fontSize: 6.5, color: PdfColors.grey800, lineSpacing: 1.3),
                     textAlign: pw.TextAlign.justify,
                   ),
                 ),
@@ -1332,19 +1339,19 @@ class PdfReportService {
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.start,
                       children: [
-                        pw.Text('توقيع عون الرقابة / المفتش:', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                        pw.Text('توقيع عون الرقابة / المفتش:', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
                         pw.SizedBox(height: 18),
-                        pw.Text(employeeName, style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+                        pw.Text(employeeName, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
                       ],
                     ),
                     pw.Column(
                       crossAxisAlignment: pw.CrossAxisAlignment.center,
                       children: [
-                        pw.Text('الختم الرقمي المشفر (SHA-256)', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                        pw.Text('الختم الرقمي المشفر (SHA-256)', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
                         pw.SizedBox(height: 4),
-                        pw.Text('DCW-SETIF-SECURE-2026', style: const pw.TextStyle(fontSize: 7, color: PdfColors.amber900)),
+                        pw.Text('DCW-SETIF-SECURE-2026', style: pw.TextStyle(fontSize: 7, color: PdfColors.amber900)),
                         pw.SizedBox(height: 12),
-                        pw.Text('مديرية التجارة — ولاية سطيف', style: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                        pw.Text('مديرية التجارة — ولاية سطيف', style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                       ],
                     ),
                   ],
@@ -1414,18 +1421,18 @@ class PdfReportService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('الجمهورية الجزائرية الديمقراطية الشعبية', style: const pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('وزارة التجارة الداخلية وضبط السوق الوطنية', style: const pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('مديرية التجارة الداخلية لولاية سطيف', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
-                      pw.Text('مكتب المستخدمين — خلية الانضباط والمتابعة', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                      pw.Text('الجمهورية الجزائرية الديمقراطية الشعبية', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('وزارة التجارة الداخلية وضبط السوق الوطنية', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('مديرية التجارة الداخلية لولاية سطيف', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
+                      pw.Text('مكتب المستخدمين — خلية الانضباط والمتابعة', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
                     ],
                   ),
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('الوثيقة: تقرير انضباط وقرارات سيادية', style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
-                      pw.Text('الفترة: $periodTitle', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
-                      pw.Text('تاريخ الطباعة: $dateStr $timeStr', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                      pw.Text('الوثيقة: تقرير انضباط وقرارات سيادية', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
+                      pw.Text('الفترة: $periodTitle', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
+                      pw.Text('تاريخ الطباعة: $dateStr $timeStr', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
                     ],
                   ),
                 ],
@@ -1440,8 +1447,8 @@ class PdfReportService {
           return pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('منظومة المراقبة الميدانية الرقمية DCW-SETIF-TRACKER — سجل القرارات السيادية', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
-              pw.Text('صفحة ${context.pageNumber} من ${context.pagesCount}', style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+              pw.Text('منظومة المراقبة الميدانية الرقمية DCW-SETIF-TRACKER — سجل القرارات السيادية', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+              pw.Text('صفحة ${context.pageNumber} من ${context.pagesCount}', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
             ],
           );
         },
@@ -1460,7 +1467,7 @@ class PdfReportService {
                 children: [
                   pw.Text(
                     'سجل الإجراءات الانضباطية والقرارات السيادية — $periodTitle',
-                    style: const pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900),
+                    style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900),
                   ),
                   pw.Row(
                     children: [
@@ -1483,15 +1490,15 @@ class PdfReportService {
               pw.Container(
                 padding: const pw.EdgeInsets.all(20),
                 alignment: pw.Alignment.center,
-                child: pw.Text('لا توجد ملفات أو قرارات مسجلة لهذه الفترة المحددة.', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+                child: pw.Text('لا توجد ملفات أو قرارات مسجلة لهذه الفترة المحددة.', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
               )
             else
               pw.TableHelper.fromTextArray(
                 context: context,
                 border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-                headerStyle: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                headerStyle: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
                 headerDecoration: const pw.BoxDecoration(color: PdfColors.blueGrey900),
-                cellStyle: const pw.TextStyle(fontSize: 7.5),
+                cellStyle: pw.TextStyle(fontSize: 7.5),
                 cellHeight: 22,
                 cellAlignments: {
                   0: pw.Alignment.center,
@@ -1553,29 +1560,29 @@ class PdfReportService {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text('رئيس مكتب المستخدمين:', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                    pw.Text('رئيس مكتب المستخدمين:', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
                     pw.SizedBox(height: 16),
-                    pw.Text('التأشير والتسجيل الإداري', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                    pw.Text('التأشير والتسجيل الإداري', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
                   ],
                 ),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.center,
                   children: [
-                    pw.Text('الختم الرقمي المشفر (SHA-256)', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
+                    pw.Text('الختم الرقمي المشفر (SHA-256)', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
                     pw.SizedBox(height: 3),
-                    pw.Text('DCW-SETIF-SOVEREIGN-DECISION-2026', style: const pw.TextStyle(fontSize: 7, color: PdfColors.amber900, fontWeight: pw.FontWeight.bold)),
+                    pw.Text('DCW-SETIF-SOVEREIGN-DECISION-2026', style: pw.TextStyle(fontSize: 7, color: PdfColors.amber900, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 10),
-                    pw.Text('مديرية التجارة — ولاية سطيف', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
+                    pw.Text('مديرية التجارة — ولاية سطيف', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
                   ],
                 ),
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('السيد المدير الولائي للتجارة — الآمر بالصرف:', style: const pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
+                    pw.Text('السيد المدير الولائي للتجارة — الآمر بالصرف:', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.black)),
                     pw.SizedBox(height: 4),
-                    pw.Text(directorName, style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
+                    pw.Text(directorName, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
                     pw.SizedBox(height: 12),
-                    pw.Text('توقيع وختم السيد المدير الولائي', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
+                    pw.Text('توقيع وختم السيد المدير الولائي', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700)),
                   ],
                 ),
               ],
@@ -1600,8 +1607,8 @@ class PdfReportService {
       ),
       child: pw.Row(
         children: [
-          pw.Text('$label: ', style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.white)),
-          pw.Text(value, style: const pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
+          pw.Text('$label: ', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.white)),
+          pw.Text(value, style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.white)),
         ],
       ),
     );
@@ -1613,7 +1620,7 @@ class PdfReportService {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+          pw.Text(label, style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
           pw.Text(
             value,
             style: pw.TextStyle(
