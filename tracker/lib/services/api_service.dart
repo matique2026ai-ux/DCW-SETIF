@@ -281,6 +281,45 @@ class ApiService {
     throw Exception(_parseError(response, 'فشل تحديث رمز الأمان السري (Master PIN)'));
   }
 
+  /// Get the system-wide initial onboarding Master PIN set by Admin
+  Future<String> getSystemInitialPin() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/auth/system-pin'),
+            headers: _headers,
+          )
+          .timeout(defaultTimeout);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = _safeDecodeMap(response.body);
+        return data['initialMasterPin']?.toString() ?? '202600';
+      }
+      return '202600';
+    } catch (_) {
+      return '202600';
+    }
+  }
+
+  /// Update the system-wide initial onboarding Master PIN set by Admin
+  Future<Map<String, dynamic>> updateSystemInitialPin(String newPin) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/auth/system-pin'),
+            headers: _headers,
+            body: jsonEncode({'initialMasterPin': newPin.trim()}),
+          )
+          .timeout(defaultTimeout);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return _safeDecodeMap(response.body);
+      } else {
+        throw Exception(_parseError(response, 'فشل تحديث رمز أول دخول للنظام'));
+      }
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تحديث رمز أول دخول للنظام');
+    }
+  }
+
   Future<Map<String, dynamic>> setupCredentials({
     required String newPassword,
     required String newPin,
