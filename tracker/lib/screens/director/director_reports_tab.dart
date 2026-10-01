@@ -24,6 +24,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
   String _searchQuery = '';
   DateTime _selectedDate = DateTime.now();
   String _selectedFilter = 'absent'; // 'all', 'present', 'absent'
+  bool _isListExpanded = false;
   bool _isLoading = true;
   Timer? _silentPollTimer;
 
@@ -1043,22 +1044,61 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
           ),
 
           // Top Interactive Stat Cards
+          // ── Context Banner: when 0 present & it's today (before work hours or weekend) ──
+          if (isToday && present.isEmpty) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF78350F).withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5), width: 1),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFFF59E0B), size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      () {
+                        final hour = DateTime.now().hour;
+                        if (DateTime.now().weekday == DateTime.friday || DateTime.now().weekday == DateTime.saturday) {
+                          return loc.isArabic ? 'اليوم عطلة أسبوعية — لا تسجيل حضور مطلوب' : 'Jour de repos hebdomadaire — Aucun pointage attendu';
+                        } else if (hour < 7) {
+                          return loc.isArabic ? 'قبل بدء وقت الدوام (07:30) — لا تسجيلات بعد' : 'Avant l\'heure de pointage (07h30) — Aucune présence enregistrée';
+                        } else {
+                          return loc.isArabic ? 'لا يوجد حضور مسجّل حتى الآن — يتطلب متابعة' : 'Aucune présence enregistrée pour l’instant — Suivi requis';
+                        }
+                      }(),
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 12,
+                        color: Color(0xFFF59E0B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Top Interactive Stat Cards
           Row(
             children: [
-              _stat(
-                loc.totalEmployees,
-                _employees.length,
-                AppTheme.AccentColor,
-                Icons.people,
-                'all',
-              ),
-              const SizedBox(width: 8),
               _stat(
                 isToday ? loc.presentToday : (loc.isArabic ? 'حاضرون بالسجل' : 'Présents (Registre)'),
                 present.length,
                 AppTheme.SuccessColor,
                 Icons.check_circle,
                 'present',
+              ),
+              const SizedBox(width: 8),
+              _stat(
+                loc.totalEmployees,
+                _employees.length,
+                AppTheme.AccentColor,
+                Icons.people,
+                'all',
               ),
               const SizedBox(width: 8),
               _stat(
@@ -1278,12 +1318,13 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                   ),
                 )
               : Column(
-                  children: filteredList.asMap().entries.map((entry) {
-                    final e = entry.value;
-                    final isPresent = checkedInMap.containsKey(e['Id']);
-                    final attRecord = checkedInMap[e['Id']];
-                    final checkInTime = attRecord?['CheckInTime'] != null
-                        ? _formatTime(attRecord!['CheckInTime'])
+                  children: [
+                    ...filteredList.take(_isListExpanded ? filteredList.length : 8).toList().asMap().entries.map((entry) {
+                      final e = entry.value;
+                      final isPresent = checkedInMap.containsKey(e['Id']);
+                      final attRecord = checkedInMap[e['Id']];
+                      final checkInTime = attRecord?['CheckInTime'] != null
+                          ? _formatTime(attRecord!['CheckInTime'])
                         : '';
 
                     final name = e['NomAr'] != null
@@ -1458,7 +1499,32 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                       ),
                     );
                   }).toList(),
-                ),
+                  if (!_isListExpanded && filteredList.length > 8)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                      child: TextButton.icon(
+                        onPressed: () => setState(() => _isListExpanded = true),
+                        icon: const Icon(Icons.expand_more, color: Color(0xFFD4AF37)),
+                        label: Text(
+                          loc.isArabic ? 'عرض باقي القائمة (${filteredList.length - 8} موظف)' : 'Voir le reste (${filteredList.length - 8} agents)',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            color: Color(0xFFD4AF37),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
         ],
       ),
     ),
