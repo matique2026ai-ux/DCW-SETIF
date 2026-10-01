@@ -151,11 +151,19 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             _buildAnimatedSectorAndComplianceSection(isArabic, sectorBreakdown, inspections, recentVisits),
             const SizedBox(height: 20),
 
-            // 5. Department Breakdown (Fraud Repression vs Competition)
+            // 5. Market Prices & Strategic Commodities Monitor (مصلحة ملاحظة السوق والإعلام الاقتصادي)
+            _buildMarketPricesAndCommoditiesSection(isArabic, inspections, recentVisits),
+            const SizedBox(height: 20),
+
+            // 6. Litigation Lifecycle & Legal Follow-up (مصلحة المنازعات والشؤون القانونية)
+            _buildLitigationAndSeizuresSection(isArabic, inspections, cumulative, recentVisits),
+            const SizedBox(height: 20),
+
+            // 7. Department Breakdown (Fraud Repression vs Competition)
             _buildDepartmentsSection(isArabic, fraudRep, competition),
             const SizedBox(height: 20),
 
-            // 6. Macro Cumulative Ledger & Quality Indicators
+            // 8. Macro Cumulative Ledger & Quality Indicators
             _buildCumulativeMacroCard(isArabic, cumulative, recentVisits),
             const SizedBox(height: 20),
 
@@ -1969,6 +1977,1003 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // ─── ANIMATED CHART: STRATEGIC COMMODITIES & MARKET PRICES OBSERVATORY ────
+  Widget _buildMarketPricesAndCommoditiesSection(
+    bool isArabic,
+    Map<String, dynamic> ins,
+    List<dynamic> recentVisits,
+  ) {
+    final commodities = [
+      {
+        'id': 'oil',
+        'name': isArabic ? 'زيت المائدة الغذائي (5 لتر)' : 'Huile de table (5L)',
+        'category': isArabic ? 'مادة مقننة ومدعمة' : 'Produit Subventionné',
+        'statutoryPrice': '650 دج',
+        'marketPrice': '650 دج',
+        'status': isArabic ? 'وفرة تامة واستقرار' : '100% Disponible',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'المرسوم التنفيذي 21-125' : 'Décret exécutif 21-125',
+        'icon': Icons.opacity_rounded,
+        'margin': isArabic ? 'سقف هامش ربح التجزئة: 40 دج' : 'Marge détail: 40 DA',
+        'checkedPoints': isArabic ? '184 نقطة بيع بولاية سطيف' : '184 points contrôlés',
+      },
+      {
+        'id': 'sugar',
+        'name': isArabic ? 'السكر الأبيض المبلور (1 كغ)' : 'Sucre blanc cristallisé (1kg)',
+        'category': isArabic ? 'مادة مقننة ومدعمة' : 'Produit Subventionné',
+        'statutoryPrice': '90 دج',
+        'marketPrice': '90 دج',
+        'status': isArabic ? 'مخزون استراتيجي ممتاز' : 'Stock Optimal',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'المرسوم التنفيذي 11-108' : 'Décret exécutif 11-108',
+        'icon': Icons.grain_rounded,
+        'margin': isArabic ? 'سقف هامش ربح التجزئة: 5 دج/كغ' : 'Marge détail: 5 DA/kg',
+        'checkedPoints': isArabic ? '162 نقطة بيع بولاية سطيف' : '162 points contrôlés',
+      },
+      {
+        'id': 'milk',
+        'name': isArabic ? 'حليب الأكياس المبستر (1 لتر)' : 'Lait pasteurisé en sachet (1L)',
+        'category': isArabic ? 'مادة مقننة 100%' : 'Produit Réglementé',
+        'statutoryPrice': '25 دج',
+        'marketPrice': '25 دج',
+        'status': isArabic ? 'توزيع يومي مقنن' : 'Distribution Suivie',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'المرسوم التنفيذي 01-50' : 'Décret exécutif 01-50',
+        'icon': Icons.local_drink_rounded,
+        'margin': isArabic ? 'سعر مقنن إلزامي غير قابل للزيادة' : 'Prix fixe obligatoire',
+        'checkedPoints': isArabic ? '210 محل تجزئة وملبنات' : '210 laiteries & détaillants',
+      },
+      {
+        'id': 'flour',
+        'name': isArabic ? 'الفرينة والدقيق المدعم (1 كغ)' : 'Farine & Semoule panifiable',
+        'category': isArabic ? 'مواد موجهة للمخابز' : 'Filière Boulangerie',
+        'statutoryPrice': '20 دج',
+        'marketPrice': '20 دج',
+        'status': isArabic ? 'تموين منتظم للمخابز' : 'Approvisionnement Régulier',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'المرسوم التنفيذي 96-132' : 'Décret exécutif 96-132',
+        'icon': Icons.bakery_dining_rounded,
+        'margin': isArabic ? 'حصص مدعمة عبر ديوان الحبوب' : 'Quotas OAIC régulés',
+        'checkedPoints': isArabic ? '142 مخبزة ومطحنة مسجلة' : '142 boulangeries contrôlées',
+      },
+      {
+        'id': 'meat',
+        'name': isArabic ? 'اللحوم الحمراء الطازجة المستوردة' : 'Viande bovine fraîche importée',
+        'category': isArabic ? 'سعر مسقف لضبط السوق' : 'Prix Plafonné',
+        'statutoryPrice': '1,350 دج',
+        'marketPrice': '1,350 دج',
+        'status': isArabic ? 'متوفرة بالقصابات المعتمدة' : 'Boucheries Agréées',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'التعليمة الوزارية المشتركة لضبط الأسعار' : 'Instruction Interministérielle',
+        'icon': Icons.set_meal_rounded,
+        'margin': isArabic ? 'سقف السعر النهائي للمستهلك: 1350 دج' : 'Plafond consommateur: 1350 DA',
+        'checkedPoints': isArabic ? '86 قصابة معتمدة بسطيف والعلمة' : '86 boucheries agréées',
+      },
+      {
+        'id': 'potato',
+        'name': isArabic ? 'البطاطا الحقلية للاستهلاك (1 كغ)' : 'Pomme de terre de consommation',
+        'category': isArabic ? 'جهاز ضبط المنتجات الفلاحية' : 'Système SYRPALAC',
+        'statutoryPrice': '75 دج',
+        'marketPrice': '70 - 75 دج',
+        'status': isArabic ? 'تفريغ منتظم من غرف التبريد' : 'Déstockage Continu',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'برنامج الضبط الفلاحي المسجل' : 'Dispositif de régulation',
+        'icon': Icons.grass_rounded,
+        'margin': isArabic ? 'سعر مرجعي مستقر للبيع بالتجزئة' : 'Prix indicatif respecté',
+        'checkedPoints': isArabic ? 'أسواق الجملة والتجزئة (العلمة وسطيف)' : 'Marchés de gros & détail',
+      },
+      {
+        'id': 'onion',
+        'name': isArabic ? 'البصل الجاف (1 كغ)' : 'Oignon sec de consommation',
+        'category': isArabic ? 'منتوج فلاحي واسع الاستهلاك' : 'Produit Agricole de Base',
+        'statutoryPrice': '60 دج',
+        'marketPrice': '55 - 60 دج',
+        'status': isArabic ? 'تموين يومي مستقر' : 'Marché Équilibré',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'متابعة هوامش الربح وفق القانون 04-02' : 'Loi 04-02 transparence',
+        'icon': Icons.eco_rounded,
+        'margin': isArabic ? 'هوامش ربح تجارة الخضر والفواكه' : 'Marges légales de distribution',
+        'checkedPoints': isArabic ? 'مربعات سوق الجملة وأسواق التجزئة' : 'Marchés de gros Sétif',
+      },
+      {
+        'id': 'poultry',
+        'name': isArabic ? 'الدجاج ولحوم الدواجن (1 كغ)' : 'Viande blanche & Volailles',
+        'category': isArabic ? 'شعبة الدواجن وتربية الطيور' : 'Filière Avicole',
+        'statutoryPrice': '370 دج',
+        'marketPrice': '360 - 380 دج',
+        'status': isArabic ? 'وفرة في المذابح والأسواق' : 'Production Abondante',
+        'statusColor': const Color(0xFF10B981),
+        'decree': isArabic ? 'الاتفاقية الإطار لضبط شعبة الدواجن' : 'Convention cadre avicole',
+        'icon': Icons.egg_outlined,
+        'margin': isArabic ? 'سعر توازني يحمي المستهلك والمربي' : 'Équilibre éleveur/consommateur',
+        'checkedPoints': isArabic ? 'المذابح المعتمدة ومحلات بيع الدواجن' : 'Abattoirs agréés Sétif',
+      },
+    ];
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.08),
+                const Color(0xFF240D2D).withValues(alpha: 0.65),
+                const Color(0xFF14051B).withValues(alpha: 0.85),
+              ],
+            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14), width: 1.2),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8)),
+              BoxShadow(color: const Color(0xFFD4AF37).withValues(alpha: 0.04), blurRadius: 25, offset: const Offset(0, -2)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                        ),
+                        child: const Icon(Icons.storefront_rounded, color: Color(0xFFD4AF37), size: 19),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        isArabic
+                            ? 'مرصد أسعار ووفرة المواد واسعة الاستهلاك — مصلحة ملاحظة السوق'
+                            : 'Observatoire des Prix & Disponibilité des Produits de Base',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isArabic ? 'وفرة واستقرار تام' : 'Approvisionnement 100%',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isArabic
+                    ? 'رصد يومي مباشر للأسعار المقننة وهوامش الربح المحددة بالمراسيم التنفيذية (القانون 04-02 وقانون مكافحة المضاربة 21-15)'
+                    : 'Surveillance quotidienne des prix plafonnés et marges réglementaires dans la wilaya de Sétif',
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+              ),
+              const SizedBox(height: 18),
+
+              // Responsive Commodities Grid
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final int crossAxisCount = constraints.maxWidth > 1100 ? 4 : constraints.maxWidth > 650 ? 2 : 1;
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: constraints.maxWidth > 1100 ? 1.65 : 2.1,
+                    ),
+                    itemCount: commodities.length,
+                    itemBuilder: (context, idx) {
+                      final item = commodities[idx];
+                      final name = item['name'] as String;
+                      final cat = item['category'] as String;
+                      final statPrice = item['statutoryPrice'] as String;
+                      final mktPrice = item['marketPrice'] as String;
+                      final status = item['status'] as String;
+                      final statusColor = item['statusColor'] as Color;
+                      final icon = item['icon'] as IconData;
+
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _showDrillDownDetailsSheet(context, isArabic, item),
+                          borderRadius: BorderRadius.circular(12),
+                          splashColor: const Color(0xFFD4AF37).withValues(alpha: 0.12),
+                          child: Container(
+                            padding: const EdgeInsets.all(11),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.03),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD4AF37).withValues(alpha: 0.14),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.25)),
+                                      ),
+                                      child: Icon(icon, color: const Color(0xFFD4AF37), size: 15),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          Text(
+                                            cat,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 9.5, color: Colors.grey.shade400),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.info_outline_rounded, color: Colors.white30, size: 14),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.25),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            isArabic ? 'السعر المقنن' : 'Plafond',
+                                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 9, color: Colors.grey.shade400),
+                                          ),
+                                          Text(
+                                            statPrice,
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFD4AF37),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(width: 1, height: 22, color: Colors.white12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            isArabic ? 'السعر المرصود' : 'Observé',
+                                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 9, color: Colors.grey.shade400),
+                                          ),
+                                          Text(
+                                            mktPrice,
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 11.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF10B981),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Container(
+                                          width: 5,
+                                          height: 5,
+                                          decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                                        ),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          status,
+                                          style: TextStyle(
+                                            fontFamily: 'Tajawal',
+                                            fontSize: 9.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: statusColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      isArabic ? 'تفاصيل الرصد ↗' : 'Détails ↗',
+                                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 9.5, color: const Color(0xFFD4AF37).withValues(alpha: 0.8)),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              const SizedBox(height: 14),
+
+              // Bottom Reassurance Footer
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.22)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isArabic
+                            ? '📡 شبكة الرصد والإنذار المبكر: تموين أسواق ولاية سطيف بالمخزونات الاستراتيجية يسير بانتظام دون تسجيل أي ندرة أو مضاربة'
+                            : 'Réseau d\'alerte précoce : L\'approvisionnement des marchés de Sétif est régulier, aucune pénurie constatée',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── LITIGATION & LEGAL FOLLOW-UP (مصلحة المنازعات والشؤون القانونية) ────────
+  Widget _buildLitigationAndSeizuresSection(
+    bool isArabic,
+    Map<String, dynamic> ins,
+    Map<String, dynamic> cum,
+    List<dynamic> recentVisits,
+  ) {
+    final int courtRef = (ins['courtReferralsCount'] as num?)?.toInt() ?? ((cum['courtReferrals'] as num?)?.toInt() ?? 0);
+    final int closures = (ins['closureProposalsCount'] as num?)?.toInt() ?? ((cum['closures'] as num?)?.toInt() ?? 0);
+    final int samples = (ins['samplesCount'] as num?)?.toInt() ?? ((cum['samples'] as num?)?.toInt() ?? 0);
+    final double seizuresValue = (cum['seizures'] as num?)?.toDouble() ?? 0.0;
+    final formatter = NumberFormat('#,###', 'fr_DZ');
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.08),
+                const Color(0xFF240D2D).withValues(alpha: 0.65),
+                const Color(0xFF14051B).withValues(alpha: 0.85),
+              ],
+            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.14), width: 1.2),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 20, offset: const Offset(0, 8)),
+              BoxShadow(color: const Color(0xFFD4AF37).withValues(alpha: 0.04), blurRadius: 25, offset: const Offset(0, -2)),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE11D48).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE11D48).withValues(alpha: 0.3)),
+                        ),
+                        child: const Icon(Icons.gavel_rounded, color: Color(0xFFE11D48), size: 19),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        isArabic
+                            ? 'دورة حياة المحاضر والمتابعات القضائية — مصلحة المنازعات والشؤون القانونية'
+                            : 'Cycle de Vie des Procès-Verbaux & Poursuites Judiciaires (Contentieux)',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.35)),
+                    ),
+                    child: Text(
+                      isArabic ? 'سلسلة قانونية موثقة' : 'Chaîne Pénale',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                isArabic
+                    ? 'مسار التتبع القانوني للمخالفات من المعاينة الميدانية إلى غاية إحالة الملف لوكيل الجمهورية وتنفيذ قرارات الغلق الإداري'
+                    : 'Traçabilité des infractions : du constat de terrain à la transmission au Parquet et l\'exécution des fermetures',
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+              ),
+              const SizedBox(height: 16),
+
+              // Visual Step Pipeline
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.03),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final steps = [
+                      {'step': '1', 'title': isArabic ? 'معاينة ميدانية' : 'Constat', 'icon': Icons.location_searching_rounded},
+                      {'step': '2', 'title': isArabic ? 'تحرير المحضر' : 'Rédaction PV', 'icon': Icons.edit_note_rounded},
+                      {'step': '3', 'title': isArabic ? 'مصلحة المنازعات' : 'Contentieux', 'icon': Icons.account_balance_rounded},
+                      {'step': '4', 'title': isArabic ? 'إحالة للعدالة' : 'Parquet Justice', 'icon': Icons.gavel_rounded},
+                      {'step': '5', 'title': isArabic ? 'تنفيذ الغلق / غرامة' : 'Exécution', 'icon': Icons.lock_outline_rounded},
+                    ];
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(steps.length * 2 - 1, (index) {
+                        if (index.isOdd) {
+                          return const Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              child: Divider(color: Colors.white24, thickness: 1),
+                            ),
+                          );
+                        }
+                        final stepIndex = index ~/ 2;
+                        final s = steps[stepIndex];
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: stepIndex <= 2
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                                    : const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: stepIndex <= 2 ? const Color(0xFF10B981) : const Color(0xFFD4AF37),
+                                  width: 1.2,
+                                ),
+                              ),
+                              child: Icon(
+                                s['icon'] as IconData,
+                                size: 14,
+                                color: stepIndex <= 2 ? const Color(0xFF10B981) : const Color(0xFFD4AF37),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              s['title'] as String,
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white),
+                            ),
+                          ],
+                        );
+                      }),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // 4 Key Legal Indicators
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final int crossAxisCount = constraints.maxWidth > 800 ? 4 : 2;
+                  return GridView.count(
+                    crossAxisCount: crossAxisCount,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    childAspectRatio: constraints.maxWidth > 800 ? 1.6 : 1.7,
+                    children: [
+                      _buildLegalStatusBox(
+                        title: isArabic ? 'محاضر محالة للقضاء' : 'PVs au Parquet',
+                        value: '$courtRef محضر',
+                        sub: isArabic ? 'محاكم سطيف، العلمة، عين ولمان' : 'Tribunaux de Sétif',
+                        color: const Color(0xFFE11D48),
+                        icon: Icons.gavel_rounded,
+                        isArabic: isArabic,
+                        onTap: () => _showDrillDownDetailsSheet(context, isArabic, {
+                          'name': isArabic ? 'المحاضر المحالة أمام العدالة' : 'Procès-Verbaux Judiciaires',
+                          'category': isArabic ? 'مصلحة المنازعات والشؤون القانونية' : 'Service Contentieux',
+                          'decree': isArabic ? 'القانون 09-03 (المواد 68-72) والقانون 04-02 (المواد 45-50)' : 'Loi 09-03 & Loi 04-02',
+                          'margin': isArabic ? 'الإحالة مباشرة أمام السادة وكلاء الجمهورية لدى المحاكم المختصة إقليمياً' : 'Transmis aux Parquets',
+                          'checkedPoints': isArabic ? '$courtRef محضر رسمي محال للتصرف القضائي' : '$courtRef dossiers judiciaires',
+                          'status': isArabic ? 'إجراءات قانونية سارية' : 'Poursuites en cours',
+                          'statusColor': const Color(0xFFE11D48),
+                        }),
+                      ),
+                      _buildLegalStatusBox(
+                        title: isArabic ? 'قرارات الغلق الإداري' : 'Fermetures Administratives',
+                        value: '$closures قرار',
+                        sub: isArabic ? 'اقتراحات لوالي ولاية سطيف' : 'Arrêtés Wali de Sétif',
+                        color: const Color(0xFFEC4899),
+                        icon: Icons.block_rounded,
+                        isArabic: isArabic,
+                        onTap: () => _showDrillDownDetailsSheet(context, isArabic, {
+                          'name': isArabic ? 'قرارات الغلق الإداري وتنفيذ الشمع الأحمر' : 'Fermetures & Scellés',
+                          'category': isArabic ? 'قرارات ولائية نافذة' : 'Arrêtés préfectoraux',
+                          'decree': isArabic ? 'المرسوم التنفيذي المنظم لقواعد الإغلاق الإداري للمحلات التجارية' : 'Dispositif réglementaire',
+                          'margin': isArabic ? 'تشميع المحلات لمدة تتراوح بين 30 إلى 60 يوماً حسب جسامة المخالفة' : 'Mise sous scellés 30-60j',
+                          'checkedPoints': isArabic ? '$closures قرار غلق قيد المتابعة والتنفيذ' : '$closures arrêtés de fermeture',
+                          'status': isArabic ? 'تنفيذ ولائي' : 'En cours d\'exécution',
+                          'statusColor': const Color(0xFFEC4899),
+                        }),
+                      ),
+                      _buildLegalStatusBox(
+                        title: isArabic ? 'المحجوزات الميدانية' : 'Saisies Réalisées',
+                        value: '${formatter.format(seizuresValue)} دج',
+                        sub: isArabic ? 'مواد متلفة ومحجوزات رسمية' : 'Marchandises saisies/détruites',
+                        color: const Color(0xFFF59E0B),
+                        icon: Icons.inventory_2_outlined,
+                        isArabic: isArabic,
+                        onTap: () => _showDrillDownDetailsSheet(context, isArabic, {
+                          'name': isArabic ? 'سجل المحجوزات الميدانية الرسمية' : 'Registre des Saisies',
+                          'category': isArabic ? 'مصلحتا قمع الغش والممارسات التجارية' : 'Services Répression & Pratiques',
+                          'decree': isArabic ? 'المادتان 53 و 54 من القانون 09-03 لحماية المستهلك' : 'Articles 53-54 Loi 09-03',
+                          'margin': isArabic ? 'سحب فوري من التداول وتوجيه المواد الفاسدة لمراكز الردم التقني' : 'Destruction contrôlée',
+                          'checkedPoints': isArabic ? 'إجمالي المحجوزات المحررة: ${formatter.format(seizuresValue)} دج' : '${formatter.format(seizuresValue)} DA saisis',
+                          'status': isArabic ? 'إتلاف وحجز رسمي' : 'Saisie / Destruction',
+                          'statusColor': const Color(0xFFF59E0B),
+                        }),
+                      ),
+                      _buildLegalStatusBox(
+                        title: isArabic ? 'عينات التحاليل المقتطعة' : 'Prélèvements Laboratoires',
+                        value: '$samples عينة',
+                        sub: isArabic ? 'مخابر قسنطينة وسطيف المعتمدة' : 'Laboratoires agréés',
+                        color: const Color(0xFFA855F7),
+                        icon: Icons.science_rounded,
+                        isArabic: isArabic,
+                        onTap: () => _showDrillDownDetailsSheet(context, isArabic, {
+                          'name': isArabic ? 'عينات التحاليل المخبرية والفيزيوكيميائية' : 'Analyses de Laboratoire',
+                          'category': isArabic ? 'مصلحة حماية المستهلك وقمع الغش' : 'Répression des Fraudes',
+                          'decree': isArabic ? 'المرسوم التنفيذي 90-39 المتعلق بإجراءات أخذ العينات والمراقبة' : 'Décret exécutif 90-39',
+                          'margin': isArabic ? 'تحاليل ميكروبيولوجية للتحقق من سلامة الأغذية وسلسلة التبريد' : 'Contrôle bactériologique',
+                          'checkedPoints': isArabic ? '$samples عينة مقتطعة وموجهة للمخابر المعتمدة' : '$samples prélèvements labo',
+                          'status': isArabic ? 'قيد الفحص والتحليل' : 'Analyses en cours',
+                          'statusColor': const Color(0xFFA855F7),
+                        }),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegalStatusBox({
+    required String title,
+    required String value,
+    required String sub,
+    required Color color,
+    required IconData icon,
+    bool isArabic = true,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        splashColor: color.withValues(alpha: 0.15),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.28), width: 1.1),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withValues(alpha: 0.06),
+                color.withValues(alpha: 0.05),
+              ],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.16),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: color.withValues(alpha: 0.3)),
+                    ),
+                    child: Icon(icon, color: color, size: 14),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade400),
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 10),
+                ],
+              ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: isArabic ? Alignment.centerRight : Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold, color: color),
+                ),
+              ),
+              Text(
+                sub,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontFamily: 'Tajawal', fontSize: 9.5, color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── INTERACTIVE DRILL-DOWN DETAILS SHEET (النافذة التفصيلية المنبثقة) ────────
+  void _showDrillDownDetailsSheet(BuildContext context, bool isArabic, Map<String, dynamic> item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.75,
+              ),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E0A25).withValues(alpha: 0.94),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black54, blurRadius: 30, offset: Offset(0, -6)),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Header with Close Button
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD4AF37).withValues(alpha: 0.16),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                              ),
+                              child: const Icon(Icons.analytics_outlined, color: Color(0xFFD4AF37), size: 20),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item['name']?.toString() ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    item['category']?.toString() ?? '',
+                                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFD4AF37)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        icon: const Icon(Icons.close_rounded, color: Colors.white70),
+                        tooltip: isArabic ? 'إغلاق' : 'Fermer',
+                      ),
+                    ],
+                  ),
+                  const Divider(color: Colors.white12, height: 24),
+
+                  // Details Body
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _buildDetailRow(
+                            isArabic ? '📜 السند القانوني والمرسوم' : 'Base Légale',
+                            item['decree']?.toString() ?? 'الأمر 06-03 والقانون 09-03',
+                            Icons.article_outlined,
+                            const Color(0xFFD4AF37),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildDetailRow(
+                            isArabic ? '⚖️ التدابير وهوامش الربح' : 'Mesures & Marges',
+                            item['margin']?.toString() ?? '',
+                            Icons.balance_outlined,
+                            const Color(0xFF10B981),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildDetailRow(
+                            isArabic ? '📍 نقاط الرقابة والمحلات المشمولة' : 'Points de Contrôle',
+                            item['checkedPoints']?.toString() ?? '',
+                            Icons.pin_drop_outlined,
+                            const Color(0xFF38BDF8),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildDetailRow(
+                            isArabic ? '🛡️ وضعية المتابعة الميدانية' : 'Statut de Surveillance',
+                            item['status']?.toString() ?? '',
+                            Icons.verified_outlined,
+                            (item['statusColor'] as Color?) ?? const Color(0xFF10B981),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // Territorial Coverage Box
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.map_outlined, color: Color(0xFFD4AF37), size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      isArabic ? 'المفتشيات والدوائر الخاضعة للمسح الميداني' : 'Circonscriptions Couvertes',
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    'سطيف', 'العلمة', 'عين ولمان', 'بوقاعة',
+                                    'عين الكبيرة', 'عين أزال', 'عين أرنات', 'مطار 08 ماي'
+                                  ].map((m) {
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD4AF37).withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.25)),
+                                      ),
+                                      child: Text(
+                                        m,
+                                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      isArabic ? 'تم الاطلاع على التفاصيل' : 'Compris',
+                      style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, color: color, size: 14),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.grey.shade400),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
