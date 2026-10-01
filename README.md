@@ -4,7 +4,7 @@
 > **المستودع الموحد (Unified Monorepo)**: يجمع بين الخادم السحابي وقاعدة البيانات (Backend) وتطبيق الرقابة والتفتيش الميداني متعدد المنصات (Frontend Flutter).
 > **المنصة السحابية الحية (Live Render Web App)**: [dcw-setif-tracker.onrender.com](https://dcw-setif-tracker.onrender.com)
 > **الخادم السحابي الحي (Live Render API)**: `https://drh-setif-api.onrender.com/api`
-> **حالة المنظومة**: ✅ `v3.6.0-authentic-only` — تدقيق واختبار حي ميداني ناجح 100% على السحابة، متوافق ومتجاوب بالكامل مع كافة شاشات الهواتف المحمولة والحواسيب.
+> **حالة المنظومة**: ✅ `v3.6.2-ux-clarity` — تدقيق واختبار حي ميداني ناجح 100% على السحابة، متوافق ومتجاوب بالكامل مع كافة شاشات الهواتف المحمولة والحواسيب.
 
 ---
 
@@ -27,6 +27,7 @@ DCW-SETIF/
 │   └── pubspec.yaml           # تبعات Flutter
 │
 ├── 📁 docs/                   # الوثائق الإدارية والتقنية
+│   ├── LEGAL_ADMINISTRATIVE_FIELD_AUDIT_GUIDE.pdf # دليل التدقيق الميداني والشرعية القانونية والإدارية
 │   ├── DCW_SETIF_DIRECTOR_MANUAL.pdf          # الدليل الرسمي الشامل للمدير الولائي
 │   ├── DIRECTOR_MANUAL_PRESENTATION.html      # العرض التقديمي التفاعلي للمنظومة
 │   └── OFFICIAL_CREDENTIALS.md                # بيانات الحسابات المعتمدة الرسمية
