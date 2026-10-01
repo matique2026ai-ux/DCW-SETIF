@@ -276,6 +276,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
         ? _getTrackPoints(_selectedInspectorForTrack!)
         : const <LatLng>[];
 
+
+
     return Stack(
       children: [
         FlutterMap(
@@ -1578,6 +1580,17 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     final emp = _selectedInspectorForTrack!;
     final name = (emp['name'] ?? (loc.isArabic ? 'المفتش' : 'Inspecteur')).toString();
     final trackPts = _getTrackPoints(emp);
+    double trackDistKm = 0.0;
+    if (trackPts.length >= 2) {
+      for (int i = 0; i < trackPts.length - 1; i++) {
+        trackDistKm += Geolocator.distanceBetween(
+          trackPts[i].latitude,
+          trackPts[i].longitude,
+          trackPts[i + 1].latitude,
+          trackPts[i + 1].longitude,
+        ) / 1000.0;
+      }
+    }
 
     return Container(
       constraints: const BoxConstraints(maxWidth: 580),
@@ -1641,12 +1654,13 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 ),
                 Text(
                   loc.isArabic
-                      ? '${trackPts.length} محطات مسجلة اليوم'
-                      : '${trackPts.length} stations enregistrées',
+                      ? '${trackPts.length} محطات | ${trackDistKm.toStringAsFixed(1)} كم مسار مقدر'
+                      : '${trackPts.length} stations | ~${trackDistKm.toStringAsFixed(1)} km',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 11,
-                    color: AppTheme.TextSecondary,
+                    color: Color(0xFFD4AF37),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -2269,6 +2283,76 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 '${loc.isArabic ? "الإحداثيات الجغرافية" : "Coordonnées GPS"}: $lat, $lng',
                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
               ),
+            const SizedBox(height: 10),
+
+            // 📋 Legal Metadata (Paper PV, Partner Inspector, Mission Type)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.receipt_long, color: Color(0xFFD4AF37), size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        loc.isArabic ? 'رقم المحضر الورقي (Avis de passage): ' : 'N° PV / Avis : ',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+                      ),
+                      Expanded(
+                        child: Text(
+                          (v['paperPvNumber'] ?? v['PaperPvNumber'] ?? (loc.isArabic ? 'غير مسجل' : 'Non spécifié')).toString(),
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.people_alt, color: Color(0xFF10B981), size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        loc.isArabic ? 'العون المرافق (الثنائي الرقابي): ' : 'Binôme : ',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+                      ),
+                      Expanded(
+                        child: Text(
+                          (v['partnerInspectorName'] ?? v['PartnerInspectorName'] ?? (loc.isArabic ? 'مهمة فردية' : 'Mission solo')).toString(),
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.assignment, color: Color(0xFFF59E0B), size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        loc.isArabic ? 'طبيعة المهمة: ' : 'Type de mission : ',
+                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
+                      ),
+                      Expanded(
+                        child: Text(
+                          (v['missionType'] ?? v['MissionType']) == 'market_observation'
+                              ? (loc.isArabic ? 'ملاحظة السوق واستطلاع الأسعار' : 'Observation du marché')
+                              : ((v['missionType'] ?? v['MissionType']) == 'administrative_inquiry'
+                                  ? (loc.isArabic ? 'تحقيق إداري واستدعاء' : 'Enquête administrative')
+                                  : (loc.isArabic ? 'رقابة وقمع الغش' : 'Contrôle & Répression des fraudes')),
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFCD34D)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,

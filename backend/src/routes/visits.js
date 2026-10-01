@@ -209,6 +209,29 @@ router.post('/', authMiddleware, async (req, res) => {
     const finalLegalAction = legalAction || LegalAction || null;
     const sValue = parseFloat(seizureValue || SeizureValue) || 0;
 
+    const finalPaperPvNumber = (req.body.paperPvNumber || req.body.PaperPvNumber || '').toString().trim() || null;
+    const finalPartnerInspectorName = (req.body.partnerInspectorName || req.body.PartnerInspectorName || '').toString().trim() || null;
+    const rawPartnerId = req.body.partnerInspectorId || req.body.PartnerInspectorId;
+    const finalPartnerInspectorId = rawPartnerId ? parseInt(rawPartnerId) : null;
+    const finalMissionType = (req.body.missionType || req.body.MissionType || 'repressive_inspection').toString().trim();
+
+    // ⚖️ الضوابط القانونية الصارمة للتشريع الجزائري (المادة 53 من القانون 09-03 والمادة 55 من القانون 04-02):
+    // 1. اشتراط الرقم الورقي المتسلسل لمنع الانتحال والتسجيل الصوري
+    if (finalViolationFound && !finalPaperPvNumber) {
+      return res.status(400).json({
+        error: '⚠️ إلزامية إدارية وقانونية: يجب تدوين رقم محضر المعاينة أو الإشعار بالمرور الورقي (Avis de passage N°) ذي الأرومة المتسلسلة عند توثيق أي مخالفة تجارية أو حجز سلع.',
+        fieldRequired: 'paperPvNumber',
+      });
+    }
+
+    // 2. اشتراط الثنائي الرقابي (عونان محلفان على الأقل) لصحة تحرير محاضر المخالفات التنازعية
+    if (finalViolationFound && !finalPartnerInspectorName) {
+      return res.status(400).json({
+        error: '⚠️ اشتراط قانوني إلزامي (المادة 53 من القانون 09-03 والمادة 55 من القانون 04-02): يُشترط لصحة المعاينة التنازعية وتوثيق المخالفات وجود عونين محلفين على الأقل (ثنائي رقابي). يرجى تحديد العون الثاني المرافق.',
+        fieldRequired: 'partnerInspectorName',
+      });
+    }
+
     const db = await getConnection();
     const pg = isPostgres();
     const today = getTodayAlgeria();
@@ -231,6 +254,9 @@ router.post('/', authMiddleware, async (req, res) => {
       violationNotes: finalViolationNotes,
       seizureValue: sValue,
       legalAction: finalLegalAction,
+      paperPvNumber: finalPaperPvNumber,
+      partnerInspectorName: finalPartnerInspectorName,
+      missionType: finalMissionType,
     });
 
     // 🛡️ Military-grade AES-256-GCM encryption of sensitive data
@@ -245,19 +271,20 @@ router.post('/', authMiddleware, async (req, res) => {
             "EmployeeId","AssignmentId","Date","Latitude","Longitude","Accuracy",
             "LocationName","ShopName","ShopType","Photo","Notes","Status",
             "ViolationFound","ViolationType","ViolationNotes","LegalAction","SeizureValue","CheckInTime",
-            "DigitalSignature","IsEncrypted"
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'completed',$12,$13,$14,$15,$16,COALESCE($17::timestamp, NOW()),$18,true)`
+            "DigitalSignature","IsEncrypted","PaperPvNumber","PartnerInspectorName","PartnerInspectorId","MissionType"
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'completed',$12,$13,$14,$15,$16,COALESCE($17::timestamp, NOW()),$18,true,$19,$20,$21,$22)`
         : `INSERT INTO TrackerVisits (
             EmployeeId,AssignmentId,Date,Latitude,Longitude,Accuracy,
             LocationName,ShopName,ShopType,Photo,Notes,Status,
             ViolationFound,ViolationType,ViolationNotes,LegalAction,SeizureValue,CheckInTime,
-            DigitalSignature,IsEncrypted
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,'completed',?,?,?,?,?,ISNULL(?, GETDATE()),?,1)`,
+            DigitalSignature,IsEncrypted,PaperPvNumber,PartnerInspectorName,PartnerInspectorId,MissionType
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,'completed',?,?,?,?,?,ISNULL(?, GETDATE()),?,1,?,?,?,?)`,
       [
         finalEmpId, assignmentId || AssignmentId || null, today, finalLat, finalLng, accuracy || Accuracy || null,
         encLoc, encShopName, finalShopType, finalPhoto, encNotes,
         finalViolationFound, finalViolationType, encViolationNotes, finalLegalAction, sValue,
-        visitTimestamp, pvSeal
+        visitTimestamp, pvSeal,
+        finalPaperPvNumber, finalPartnerInspectorName, finalPartnerInspectorId, finalMissionType
       ]
     );
 

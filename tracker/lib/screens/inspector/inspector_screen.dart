@@ -1422,7 +1422,11 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final notesCtrl = TextEditingController();
     final violationNotesCtrl = TextEditingController();
     final seizureValueCtrl = TextEditingController();
+    final paperPvCtrl = TextEditingController();
     String shopType = 'محل تجزئة / مواد غذائية';
+    String missionType = 'repressive_inspection';
+    int? selectedPartnerId;
+    String? selectedPartnerName;
     bool violationFound = false;
     String violationType = 'عدم إشهار الأسعار والتعريفات';
     String legalAction = 'محضر متابعة قضائية';
@@ -1514,7 +1518,95 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    // نوع المهمة التفتيشية
+                    DropdownButtonFormField<String>(
+                      initialValue: missionType,
+                      isExpanded: true,
+                      dropdownColor: AppTheme.CardColor,
+                      decoration: InputDecoration(
+                        labelText: 'طبيعة المهمة الرقابية الميدانية',
+                        prefixIcon: const Icon(Icons.shield, color: AppTheme.AccentColor, size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'repressive_inspection',
+                          child: Text('جولة قمع الغش والممارسات التجارية (ثنائي رقابي)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                        ),
+                        DropdownMenuItem(
+                          value: 'price_observation',
+                          child: Text('ملاحظة الأسعار وتتبع وفرة المواد الأساسية (فردي/ثنائي)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                        ),
+                        DropdownMenuItem(
+                          value: 'inquiry_survey',
+                          child: Text('تحري إداري وبحث اقتصادي ميداني (فردي/ثنائي)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => missionType = val);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    // الثنائي الرقابي المرافق (القانون 09-03)
+                    FutureBuilder<List<dynamic>>(
+                      future: context.read<AuthService>().api.getEmployees(),
+                      builder: (fCtx, fSnap) {
+                        final currentUserId = context.read<AuthService>().currentUser?.employeeId;
+                        final allEmps = (fSnap.data ?? [])
+                            .where((e) => e['Id'] != currentUserId && (e['Role'] == 4 || e['Role'] == '4' || e['Nom'] != null))
+                            .toList();
+                        return DropdownButtonFormField<int>(
+                          initialValue: selectedPartnerId,
+                          isExpanded: true,
+                          dropdownColor: AppTheme.CardColor,
+                          decoration: InputDecoration(
+                            labelText: missionType == 'repressive_inspection'
+                                ? 'العون المرافق (الثنائي الرقابي - إلزامي للمخالفات) *'
+                                : 'العون المرافق (اختياري)',
+                            prefixIcon: const Icon(Icons.group, color: Color(0xFFD4AF37), size: 18),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          items: [
+                            const DropdownMenuItem<int>(
+                              value: null,
+                              child: Text('— بدون مرافق (مهمة فردية) —', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white60)),
+                            ),
+                            ...allEmps.map((emp) {
+                              final int id = emp['Id'] as int;
+                              final String name = '${emp['Nom'] ?? ''} ${emp['Prenom'] ?? ''}'.trim();
+                              return DropdownMenuItem<int>(
+                                value: id,
+                                child: Text(name.isNotEmpty ? name : 'موظف #$id', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12)),
+                              );
+                            }),
+                          ],
+                          onChanged: (val) {
+                            setDialogState(() {
+                              selectedPartnerId = val;
+                              if (val != null) {
+                                final matched = allEmps.firstWhere((e) => e['Id'] == val, orElse: () => null);
+                                selectedPartnerName = matched != null ? '${matched['Nom'] ?? ''} ${matched['Prenom'] ?? ''}'.trim() : null;
+                              } else {
+                                selectedPartnerName = null;
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    // رقم محضر المعاينة الورقي أو إشعار المرور
+                    TextField(
+                      controller: paperPvCtrl,
+                      textDirection: TextDirection.ltr,
+                      decoration: InputDecoration(
+                        labelText: 'رقم محضر المعاينة الورقي / إشعار المرور (Avis de passage)',
+                        hintText: 'مثال: PV-2026/048 أو AVP-112',
+                        prefixIcon: const Icon(Icons.receipt_long, color: Color(0xFFD4AF37), size: 18),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: nameCtrl,
                       textDirection: TextDirection.rtl,
@@ -1730,6 +1822,80 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   final double parsedSeizure = double.tryParse(seizureValueCtrl.text.trim()) ?? 0.0;
                   final String finalLegalAction = violationFound ? legalAction : 'مطابقة وتوعية';
 
+                  // ⚖️ التحقق القانوني التشريعي الجزائري (المادة 53 من القانون 09-03 والمادة 55 من القانون 04-02)
+                  final paperPvVal = paperPvCtrl.text.trim();
+                  if (violationFound) {
+                    if (paperPvVal.isEmpty) {
+                      setDialogState(() => isSaving = false);
+                      showDialog(
+                        context: ctx,
+                        builder: (alertCtx) => AlertDialog(
+                          backgroundColor: const Color(0xFF200B1A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+                          ),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: Color(0xFFD4AF37), size: 24),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text('رقم المحضر الورقي إلزامي', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                          content: const Text(
+                            '⚠️ تنبيه إداري وإجرائي:\nعند رصد مخالفة أو اتخاذ إجراء قانوني، يجب تدوين رقم محضر المعاينة الورقي الرسمي أو إشعار المرور (Avis de passage) لربط البصمة الرقمية بالسند القانوني المادي أمام القضاء.',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70, height: 1.5),
+                          ),
+                          actions: [
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor),
+                              onPressed: () => Navigator.pop(alertCtx),
+                              child: const Text('حسناً، سأقوم بتدوينه', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (selectedPartnerName == null || selectedPartnerName!.isEmpty) {
+                      setDialogState(() => isSaving = false);
+                      showDialog(
+                        context: ctx,
+                        builder: (alertCtx) => AlertDialog(
+                          backgroundColor: const Color(0xFF200B1A),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: const BorderSide(color: AppTheme.DangerColor, width: 1.5),
+                          ),
+                          title: const Row(
+                            children: [
+                              Icon(Icons.gavel, color: AppTheme.DangerColor, size: 24),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text('بطلان إجرائي: اشتراط الثنائي الرقابي', style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                          content: const Text(
+                            '⚠️ تنبيه تشريعي إلزامي (المادة 53 من القانون 09-03 والمادة 55 من القانون 04-02):\nيُشترط قانوناً لصحة المعاينة التنازعية وتوثيق المخالفات أو حجز السلع وجود عونين محلفين على الأقل (ثنائي رقابي) وتوقيعهما معاً.\n\nلا يمكن قانوناً تسجيل محضر متابعة قضائية أو حجز بشكل فردي دون تحديد العون الثاني المرافق منعاً للبطلان القضائي.',
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white70, height: 1.5),
+                          ),
+                          actions: [
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor),
+                              onPressed: () => Navigator.pop(alertCtx),
+                              child: const Text('حسناً، سأحدد العون المرافق', style: TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
+                  }
+
                   final payload = {
                     'employeeId': empId,
                     'latitude': posLat,
@@ -1744,6 +1910,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     'legalAction': finalLegalAction,
                     'seizureValue': parsedSeizure,
                     'visitTime': DateTime.now().toIso8601String(),
+                    'paperPvNumber': paperPvVal.isNotEmpty ? paperPvVal : null,
+                    'partnerInspectorName': selectedPartnerName,
+                    'partnerInspectorId': selectedPartnerId,
+                    'missionType': missionType,
                   };
 
                   bool isOfflineMode = false;
@@ -1762,6 +1932,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       violationNotes: payload['violationNotes'] as String?,
                       legalAction: finalLegalAction,
                       seizureValue: parsedSeizure,
+                      paperPvNumber: payload['paperPvNumber'] as String?,
+                      partnerInspectorName: payload['partnerInspectorName'] as String?,
+                      partnerInspectorId: payload['partnerInspectorId'] as int?,
+                      missionType: payload['missionType'] as String?,
                     );
                   } catch (e) {
                     isOfflineMode = true;
@@ -1786,6 +1960,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     'ViolationType': violationType,
                     'LegalAction': finalLegalAction,
                     'SeizureValue': parsedSeizure,
+                    'PaperPvNumber': payload['paperPvNumber'],
+                    'PartnerInspectorName': payload['partnerInspectorName'],
+                    'MissionType': payload['missionType'],
                     'IsOffline': isOfflineMode,
                   };
 
@@ -3059,7 +3236,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
               const SizedBox(height: 16),
 
               // Visit Action
-              if (_isCheckedIn) ...[
+              if (_isCheckedIn && !_isCheckedOut) ...[
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -3081,7 +3258,72 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: _handleSmartCheckOut,
+                    icon: const Icon(Icons.exit_to_app, color: Color(0xFFEF4444)),
+                    label: const Text(
+                      'اختتام المهمة الرقابية والانصراف الميداني',
+                      style: TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFEF4444),
+                        fontSize: 13,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
+              ] else if (_isCheckedOut) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4), width: 1.2),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check, color: Colors.white, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'تم اختتام النشاط الرقابي والانصراف بنجاح لهذا اليوم',
+                              style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'توقيت الانصراف: ${_checkOutTime ?? "مسجل"} | إجمالي المعاينات الميدانية: $_visitCount',
+                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFF10B981)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
 
                 // Today's visits
                 Row(

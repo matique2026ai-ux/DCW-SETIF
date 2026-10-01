@@ -1649,6 +1649,10 @@ async function ensureTables() {
       await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "ApprovedAt" TIMESTAMP`);
       await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "DigitalSignature" VARCHAR(200)`);
       await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "IsEncrypted" BOOLEAN DEFAULT true`);
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "PaperPvNumber" VARCHAR(100)`);
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "PartnerInspectorName" VARCHAR(150)`);
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "PartnerInspectorId" INT`);
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "MissionType" VARCHAR(50) DEFAULT 'repressive_inspection'`);
 
       // 🛡️ Ensure columns are TEXT to safely hold AES-256-GCM ciphertexts
       await db.query(`ALTER TABLE "TrackerVisits" ALTER COLUMN "ShopName" TYPE TEXT`);
@@ -1687,6 +1691,10 @@ async function ensureTables() {
       await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TrackerVisits') AND name = 'IsApproved') ALTER TABLE TrackerVisits ADD IsApproved BIT DEFAULT 0`);
       await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TrackerVisits') AND name = 'ApprovedBy') ALTER TABLE TrackerVisits ADD ApprovedBy NVARCHAR(200) NULL`);
       await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TrackerVisits') AND name = 'ApprovedAt') ALTER TABLE TrackerVisits ADD ApprovedAt DATETIME NULL`);
+      await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TrackerVisits') AND name = 'PaperPvNumber') ALTER TABLE TrackerVisits ADD PaperPvNumber NVARCHAR(100) NULL`);
+      await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TrackerVisits') AND name = 'PartnerInspectorName') ALTER TABLE TrackerVisits ADD PartnerInspectorName NVARCHAR(150) NULL`);
+      await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TrackerVisits') AND name = 'PartnerInspectorId') ALTER TABLE TrackerVisits ADD PartnerInspectorId INT NULL`);
+      await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('TrackerVisits') AND name = 'MissionType') ALTER TABLE TrackerVisits ADD MissionType NVARCHAR(50) DEFAULT 'repressive_inspection'`);
 
       await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('UtilisateursSysteme') AND name = 'DeviceId') ALTER TABLE UtilisateursSysteme ADD DeviceId NVARCHAR(150) NULL`);
       await db.query(`IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('UtilisateursSysteme') AND name = 'DeviceName') ALTER TABLE UtilisateursSysteme ADD DeviceName NVARCHAR(100) NULL`);

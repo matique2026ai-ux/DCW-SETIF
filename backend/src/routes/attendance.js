@@ -353,8 +353,8 @@ router.get('/map-data', async (req, res) => {
 
     const rawVisits = await db.query(
       pg
-        ? `SELECT "Id","EmployeeId","CheckInTime","Latitude","Longitude","ShopName","ShopType","Photo","ViolationFound","Notes" FROM "TrackerVisits" WHERE "Date" = $1 ORDER BY "CheckInTime" ASC`
-        : 'SELECT Id,EmployeeId,CheckInTime,Latitude,Longitude,ShopName,ShopType,Photo,ViolationFound,Notes FROM TrackerVisits WHERE Date = ? ORDER BY CheckInTime ASC',
+        ? `SELECT "Id","EmployeeId","CheckInTime","Latitude","Longitude","ShopName","ShopType","Photo","ViolationFound","Notes","PaperPvNumber","PartnerInspectorName","PartnerInspectorId","MissionType" FROM "TrackerVisits" WHERE "Date" = $1 ORDER BY "CheckInTime" ASC`
+        : 'SELECT Id,EmployeeId,CheckInTime,Latitude,Longitude,ShopName,ShopType,Photo,ViolationFound,Notes,PaperPvNumber,PartnerInspectorName,PartnerInspectorId,MissionType FROM TrackerVisits WHERE Date = ? ORDER BY CheckInTime ASC',
       [today]
     );
     const visits = decryptVisitsList(rawVisits || []);
@@ -414,6 +414,10 @@ router.get('/map-data', async (req, res) => {
           photo: v.Photo || v.photo,
           violationFound: v.ViolationFound !== undefined ? v.ViolationFound : v.violationfound,
           notes: v.Notes || v.notes,
+          paperPvNumber: v.paperPvNumber || v.PaperPvNumber || v.paperpvnumber || null,
+          partnerInspectorName: v.partnerInspectorName || v.PartnerInspectorName || v.partnerinspectorname || null,
+          partnerInspectorId: v.partnerInspectorId || v.PartnerInspectorId || v.partnerinspectorid || null,
+          missionType: v.missionType || v.MissionType || v.missiontype || 'repressive_inspection',
         });
       }
     }

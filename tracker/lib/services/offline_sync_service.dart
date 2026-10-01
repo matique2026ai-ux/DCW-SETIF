@@ -75,6 +75,9 @@ class OfflineSyncService {
       'ActivityType': payload['shopType'] ?? 'تفتيش',
       'VisitTime': DateTime.now().toIso8601String(),
       'Notes': payload['notes'] ?? '',
+      'PaperPvNumber': payload['paperPvNumber'],
+      'PartnerInspectorName': payload['partnerInspectorName'],
+      'MissionType': payload['missionType'] ?? 'repressive_inspection',
       'IsOffline': true,
     });
     await prefs.setString(_cachedVisitsKey, jsonEncode(cachedVisits));
@@ -190,6 +193,10 @@ class OfflineSyncService {
             legalAction: payload['legalAction'] as String?,
             seizureValue: (payload['seizureValue'] as num?)?.toDouble(),
             visitTime: payload['visitTime'] as String? ?? item['createdAt'] as String?,
+            paperPvNumber: payload['paperPvNumber'] as String?,
+            partnerInspectorName: payload['partnerInspectorName'] as String?,
+            partnerInspectorId: (payload['partnerInspectorId'] as num?)?.toInt(),
+            missionType: payload['missionType'] as String?,
           );
           syncedCount++;
         }

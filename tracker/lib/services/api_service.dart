@@ -1157,6 +1157,10 @@ class ApiService {
     String? legalAction,
     double? seizureValue,
     String? visitTime,
+    String? paperPvNumber,
+    String? partnerInspectorName,
+    int? partnerInspectorId,
+    String? missionType,
   }) async {
     try {
       final response = await http.post(
@@ -1179,6 +1183,10 @@ class ApiService {
           'legalAction': legalAction,
           'seizureValue': seizureValue ?? 0,
           if (visitTime != null) 'visitTime': visitTime,
+          if (paperPvNumber != null) 'paperPvNumber': paperPvNumber,
+          if (partnerInspectorName != null) 'partnerInspectorName': partnerInspectorName,
+          if (partnerInspectorId != null) 'partnerInspectorId': partnerInspectorId,
+          if (missionType != null) 'missionType': missionType,
         }),
       ).timeout(defaultTimeout);
 

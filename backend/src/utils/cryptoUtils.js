@@ -77,8 +77,11 @@ function generatePvSeal(pvData) {
   const notes = (pvData.ViolationNotes || pvData.violationNotes || '').toString();
   const seizure = parseFloat(pvData.SeizureValue !== undefined ? pvData.SeizureValue : (pvData.seizureValue || 0)) || 0;
   const legal = (pvData.LegalAction || pvData.legalAction || '').toString();
+  const paperPv = (pvData.PaperPvNumber || pvData.paperPvNumber || '').toString();
+  const partner = (pvData.PartnerInspectorName || pvData.partnerInspectorName || '').toString();
+  const mission = (pvData.MissionType || pvData.missionType || '').toString();
 
-  const canonicalPayload = [id, empId, date, shop, viol, notes, seizure.toFixed(2), legal].join('||');
+  const canonicalPayload = [id, empId, date, shop, viol, notes, seizure.toFixed(2), legal, paperPv, partner, mission].join('||');
   return crypto.createHmac('sha256', HMAC_KEY).update(canonicalPayload, 'utf8').digest('hex');
 }
 
@@ -110,6 +113,12 @@ function decryptVisitRecord(v) {
 
   if (clone.LocationName !== undefined) clone.LocationName = decryptText(clone.LocationName);
   if (clone.locationName !== undefined) clone.locationName = decryptText(clone.locationName);
+
+  // Normalize camelCase and PascalCase for new legal fields
+  clone.paperPvNumber = clone.PaperPvNumber || clone.paperPvNumber || null;
+  clone.partnerInspectorName = clone.PartnerInspectorName || clone.partnerInspectorName || null;
+  clone.partnerInspectorId = clone.PartnerInspectorId || clone.partnerInspectorId || null;
+  clone.missionType = clone.MissionType || clone.missionType || 'repressive_inspection';
 
   // Attach digital seal indicator
   const signature = clone.DigitalSignature || clone.digitalsignature;
