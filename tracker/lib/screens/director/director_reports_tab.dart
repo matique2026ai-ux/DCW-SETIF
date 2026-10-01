@@ -1498,7 +1498,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                         ),
                       ),
                     );
-                  }).toList(),
+                  }),
                   if (!_isListExpanded && filteredList.length > 8)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),

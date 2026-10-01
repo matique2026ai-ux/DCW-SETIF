@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -30,7 +30,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
   String _selectedMapStyle = 'satellite'; // 'satellite', 'osm'
   bool _isLegendExpanded = false;
   Map<String, dynamic>? _selectedInspectorForTrack;
-  // ðŸ›°ï¸ ÙƒØ§Ø´ Ù†Ù‚Ø§Ø· GPS Ø§Ù„Ø¯ÙˆØ±ÙŠØ© Ù„ÙƒÙ„ Ù…ÙØªØ´ (employeeId â†’ Ù‚Ø§Ø¦Ù…Ø© Ù†Ù‚Ø§Ø·)
+  // 🛰️ كاش نقاط GPS الدورية لكل مفتش (employeeId → قائمة نقاط)
   final Map<int, List<Map<String, dynamic>>> _locationTrailCache = {};
 
   late AnimationController _pulseController;
@@ -73,7 +73,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       final cleanData = data.where((e) {
         final name = (e['name'] ?? '').toString();
         final service = (e['service'] ?? '').toString();
-        return !name.contains('Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ') && !service.contains('Ø§Ù„Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠØ©');
+        return !name.contains('المدير الولائي') && !service.contains('المديرية الولائية');
       }).toList();
 
       if (mounted) {
@@ -89,7 +89,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 (e) => (e['employeeId'] ?? e['Id'] ?? e['id']) == trackId,
               );
             } catch (_) {}
-            // ðŸ›°ï¸ ØªØ­Ø¯ÙŠØ« Ù…Ø³Ø§Ø± GPS Ø§Ù„Ù…ÙØªØ´ Ø§Ù„Ù…Ø­Ø¯Ø¯ Ø¹Ù†Ø¯ ÙƒÙ„ Ø¯ÙˆØ±Ø©
+            // 🛰️ تحديث مسار GPS المفتش المحدد عند كل دورة
             if (silent && trackId != null) {
               _loadInspectorTrail(trackId is int ? trackId : int.tryParse(trackId.toString()) ?? 0);
             }
@@ -101,7 +101,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     }
   }
 
-  /// ðŸ›°ï¸ ØªØ­Ù…ÙŠÙ„ Ù…Ø³Ø§Ø± GPS Ø§Ù„Ø¯ÙˆØ±ÙŠ Ù„Ù…ÙØªØ´ Ù…Ø­Ø¯Ø¯ ÙˆØªØ®Ø²ÙŠÙ†Ù‡ ÙÙŠ Ø§Ù„ÙƒØ§Ø´
+  /// 🛰️ تحميل مسار GPS الدوري لمفتش محدد وتخزينه في الكاش
   Future<void> _loadInspectorTrail(int employeeId) async {
     if (employeeId <= 0) return;
     try {
@@ -152,8 +152,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               content: Text(
                 loc.isArabic
-                    ? 'ðŸ“ ØªÙ… Ø§Ù„ØªÙˆØ¬ÙŠÙ‡ Ø¥Ù„Ù‰ Ù…Ø±ÙƒØ² ÙˆÙ„Ø§ÙŠØ© Ø³Ø·ÙŠÙ (ØµÙ„Ø§Ø­ÙŠØ© GPS ØºÙŠØ± Ù…ÙØ¹Ù„Ø© ÙÙŠ Ø§Ù„Ù…ØªØµÙØ­)'
-                    : 'ðŸ“ Redirection vers le centre de SÃ©tif (GPS non autorisÃ©)',
+                    ? '📍 تم التوجيه إلى مركز ولاية سطيف (صلاحية GPS غير مفعلة في المتصفح)'
+                    : '📍 Redirection vers le centre de Sétif (GPS non autorisé)',
                 style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
               ),
               backgroundColor: AppTheme.WarningColor,
@@ -180,8 +180,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             content: Text(
               loc.isArabic
-                  ? 'ðŸŽ¯ ØªÙ… ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆÙ‚Ø¹Ùƒ Ø§Ù„Ù…Ø¨Ø§Ø´Ø± Ø¨Ù†Ø¬Ø§Ø­ (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})'
-                  : 'ðŸŽ¯ Position actuelle localisÃ©e (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})',
+                  ? '🎯 تم تحديد موقعك المباشر بنجاح (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})'
+                  : '🎯 Position actuelle localisée (${pos.latitude.toStringAsFixed(4)}, ${pos.longitude.toStringAsFixed(4)})',
               style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
             ),
             backgroundColor: AppTheme.SuccessColor,
@@ -199,8 +199,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             content: Text(
               loc.isArabic
-                  ? 'ðŸ“ ØªÙ… Ø§Ù„ØªÙˆØ¬ÙŠÙ‡ Ø¥Ù„Ù‰ Ù…Ø±ÙƒØ² ÙˆÙ„Ø§ÙŠØ© Ø³Ø·ÙŠÙ ÙˆØ§Ù„Ù…Ù‚Ø± Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ'
-                  : 'ðŸ“ Redirection vers le siÃ¨ge principal (SÃ©tif)',
+                  ? '📍 تم التوجيه إلى مركز ولاية سطيف والمقر الرئيسي'
+                  : '📍 Redirection vers le siège principal (Sétif)',
               style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.w600),
             ),
             backgroundColor: AppTheme.AccentColor,
@@ -213,7 +213,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     }
   }
 
-  String _selectedInspectorateId = 'Ø§Ù„ÙƒÙ„';
+  String _selectedInspectorateId = 'الكل';
 
   @override
   Widget build(BuildContext context) {
@@ -246,7 +246,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           final double? vLng = (v['longitude'] is num) ? (v['longitude'] as num).toDouble() : double.tryParse(v['longitude']?.toString() ?? '');
           if (vLat == null || vLng == null) continue;
           final visitMap = Map<String, dynamic>.from(v as Map);
-          final String empName = emp['name']?.toString() ?? 'Ù…ÙØªØ´ Ù…ÙŠØ¯Ø§Ù†ÙŠ';
+          final String empName = emp['name']?.toString() ?? 'مفتش ميداني';
           visitMarkers.add(
             Marker(
               point: LatLng(vLat, vLng),
@@ -256,7 +256,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 onTap: () => _showVisitDetailsModal(visitMap, empName),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6), // بنفسجي — معاينة/محل
+                    color: const Color(0xFFD4AF37),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: const [
@@ -320,7 +320,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               }).toList(),
             ),
 
-            // ðŸ—ºï¸ Trajectory Route for Selected Inspector (On-Demand only)
+            // 🗺️ Trajectory Route for Selected Inspector (On-Demand only)
             if (_selectedInspectorForTrack != null && activeTrackPoints.length >= 2) ...[
               PolylineLayer(
                 polylines: [
@@ -443,13 +443,13 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
                       Color markerColor;
                       if (isOut) {
-                        markerColor = const Color(0xFF64748B); // Ø±Ù…Ø§Ø¯ÙŠ â€” Ù…Ù†ØµØ±Ù
+                        markerColor = const Color(0xFF64748B);
                       } else if (isLate) {
-                        markerColor = const Color(0xFFF97316); // Ø¨Ø±ØªÙ‚Ø§Ù„ÙŠ Ø­Ø§Ø¯ â€” ØªØ£Ø®Ø± ØµØ¨Ø§Ø­ÙŠ
+                        markerColor = const Color(0xFFF59E0B);
                       } else if (isInField) {
-                        markerColor = const Color(0xFF0D9488); // Ø£Ø®Ø¶Ø± Ø²Ù…Ø±Ø¯ÙŠ Ø¯Ø§ÙƒÙ† â€” Ù†Ø´Ø§Ø· Ù…ÙŠØ¯Ø§Ù†ÙŠ
+                        markerColor = const Color(0xFFD4AF37);
                       } else {
-                        markerColor = const Color(0xFF10B981); // Ø£Ø®Ø¶Ø± â€” Ø­Ø¶ÙˆØ± Ù…Ù†Ø¶Ø¨Ø·
+                        markerColor = const Color(0xFF10B981);
                       }
 
                       final isSelectedForTrack = _selectedInspectorForTrack != null &&
@@ -668,19 +668,19 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               _actionButton(
                 Icons.add,
                 _zoomIn,
-                tooltip: loc.isArabic ? 'ØªÙƒØ¨ÙŠØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© (+)' : 'Zoomer (+)',
+                tooltip: loc.isArabic ? 'تكبير الخريطة (+)' : 'Zoomer (+)',
               ),
               const SizedBox(height: 10),
               _actionButton(
                 Icons.remove,
                 _zoomOut,
-                tooltip: loc.isArabic ? 'ØªØµØºÙŠØ± Ø§Ù„Ø®Ø±ÙŠØ·Ø© (-)' : 'DÃ©zoomer (-)',
+                tooltip: loc.isArabic ? 'تصغير الخريطة (-)' : 'Dézoomer (-)',
               ),
               const SizedBox(height: 10),
               _actionButton(
                 Icons.my_location,
                 _locateDirectorLocation,
-                tooltip: loc.isArabic ? 'ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆÙ‚Ø¹ÙŠ Ø§Ù„Ù…Ø¨Ø§Ø´Ø± (GPS)' : 'Ma position actuelle (GPS)',
+                tooltip: loc.isArabic ? 'تحديد موقعي المباشر (GPS)' : 'Ma position actuelle (GPS)',
                 isLoading: _isLocating,
                 highlightColor: AppTheme.AccentColor,
               ),
@@ -688,14 +688,14 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           ),
         ),
 
-        // Map Legend (Ù…ÙØªØ§Ø­ Ø±Ù…ÙˆØ² Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠ)
+        // Map Legend (مفتاح رموز الخريطة الرقابي)
         Positioned(
           bottom: 24,
           right: 16,
           child: _buildMapLegend(loc),
         ),
 
-        // ðŸ—ºï¸ Floating Active Trajectory Tracking Pill (When an inspector is selected)
+        // 🗺️ Floating Active Trajectory Tracking Pill (When an inspector is selected)
         if (_selectedInspectorForTrack != null)
           Positioned(
             bottom: 84,
@@ -736,7 +736,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     const Icon(Icons.palette_outlined, color: Color(0xFFD4AF37), size: 16),
                     const SizedBox(width: 8),
                     Text(
-                      loc.isArabic ? 'Ù…ÙØªØ§Ø­ Ø§Ù„Ø®Ø±ÙŠØ·Ø©' : 'LÃ©gende',
+                      loc.isArabic ? 'مفتاح الخريطة' : 'Légende',
                       style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontWeight: FontWeight.bold,
@@ -762,29 +762,27 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Divider(color: Colors.white12, height: 8),
-                    // â”€â”€ Legend items with distinct icons + colors â”€â”€
-                    _legendItem(const Color(0xFF10B981), loc.isArabic ? 'Ø­Ø¶ÙˆØ± Ù…Ù†Ø¶Ø¨Ø· Ø¨Ø§Ù„Ù…Ù‚Ø±' : 'PrÃ©sent Ã  l\'heure (siÃ¨ge)', icon: Icons.check_circle_outline),
+                    _legendItem(const Color(0xFF10B981), loc.isArabic ? 'حضور منضبط بالمقر' : 'Présent à l\'heure (siège)'),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFFF97316), loc.isArabic ? 'Ø­Ø§Ø¶Ø± Ù…Ø¹ ØªØ£Ø®Ø± ØµØ¨Ø§Ø­ÙŠ' : 'PrÃ©sent avec retard', icon: Icons.schedule),
+                    _legendItem(const Color(0xFFF59E0B), loc.isArabic ? 'حاضر مع تأخر صباحي' : 'Présent avec retard'),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFF0D9488), loc.isArabic ? 'Ù†Ø´Ø· ÙÙŠ Ø§Ù„Ù…ÙŠØ¯Ø§Ù†' : 'Actif sur le terrain', icon: Icons.directions_walk),
+                    _legendItem(const Color(0xFFD4AF37), loc.isArabic ? 'نشط في الميدان' : 'Actif sur le terrain'),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFF8B5CF6), loc.isArabic ? 'Ù…Ø¹Ø§ÙŠÙ†Ø© / Ù…Ø­Ù„ ØªØ¬Ø§Ø±ÙŠ' : 'Visite / commerce', icon: Icons.storefront),
+                    _legendItem(const Color(0xFFF59E0B), loc.isArabic ? 'معاينة / محل تجاري' : 'Visite / commerce'),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFF64748B), loc.isArabic ? 'Ù…Ù†ØµØ±Ù (Ø£Ù†Ù‡Ù‰ Ø§Ù„Ø¯ÙˆØ§Ù…)' : 'Sorti (fin de shift)', icon: Icons.exit_to_app),
+                    _legendItem(const Color(0xFF64748B), loc.isArabic ? 'منصرف (أنهى الدوام)' : 'Sorti (fin de shift)'),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFFEF4444), loc.isArabic ? 'Ù„Ù… ÙŠØ³Ø¬Ù„ Ø§Ù„Ø­Ø¶ÙˆØ± (ØºØ§Ø¦Ø¨)' : 'Non enregistrÃ© (absent)', icon: Icons.person_off_outlined),
+                    _legendItem(const Color(0xFFEF4444), loc.isArabic ? 'لم يسجل الحضور (غائب)' : 'Non enregistré (absent)'),
                     const SizedBox(height: 5),
                     _legendItem(
-                      const Color(0xFF10B981),
-                      loc.isArabic ? 'Ù†Ø·Ø§Ù‚ Ø§Ù„Ø¨ØµÙ…Ø© (Ø§Ù„Ù…Ù‚Ø±Ø§Øª)' : 'PÃ©rimÃ¨tre GPS officiel',
+                      const Color(0xFFD4AF37),
+                      loc.isArabic ? 'نطاق البصمة (المقرات)' : 'Périmètre GPS officiel',
                       isCircle: true,
                     ),
                     const SizedBox(height: 5),
                     _legendItem(
                       const Color(0xFFD4AF37),
-                      loc.isArabic ? 'Ù…Ø³Ø§Ø± Ø§Ù„Ù…ÙØªØ´ (Ø¹Ù†Ø¯ Ø§Ù„Ù†Ù‚Ø±)' : 'ItinÃ©raire (sÃ©lection)',
-                      icon: Icons.route,
+                      loc.isArabic ? 'مسار المفتش (عند النقر)' : 'Itinéraire (sélection)',
                     ),
                   ],
                 ),
@@ -795,30 +793,19 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     );
   }
 
-  Widget _legendItem(Color color, String label, {bool isCircle = false, IconData? icon}) {
+  Widget _legendItem(Color color, String label, {bool isCircle = false}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (icon != null && !isCircle)
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Icon(icon, color: color, size: 12),
-          )
-        else
-          Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color: isCircle ? color.withValues(alpha: 0.2) : color,
-              shape: BoxShape.circle,
-              border: Border.all(color: color, width: isCircle ? 1.8 : 0),
-            ),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: isCircle ? color.withValues(alpha: 0.25) : color,
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: isCircle ? 1.5 : 1.0),
           ),
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1035,7 +1022,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                           ),
                         ),
                         Text(
-                          loc.isArabic ? 'Ø§Ù„Ø¹Ø¯Ø¯ Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ: ${emps.length} Ù…ÙˆØ¸Ù' : 'Total : ${emps.length} employÃ©s',
+                          loc.isArabic ? 'العدد الإجمالي: ${emps.length} موظف' : 'Total : ${emps.length} employés',
                           style: TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 11,
@@ -1057,7 +1044,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 child: emps.isEmpty
                     ? Center(
                         child: Text(
-                          loc.isArabic ? 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…ÙˆØ¸ÙÙˆÙ† ÙÙŠ Ù‡Ø°Ù‡ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø­Ø§Ù„ÙŠØ§Ù‹' : 'Aucun employÃ© dans cette catÃ©gorie',
+                          loc.isArabic ? 'لا يوجد موظفون في هذه القائمة حالياً' : 'Aucun employé dans cette catégorie',
                           style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary),
                         ),
                       )
@@ -1065,7 +1052,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                         itemCount: emps.length,
                         itemBuilder: (context, idx) {
                           final emp = emps[idx];
-                          final name = emp['name']?.toString() ?? (loc.isArabic ? 'Ù…ÙˆØ¸Ù' : 'EmployÃ©');
+                          final name = emp['name']?.toString() ?? (loc.isArabic ? 'موظف' : 'Employé');
                           final service = emp['service']?.toString() ?? '';
                           final checkIn = emp['checkInTime'] != null ? _formatAttendanceTime(emp['checkInTime']) : null;
                           final checkOut = emp['checkOutTime'] != null ? _formatAttendanceTime(emp['checkOutTime']) : null;
@@ -1134,7 +1121,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                         },
                                         icon: const Icon(Icons.route, size: 14, color: Colors.black87),
                                         label: Text(
-                                          loc.isArabic ? 'Ø±Ø³Ù… Ø§Ù„Ù…Ø³Ø§Ø± ðŸ—ºï¸' : 'ItinÃ©raire ðŸ—ºï¸',
+                                          loc.isArabic ? 'رسم المسار 🗺️' : 'Itinéraire 🗺️',
                                           style: const TextStyle(
                                             fontFamily: 'Tajawal',
                                             fontSize: 11,
@@ -1166,14 +1153,14 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                             const Icon(Icons.login, size: 14, color: Color(0xFF10B981)),
                                             const SizedBox(width: 4),
                                             Text(
-                                              '${loc.isArabic ? "Ø§Ù„Ø¯Ø®ÙˆÙ„:" : "EntrÃ©e:"} ${checkIn ?? "--"}',
+                                              '${loc.isArabic ? "الدخول:" : "Entrée:"} ${checkIn ?? "--"}',
                                               style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
                                             ),
                                             const Spacer(),
                                             const Icon(Icons.logout, size: 14, color: Color(0xFF94A3B8)),
                                             const SizedBox(width: 4),
                                             Text(
-                                              '${loc.isArabic ? "Ø§Ù„Ø§Ù†ØµØ±Ø§Ù:" : "Sortie:"} ${checkOut ?? "--"}',
+                                              '${loc.isArabic ? "الانصراف:" : "Sortie:"} ${checkOut ?? "--"}',
                                               style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFCBD5E1), fontWeight: FontWeight.bold),
                                             ),
                                           ],
@@ -1186,7 +1173,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                               const SizedBox(width: 4),
                                               Expanded(
                                                 child: Text(
-                                                  '${loc.isArabic ? "Ø§Ù„Ù…Ø¨Ø±Ø±:" : "Motif:"} $earlyReason',
+                                                  '${loc.isArabic ? "المبرر:" : "Motif:"} $earlyReason',
                                                   style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFBBF24)),
                                                 ),
                                               ),
@@ -1201,7 +1188,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                               const SizedBox(width: 4),
                                               Expanded(
                                                 child: Text(
-                                                  '${loc.isArabic ? "Ù…ÙˆÙ‚Ø¹ Ø§Ù„Ø§Ù†ØµØ±Ø§Ù:" : "Lieu:"} $checkOutLoc',
+                                                  '${loc.isArabic ? "موقع الانصراف:" : "Lieu:"} $checkOutLoc',
                                                   style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Colors.white60),
                                                 ),
                                               ),
@@ -1218,7 +1205,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                       const Icon(Icons.cancel_outlined, size: 13, color: Color(0xFFEF4444)),
                                       const SizedBox(width: 4),
                                       Text(
-                                        loc.isArabic ? 'Ù„Ù… ÙŠØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø­Ø¶ÙˆØ± Ø¨Ø§Ù„Ø¨ØµÙ…Ø© Ø§Ù„Ø¬ØºØ±Ø§ÙÙŠØ© Ø§Ù„ÙŠÙˆÙ…' : 'Absence de pointage aujourd\'hui',
+                                        loc.isArabic ? 'لم يتم تسجيل الحضور بالبصمة الجغرافية اليوم' : 'Absence de pointage aujourd\'hui',
                                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Color(0xFFFCA5A5)),
                                       ),
                                     ],
@@ -1230,7 +1217,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                       const Icon(Icons.access_time, size: 13, color: Color(0xFF10B981)),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '${loc.isArabic ? "Ø³Ø¬Ù„ Ø§Ù„Ø­Ø¶ÙˆØ± ÙÙŠ:" : "PointÃ© Ã :"} $checkIn',
+                                        '${loc.isArabic ? "سجل الحضور في:" : "Pointé à:"} $checkIn',
                                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
                                       ),
                                     ],
@@ -1268,13 +1255,13 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     final empId = emp['employeeId'] ?? emp['Id'] ?? emp['id'];
     final int? resolvedId = empId is int ? empId : int.tryParse(empId?.toString() ?? '');
 
-    // ðŸ›°ï¸ Ù†Ù‚Ø§Ø· GPS Ø§Ù„Ø¯ÙˆØ±ÙŠØ© Ù…Ù† Ø§Ù„ÙƒØ§Ø´ (Ù…Ø±ØªØ¨Ø© Ø²Ù…Ù†ÙŠØ§Ù‹)
+    // 🛰️ نقاط GPS الدورية من الكاش (مرتبة زمنياً)
     final List<Map<String, dynamic>> trailPts =
         (resolvedId != null && _locationTrailCache.containsKey(resolvedId))
             ? List<Map<String, dynamic>>.from(_locationTrailCache[resolvedId]!)
             : [];
 
-    // Ù†Ù‚Ø§Ø· Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø§Øª Ù…Ø±ØªØ¨Ø© Ø²Ù…Ù†ÙŠØ§Ù‹
+    // نقاط المعاينات مرتبة زمنياً
     final rawVisits = (emp['visits'] as List?) ?? [];
     final List<Map<String, dynamic>> sortedVisits = [];
     for (final v in rawVisits) {
@@ -1286,10 +1273,10 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       return tA.compareTo(tB);
     });
 
-    // Ø¯Ù…Ø¬ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù†Ù‚Ø§Ø· ÙÙŠ Ù‚Ø§Ø¦Ù…Ø© ÙˆØ§Ø­Ø¯Ø© Ù…Ø±ØªØ¨Ø© Ø²Ù…Ù†ÙŠØ§Ù‹
+    // دمج جميع النقاط في قائمة واحدة مرتبة زمنياً
     final List<Map<String, dynamic>> allPoints = [];
 
-    // Ø£) Ù†Ù‚Ø·Ø© Ø§Ù†Ø·Ù„Ø§Ù‚ Ø§Ù„Ø­Ø¶ÙˆØ± (CheckIn)
+    // أ) نقطة انطلاق الحضور (CheckIn)
     final double? cLat = (emp['checkInLatitude'] is num)
         ? (emp['checkInLatitude'] as num).toDouble()
         : double.tryParse(emp['checkInLatitude']?.toString() ?? '');
@@ -1300,7 +1287,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       allPoints.add({'lat': cLat, 'lng': cLng, 'time': emp['checkInTime']?.toString() ?? '00:00:00'});
     }
 
-    // Ø¨) Ù†Ù‚Ø§Ø· GPS Ø§Ù„Ø¯ÙˆØ±ÙŠØ© Ù…Ù† locationHistory
+    // ب) نقاط GPS الدورية من locationHistory
     for (final t in trailPts) {
       final double? tLat = (t['latitude'] is num)
           ? (t['latitude'] as num).toDouble()
@@ -1313,7 +1300,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       }
     }
 
-    // Ø¬) Ù†Ù‚Ø§Ø· Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø§Øª Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠØ©
+    // ج) نقاط المعاينات الميدانية
     for (final v in sortedVisits) {
       final double? vLat = (v['latitude'] is num)
           ? (v['latitude'] as num).toDouble()
@@ -1326,7 +1313,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       }
     }
 
-    // Ø¯) Ù†Ù‚Ø·Ø© Ø§Ù„Ø§Ù†ØµØ±Ø§Ù Ø£Ùˆ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø§Ù„Ø­Ø§Ù„ÙŠ
+    // د) نقطة الانصراف أو الموقع الحالي
     final isOut = emp['isCheckedOut'] == true;
     double? endLat;
     double? endLng;
@@ -1351,10 +1338,10 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       allPoints.add({'lat': endLat, 'lng': endLng, 'time': endTime});
     }
 
-    // ØªØ±ØªÙŠØ¨ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù†Ù‚Ø§Ø· Ø²Ù…Ù†ÙŠØ§Ù‹
+    // ترتيب جميع النقاط زمنياً
     allPoints.sort((a, b) => (a['time'] as String).compareTo(b['time'] as String));
 
-    // ØªØ­ÙˆÙŠÙ„ Ø¥Ù„Ù‰ LatLng Ù…Ø¹ Ø¥Ø²Ø§Ù„Ø© Ø§Ù„ØªÙƒØ±Ø§Ø±Ø§Øª (< 5 Ù…ØªØ±)
+    // تحويل إلى LatLng مع إزالة التكرارات (< 5 متر)
     final List<LatLng> points = [];
     for (final p in allPoints) {
       final pt = LatLng(p['lat'] as double, p['lng'] as double);
@@ -1364,7 +1351,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
         final last = points.last;
         final dLat = (last.latitude - pt.latitude).abs();
         final dLng = (last.longitude - pt.longitude).abs();
-        // ØªØ¬Ø§Ù‡Ù„ Ø§Ù„Ù†Ù‚Ø§Ø· Ø§Ù„Ù…ØªÙ‚Ø§Ø±Ø¨Ø© Ø¬Ø¯Ø§Ù‹ (< 5Ù…)
+        // تجاهل النقاط المتقاربة جداً (< 5م)
         if (dLat > 0.000045 || dLng > 0.000045) {
           points.add(pt);
         }
@@ -1376,9 +1363,9 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
   void _focusOnInspectorTrack(Map<String, dynamic> emp) {
     final loc = AppLocalizations.of(context);
-    final name = (emp['name'] ?? (loc.isArabic ? 'Ø§Ù„Ù…ÙØªØ´' : 'Inspecteur')).toString();
+    final name = (emp['name'] ?? (loc.isArabic ? 'المفتش' : 'Inspecteur')).toString();
 
-    // ðŸ›°ï¸ ØªØ­Ù…ÙŠÙ„ Ù…Ø³Ø§Ø± GPS Ø§Ù„Ø¯ÙˆØ±ÙŠ ÙÙˆØ±Ø§Ù‹ Ø¹Ù†Ø¯ Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ù…ÙØªØ´
+    // 🛰️ تحميل مسار GPS الدوري فوراً عند اختيار المفتش
     final empId = emp['employeeId'] ?? emp['Id'] ?? emp['id'];
     final int? resolvedId = empId is int ? empId : int.tryParse(empId?.toString() ?? '');
     if (resolvedId != null && resolvedId > 0) {
@@ -1389,7 +1376,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       _selectedInspectorForTrack = emp;
     });
 
-    // Ù†Ø­Ø³Ø¨ Ø§Ù„Ù†Ù‚Ø§Ø· Ø§Ù„Ø­Ø§Ù„ÙŠØ© Ù„ØªØ­Ø¯ÙŠØ¯ Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ø±Ø¨Ø· (ØªØ­ØªØ³Ø¨ Ø¨Ø¯ÙˆÙ† trail cache Ø£ÙˆÙ„Ø§Ù‹)
+    // نحسب النقاط الحالية لتحديد رسالة الربط (تحتسب بدون trail cache أولاً)
     final points = _getTrackPoints(emp);
 
     if (points.isEmpty) {
@@ -1406,8 +1393,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               Expanded(
                 child: Text(
                   loc.isArabic
-                      ? 'Ø§Ù„Ø¹ÙˆÙ† ($name) Ù„Ù… ÙŠØ³Ø¬Ù„ Ø­Ø¶ÙˆØ±Ù‡ Ø§Ù„ÙŠÙˆÙ… Ø¨Ø¹Ø¯ØŒ Ù„Ø§ ØªØªÙˆÙØ± Ø£ÙŠ Ù…Ø­Ø·Ø§Øª Ù…Ø³Ø¬Ù„Ø©.'
-                      : 'L\'agent ($name) n\'a pas encore de points enregistrÃ©s aujourd\'hui.',
+                      ? 'العون ($name) لم يسجل حضوره اليوم بعد، لا تتوفر أي محطات مسجلة.'
+                      : 'L\'agent ($name) n\'a pas encore de points enregistrés aujourd\'hui.',
                   style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white),
                 ),
               ),
@@ -1429,8 +1416,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           duration: const Duration(seconds: 3),
           content: Text(
             loc.isArabic
-                ? 'ðŸ“ ØªÙ… ØªØ­Ø¯ÙŠØ¯ Ù…ÙˆÙ‚Ø¹ Ø§Ù†Ø·Ù„Ø§Ù‚ Ø§Ù„Ù…ÙØªØ´ ($name) â€” Ù…Ø­Ø·Ø© ÙˆØ§Ø­Ø¯Ø© Ù…Ø³Ø¬Ù„Ø© (Ø­Ø¶ÙˆØ± Ø¨Ø§Ù„Ù…Ù‚Ø±)'
-                : 'ðŸ“ Point de dÃ©part de l\'agent ($name) localisÃ© (1 station)',
+                ? '📍 تم تحديد موقع انطلاق المفتش ($name) — محطة واحدة مسجلة (حضور بالمقر)'
+                : '📍 Point de départ de l\'agent ($name) localisé (1 station)',
             style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
           ),
         ),
@@ -1462,8 +1449,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               Expanded(
                 child: Text(
                   loc.isArabic
-                      ? 'ðŸ—ºï¸ ØªÙ… Ø±Ø³Ù… Ù…Ø³Ø§Ø± Ø§Ù„Ø¬ÙˆÙ„Ø© Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠØ© Ù„Ù„Ù…ÙØªØ´ ($name) â€” ${points.length} Ù…Ø­Ø·Ø§Øª'
-                      : 'ðŸ—ºï¸ ItinÃ©raire terrain tracÃ© pour ($name) â€” ${points.length} stations',
+                      ? '🗺️ تم رسم مسار الجولة الميدانية للمفتش ($name) — ${points.length} محطات'
+                      : '🗺️ Itinéraire terrain tracé pour ($name) — ${points.length} stations',
                   style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -1476,7 +1463,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
   List<Marker> _buildTrackWaypointMarkers(Map<String, dynamic> emp, AppLocalizations loc) {
     final List<Marker> markers = [];
-    final name = (emp['name'] ?? (loc.isArabic ? 'Ø§Ù„Ù…ÙØªØ´' : 'Inspecteur')).toString();
+    final name = (emp['name'] ?? (loc.isArabic ? 'المفتش' : 'Inspecteur')).toString();
 
     // 1. Check-in Start Marker (Emerald Green #1)
     final double? cLat = (emp['checkInLatitude'] is num)
@@ -1494,7 +1481,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           width: 36,
           height: 36,
           child: Tooltip(
-            message: loc.isArabic ? 'Ø§Ù„Ù…Ø­Ø·Ø© 1: Ø§Ù†Ø·Ù„Ø§Ù‚ Ø¨Ø§Ù„Ù…Ù‚Ø± ($checkInStr)' : 'Ã‰tape 1: DÃ©part ($checkInStr)',
+            message: loc.isArabic ? 'المحطة 1: انطلاق بالمقر ($checkInStr)' : 'Étape 1: Départ ($checkInStr)',
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF10B981),
@@ -1546,7 +1533,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       if (vLat == null || vLng == null || (vLat == 0 && vLng == 0)) continue;
 
       final int stepNum = (markers.isNotEmpty ? 2 : 1) + i;
-      final String shop = (v['shopName'] ?? (loc.isArabic ? 'Ù…Ø­Ù„ ØªØ¬Ø§Ø±ÙŠ' : 'Commerce')).toString();
+      final String shop = (v['shopName'] ?? (loc.isArabic ? 'محل تجاري' : 'Commerce')).toString();
       final bool hasViolation = v['violationFound'] == true || v['violationFound'] == 1;
 
       markers.add(
@@ -1557,7 +1544,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           child: GestureDetector(
             onTap: () => _showVisitDetailsModal(v, name),
             child: Tooltip(
-              message: 'Ø§Ù„Ù…Ø­Ø·Ø© $stepNum: $shop',
+              message: 'المحطة $stepNum: $shop',
               child: Container(
                 decoration: BoxDecoration(
                   color: hasViolation ? const Color(0xFFEF4444) : const Color(0xFFD4AF37),
@@ -1591,7 +1578,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
   Widget _buildActiveTrackPill(AppLocalizations loc) {
     if (_selectedInspectorForTrack == null) return const SizedBox.shrink();
     final emp = _selectedInspectorForTrack!;
-    final name = (emp['name'] ?? (loc.isArabic ? 'Ø§Ù„Ù…ÙØªØ´' : 'Inspecteur')).toString();
+    final name = (emp['name'] ?? (loc.isArabic ? 'المفتش' : 'Inspecteur')).toString();
     final trackPts = _getTrackPoints(emp);
     double trackDistKm = 0.0;
     if (trackPts.length >= 2) {
@@ -1642,7 +1629,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      loc.isArabic ? 'Ù…Ø³Ø§Ø± Ø§Ù„Ø¬ÙˆÙ„Ø©:' : 'ItinÃ©raire:',
+                      loc.isArabic ? 'مسار الجولة:' : 'Itinéraire:',
                       style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 11,
@@ -1667,7 +1654,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 ),
                 Text(
                   loc.isArabic
-                      ? '${trackPts.length} Ù…Ø­Ø·Ø§Øª | ${trackDistKm.toStringAsFixed(1)} ÙƒÙ… Ù…Ø³Ø§Ø± Ù…Ù‚Ø¯Ø±'
+                      ? '${trackPts.length} محطات | ${trackDistKm.toStringAsFixed(1)} كم مسار مقدر'
                       : '${trackPts.length} stations | ~${trackDistKm.toStringAsFixed(1)} km',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
@@ -1682,7 +1669,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           const SizedBox(width: 8),
           IconButton(
             icon: const Icon(Icons.center_focus_strong, color: Color(0xFFD4AF37), size: 20),
-            tooltip: loc.isArabic ? 'Ø§Ù„ØªØ±ÙƒÙŠØ² Ø¹Ù„Ù‰ ÙƒØ§Ù…Ù„ Ø§Ù„Ù…Ø³Ø§Ø±' : 'Recadrer',
+            tooltip: loc.isArabic ? 'التركيز على كامل المسار' : 'Recadrer',
             visualDensity: VisualDensity.compact,
             onPressed: () => _focusOnInspectorTrack(emp),
           ),
@@ -1690,7 +1677,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             onPressed: () => _showInspectorModal(emp),
             icon: const Icon(Icons.info_outline, size: 14),
             label: Text(
-              loc.isArabic ? 'Ø§Ù„ØªÙØ§ØµÙŠÙ„ ÙˆØ§Ù„Ù€ QR' : 'DÃ©tails & QR',
+              loc.isArabic ? 'التفاصيل والـ QR' : 'Détails & QR',
               style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
@@ -1704,7 +1691,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.white70, size: 20),
-            tooltip: loc.isArabic ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ù…Ø³Ø§Ø±' : 'Masquer',
+            tooltip: loc.isArabic ? 'إخفاء المسار' : 'Masquer',
             visualDensity: VisualDensity.compact,
             onPressed: () {
               setState(() => _selectedInspectorForTrack = null);
@@ -1717,8 +1704,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
   void _showInspectorModal(Map<String, dynamic> emp) {
     final loc = AppLocalizations.of(context);
-    final String name = (emp['name'] ?? (loc.isArabic ? 'Ù…ÙØªØ´' : 'Agent')).toString();
-    final String service = (emp['service'] ?? (loc.isArabic ? 'Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„ØªØ¬Ø§Ø±Ø©' : 'Direction du Commerce')).toString();
+    final String name = (emp['name'] ?? (loc.isArabic ? 'مفتش' : 'Agent')).toString();
+    final String service = (emp['service'] ?? (loc.isArabic ? 'مديرية التجارة' : 'Direction du Commerce')).toString();
     final String checkInStr = _formatAttendanceTime(emp['checkInTime']);
     final bool isPresent = emp['hasCheckedIn'] == true;
     final bool isOut = emp['isCheckedOut'] == true;
@@ -1728,20 +1715,20 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     final int empId = int.tryParse('${emp['employeeId'] ?? emp['Id'] ?? emp['id'] ?? 0}') ?? 0;
 
     // Precise administrative status:
-    String statusText = loc.isArabic ? 'ØºØ§Ø¦Ø¨ (Ù„Ù… ÙŠØ³Ø¬Ù„)' : 'Absent (Non pointÃ©)';
+    String statusText = loc.isArabic ? 'غائب (لم يسجل)' : 'Absent (Non pointé)';
     Color statusColor = AppTheme.DangerColor;
     if (isOut) {
-      statusText = loc.isArabic ? 'Ø§Ù†ØµØ±Ù' : 'Sorti';
+      statusText = loc.isArabic ? 'انصرف' : 'Sorti';
       statusColor = const Color(0xFF64748B);
     } else if (isPresent) {
       final bool isInField = emp['locationType'] == 'in_field' || visits.isNotEmpty;
       if (isInField) {
         statusText = loc.isArabic
-            ? (visits.isNotEmpty ? 'Ù†Ø´Ø· ÙÙŠ Ø§Ù„Ù…ÙŠØ¯Ø§Ù† (${visits.length} Ù…Ø¹Ø§ÙŠÙ†Ø§Øª)' : 'ÙÙŠ Ù…Ù‡Ù…Ø© ØªÙØªÙŠØ´ÙŠØ© Ù…ÙŠØ¯Ø§Ù†ÙŠØ©')
+            ? (visits.isNotEmpty ? 'نشط في الميدان (${visits.length} معاينات)' : 'في مهمة تفتيشية ميدانية')
             : (visits.isNotEmpty ? 'En mission (${visits.length} visites)' : 'En mission terrain');
         statusColor = const Color(0xFF38BDF8);
       } else {
-        statusText = loc.isArabic ? 'Ø­Ø§Ø¶Ø± Ø¨Ø§Ù„Ù…Ù‚Ø± (Ù…Ø³Ø¬Ù„ Ø­Ø¶ÙˆØ±)' : 'PrÃ©sent au siÃ¨ge';
+        statusText = loc.isArabic ? 'حاضر بالمقر (مسجل حضور)' : 'Présent au siège';
         statusColor = AppTheme.SuccessColor;
       }
     }
@@ -1815,8 +1802,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 icon: const Icon(Icons.route, color: Colors.black87, size: 18),
                 label: Text(
                   loc.isArabic
-                      ? 'Ø±Ø³Ù… Ù…Ø³Ø§Ø± Ø§Ù„Ø¬ÙˆÙ„Ø© Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠØ© Ø¹Ù„Ù‰ Ø§Ù„Ø®Ø±ÙŠØ·Ø© ðŸ—ºï¸'
-                      : 'Tracer l\'itinÃ©raire de la tournÃ©e ðŸ—ºï¸',
+                      ? 'رسم مسار الجولة الميدانية على الخريطة 🗺️'
+                      : 'Tracer l\'itinéraire de la tournée 🗺️',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontWeight: FontWeight.bold,
@@ -1850,7 +1837,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            loc.isArabic ? 'Ø£Ù…Ø± Ø§Ù„Ù…Ù‡Ù…Ø© Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠØ© Ø§Ù„Ù…Ø¹ÙŠÙ†:' : 'Ordre de mission assignÃ© :',
+                            loc.isArabic ? 'أمر المهمة الرقابية المعين:' : 'Ordre de mission assigné :',
                             style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
                           ),
                         ),
@@ -1864,7 +1851,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     if (emp['activeProgram']['targetArea'] != null && emp['activeProgram']['targetArea'].toString().isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(
-                        'ðŸ“ Ø§Ù„Ø¥Ù‚Ù„ÙŠÙ…: ${emp['activeProgram']['targetArea']}',
+                        '📍 الإقليم: ${emp['activeProgram']['targetArea']}',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
                       ),
                     ],
@@ -1875,12 +1862,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             const SizedBox(height: 16),
             const Divider(color: AppTheme.BorderColor),
             const SizedBox(height: 8),
-            _infoRow(Icons.access_time, loc.isArabic ? 'ØªÙˆÙ‚ÙŠØª Ø§Ù„Ø­Ø¶ÙˆØ±' : 'Heure de pointage', checkInStr),
+            _infoRow(Icons.access_time, loc.isArabic ? 'توقيت الحضور' : 'Heure de pointage', checkInStr),
             if (isOut) ...[
               const SizedBox(height: 8),
               _infoRow(
                 Icons.exit_to_app,
-                loc.isArabic ? 'ØªÙˆÙ‚ÙŠØª Ø§Ù„Ø§Ù†ØµØ±Ø§Ù' : 'Heure de sortie',
+                loc.isArabic ? 'توقيت الانصراف' : 'Heure de sortie',
                 _formatAttendanceTime(emp['checkOutTime']),
                 valueColor: const Color(0xFFCBD5E1),
               ),
@@ -1888,7 +1875,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 const SizedBox(height: 8),
                 _infoRow(
                   Icons.location_on_outlined,
-                  loc.isArabic ? 'Ù…ÙˆÙ‚Ø¹ Ø§Ù„Ø§Ù†ØµØ±Ø§Ù Ø§Ù„Ù…Ø³Ø¬Ù„' : 'Lieu de dÃ©part',
+                  loc.isArabic ? 'موقع الانصراف المسجل' : 'Lieu de départ',
                   emp['checkOutLocation'].toString(),
                   valueColor: const Color(0xFFD4AF37),
                 ),
@@ -1897,7 +1884,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 const SizedBox(height: 8),
                 _infoRow(
                   Icons.report_problem_outlined,
-                  loc.isArabic ? 'Ù…Ø¨Ø±Ø± Ø§Ù„Ø§Ù†ØµØ±Ø§Ù Ø§Ù„Ù…Ø¨ÙƒØ±' : 'Motif de sortie',
+                  loc.isArabic ? 'مبرر الانصراف المبكر' : 'Motif de sortie',
                   emp['earlyReason'].toString(),
                   valueColor: const Color(0xFFF59E0B),
                 ),
@@ -1905,17 +1892,17 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             ],
             if (emp['notes'] != null && emp['notes'].toString().isNotEmpty && emp['notes'] != emp['earlyReason']) ...[
               const SizedBox(height: 8),
-              _infoRow(Icons.notes, loc.isArabic ? 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø¥Ø¶Ø§ÙÙŠØ©' : 'Note', emp['notes'].toString()),
+              _infoRow(Icons.notes, loc.isArabic ? 'ملاحظة إضافية' : 'Note', emp['notes'].toString()),
             ],
             const SizedBox(height: 8),
             _infoRow(
               Icons.store,
-              loc.isArabic ? 'Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø§Øª Ø§Ù„Ù…Ù†Ø¬Ø²Ø© Ø§Ù„ÙŠÙˆÙ…' : 'Visites de contrÃ´le aujourd\'hui',
-              loc.isArabic ? '${visits.length} Ù…Ø¹Ø§ÙŠÙ†Ø§Øª' : '${visits.length} visites',
+              loc.isArabic ? 'المعاينات المنجزة اليوم' : 'Visites de contrôle aujourd\'hui',
+              loc.isArabic ? '${visits.length} معاينات' : '${visits.length} visites',
             ),
             if (checkInPhoto != null && checkInPhoto.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(loc.isArabic ? 'ØµÙˆØ±Ø© Ø¥Ø«Ø¨Ø§Øª Ø§Ù„Ø­Ø¶ÙˆØ± Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠ:' : 'Photo de prÃ©sence terrain :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
+              Text(loc.isArabic ? 'صورة إثبات الحضور الميداني:' : 'Photo de présence terrain :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -1929,7 +1916,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               ),
             ] else if (hasCheckInPhoto && empId > 0) ...[
               const SizedBox(height: 12),
-              Text(loc.isArabic ? 'ØµÙˆØ±Ø© Ø¥Ø«Ø¨Ø§Øª Ø§Ù„Ø­Ø¶ÙˆØ± Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠ:' : 'Photo de prÃ©sence terrain :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
+              Text(loc.isArabic ? 'صورة إثبات الحضور الميداني:' : 'Photo de présence terrain :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
               const SizedBox(height: 6),
               FutureBuilder<String?>(
                 future: context.read<AuthService>().api.getAttendancePhoto(empId),
@@ -1962,7 +1949,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             ],
             const SizedBox(height: 16),
             if (visits.isNotEmpty) ...[
-              Text(loc.isArabic ? 'Ø³Ø¬Ù„ Ø§Ù„Ù…Ø­Ù„Ø§Øª Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ø§Ù„ÙŠÙˆÙ…:' : 'Commerces contrÃ´lÃ©s aujourd\'hui :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
+              Text(loc.isArabic ? 'سجل المحلات المعاينة اليوم:' : 'Commerces contrôlés aujourd\'hui :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ...visits.map((v) => Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -1978,7 +1965,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '${v['shopName']} â€¢ ${v['time'] != null ? v['time'].toString().substring(11, 16) : ""}',
+                            '${v['shopName']} • ${v['time'] != null ? v['time'].toString().substring(11, 16) : ""}',
                             style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
                           ),
                         ),
@@ -2008,22 +1995,22 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       'service': service,
                       'date': DateTime.now().toString().split(' ')[0],
                       'time': isPresent ? (emp['checkInTime'] ?? '') : '',
-                      'checkInTime': isPresent ? (emp['checkInTime'] ?? 'Ø­Ø§Ø¶Ø± (ØªÙˆÙ‚ÙŠØª Ù…Ø¹ØªÙ…Ø¯)') : 'Ù„Ù… ÙŠØ³Ø¬Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„ÙŠÙˆÙ…',
+                      'checkInTime': isPresent ? (emp['checkInTime'] ?? 'حاضر (توقيت معتمد)') : 'لم يسجل الدخول اليوم',
                       'isPresent': isPresent,
                       'visitsCount': visits.length,
                       'status': isPresent ? 'VERIFIED_PRESENT' : 'NOT_CHECKED_IN_TODAY',
-                      'location': isPresent ? (emp['locationName'] ?? 'Ø§Ù„Ù…Ù‚Ø± Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ Ù„Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„ØªØ¬Ø§Ø±Ø© Ø³Ø·ÙŠÙ') : 'ØºÙŠØ± Ù…ØªÙˆØ§Ø¬Ø¯ Ø¨Ø§Ù„Ù…Ù‚Ø±',
+                      'location': isPresent ? (emp['locationName'] ?? 'المقر الرئيسي لمديرية التجارة سطيف') : 'غير متواجد بالمقر',
                     },
                     title: isPresent
-                        ? (loc.isArabic ? 'Ø¥Ø«Ø¨Ø§Øª Ø§Ù„Ø­Ø¶ÙˆØ± Ø§Ù„ØµØ¨Ø§Ø­ÙŠ Ù„Ù„Ø¹ÙˆÙ† (QR)' : 'Preuve de prÃ©sence matinale (QR)')
-                        : (loc.isArabic ? 'Ø§Ù„Ø¨Ø·Ø§Ù‚Ø© Ø§Ù„Ù…Ù‡Ù†ÙŠØ© Ø§Ù„Ø±Ù‚Ù…ÙŠØ© (ØºÙŠØ± Ù…Ø³Ø¬Ù„ Ø­Ø¶ÙˆØ± Ø§Ù„ÙŠÙˆÙ…)' : 'Badge professionnel (Non pointÃ©)'),
+                        ? (loc.isArabic ? 'إثبات الحضور الصباحي للعون (QR)' : 'Preuve de présence matinale (QR)')
+                        : (loc.isArabic ? 'البطاقة المهنية الرقمية (غير مسجل حضور اليوم)' : 'Badge professionnel (Non pointé)'),
                   );
                 },
                 icon: Icon(isPresent ? Icons.verified : Icons.badge_outlined),
                 label: Text(
                   isPresent
-                      ? (loc.isArabic ? 'ÙØ­Øµ Ø¥Ø«Ø¨Ø§Øª Ø§Ù„Ø­Ø¶ÙˆØ± Ø§Ù„ØµØ¨Ø§Ø­ÙŠ Ø§Ù„Ù…Ø¹ØªÙ…Ø¯' : 'VÃ©rifier la prÃ©sence matinale')
-                      : (loc.isArabic ? 'Ø¹Ø±Ø¶ Ø§Ù„Ø¨Ø·Ø§Ù‚Ø© Ø§Ù„Ù…Ù‡Ù†ÙŠØ© Ø§Ù„Ø±Ù‚Ù…ÙŠØ© (ØºÙŠØ± Ø­Ø§Ø¶Ø±)' : 'Voir le badge professionnel (Absent)'),
+                      ? (loc.isArabic ? 'فحص إثبات الحضور الصباحي المعتمد' : 'Vérifier la présence matinale')
+                      : (loc.isArabic ? 'عرض البطاقة المهنية الرقمية (غير حاضر)' : 'Voir le badge professionnel (Absent)'),
                   style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -2049,26 +2036,26 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                             const Icon(Icons.restore, color: Color(0xFFD4AF37)),
                             const SizedBox(width: 8),
                             Text(
-                              loc.isArabic ? 'Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø§Ù†ØµØ±Ø§Ù ÙˆØ§Ø³ØªØ¦Ù†Ø§Ù Ø§Ù„Ø¯ÙˆØ§Ù…' : 'Annuler la sortie',
+                              loc.isArabic ? 'إلغاء الانصراف واستئناف الدوام' : 'Annuler la sortie',
                               style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                           ],
                         ),
                         content: Text(
                           loc.isArabic
-                              ? 'Ù‡Ù„ ØªÙˆØ¯ Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø§Ù†ØµØ±Ø§Ù Ø§Ù„Ù…Ø³Ø¬Ù„ Ù„Ù„Ø¹ÙˆÙ† ($name) ÙˆØ¥Ø¹Ø§Ø¯Ø© ØªÙØ¹ÙŠÙ„ Ø¨Ø·Ø§Ù‚Ø© Ø­Ø¶ÙˆØ±Ù‡ Ù„Ù„ÙŠÙˆÙ… (ÙÙŠ Ø­Ø§Ù„ Ø§Ù„Ø¶ØºØ· Ø®Ø·Ø£ Ù…Ù† Ø·Ø±ÙÙ‡)ØŸ'
-                              : 'Voulez-vous annuler la sortie de ($name) et rÃ©activer son pointage ?',
+                              ? 'هل تود إلغاء الانصراف المسجل للعون ($name) وإعادة تفعيل بطاقة حضوره لليوم (في حال الضغط خطأ من طرفه)؟'
+                              : 'Voulez-vous annuler la sortie de ($name) et réactiver son pointage ?',
                           style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
                         ),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(dCtx, false),
-                            child: Text(loc.isArabic ? 'ØªØ±Ø§Ø¬Ø¹' : 'Non', style: const TextStyle(fontFamily: 'Tajawal')),
+                            child: Text(loc.isArabic ? 'تراجع' : 'Non', style: const TextStyle(fontFamily: 'Tajawal')),
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.black),
                             onPressed: () => Navigator.pop(dCtx, true),
-                            child: Text(loc.isArabic ? 'ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø¥Ù„ØºØ§Ø¡ ÙˆØ§Ø³ØªØ¦Ù†Ø§Ù Ø§Ù„Ø¯ÙˆØ§Ù…' : 'Confirmer', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+                            child: Text(loc.isArabic ? 'تأكيد الإلغاء واستئناف الدوام' : 'Confirmer', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -2083,7 +2070,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              loc.isArabic ? 'âœ… ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø§Ù†ØµØ±Ø§Ù ÙˆØ§Ø³ØªØ¦Ù†Ø§Ù Ø¯ÙˆØ§Ù… Ø§Ù„Ø¹ÙˆÙ† Ø¨Ù†Ø¬Ø§Ø­' : 'Sortie annulÃ©e avec succÃ¨s',
+                              loc.isArabic ? '✅ تم إلغاء الانصراف واستئناف دوام العون بنجاح' : 'Sortie annulée avec succès',
                               style: const TextStyle(fontFamily: 'Tajawal'),
                             ),
                             backgroundColor: const Color(0xFF10B981),
@@ -2095,7 +2082,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   },
                   icon: const Icon(Icons.restore, color: Color(0xFFD4AF37), size: 18),
                   label: Text(
-                    loc.isArabic ? 'Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ø§Ù†ØµØ±Ø§Ù Ø§Ù„Ø®Ø§Ø·Ø¦ ÙˆØ§Ø³ØªØ¦Ù†Ø§Ù Ø§Ù„Ø¯ÙˆØ§Ù…' : 'Annuler la sortie (Erreur)',
+                    loc.isArabic ? 'إلغاء الانصراف الخاطئ واستئناف الدوام' : 'Annuler la sortie (Erreur)',
                     style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFD4AF37)),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -2117,7 +2104,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   },
                   icon: const Icon(Icons.gavel, color: Colors.orangeAccent, size: 18),
                   label: Text(
-                    loc.isArabic ? 'Ø£Ù…Ø± Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø¨ØªÙˆØ¬ÙŠÙ‡ Ø§Ø³ØªÙØ³Ø§Ø± ÙƒØªØ§Ø¨ÙŠ' : 'Ordonner une demande d\'explications',
+                    loc.isArabic ? 'أمر مكتب المستخدمين بتوجيه استفسار كتابي' : 'Ordonner une demande d\'explications',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
@@ -2140,15 +2127,15 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
   void _showOrderInquiryForEmployee(Map<String, dynamic> emp) {
     final loc = AppLocalizations.of(context);
-    final name = (emp['name'] ?? (loc.isArabic ? 'Ø¹ÙˆÙ† Ø±Ù‚Ø§Ø¨Ø©' : 'Agent de contrÃ´le')).toString();
+    final name = (emp['name'] ?? (loc.isArabic ? 'عون رقابة' : 'Agent de contrôle')).toString();
     final empId = emp['id'] ?? emp['Id'] ?? emp['employeeId'];
     final subjectCtrl = TextEditingController(
-      text: loc.isArabic ? 'Ø§Ø³ØªÙØ³Ø§Ø± ÙˆØ£Ù…Ø± Ø¨Ø§Ù„Ø§Ù†Ø¶Ø¨Ø§Ø· Ø­ÙˆÙ„ Ø§Ù„ØºÙŠØ§Ø¨ / Ø§Ù„ØªØ£Ø®Ø±' : 'Demande d\'explications sur l\'absence / retard',
+      text: loc.isArabic ? 'استفسار وأمر بالانضباط حول الغياب / التأخر' : 'Demande d\'explications sur l\'absence / retard',
     );
     final detailsCtrl = TextEditingController(
       text: loc.isArabic
-          ? 'Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠØ© ÙÙŠ Ø§Ù„Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ù…Ø±ÙƒØ²ÙŠØ©ØŒ ÙŠÙØ·Ù„Ø¨ Ù…Ù† Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ØªÙˆØ¬ÙŠÙ‡ Ø§Ø³ØªÙØ³Ø§Ø± ÙƒØªØ§Ø¨ÙŠ Ø±Ø³Ù…ÙŠ Ù„Ù„Ù…ÙˆØ¸Ù ($name) Ù…Ø¹ Ø¥Ù„Ø²Ø§Ù…Ù‡ Ø¨Ø§Ù„Ø±Ø¯ Ø®Ù„Ø§Ù„ Ù…Ù‡Ù„Ø© 48 Ø³Ø§Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©.'
-          : 'Sur la base des donnÃ©es de la carte centrale, le bureau du personnel est chargÃ© d\'adresser une demande d\'explications officielle Ã  l\'agent ($name) sous 48h.',
+          ? 'بناءً على المعطيات الرقابية في الخريطة المركزية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف ($name) مع إلزامه بالرد خلال مهلة 48 ساعة القانونية.'
+          : 'Sur la base des données de la carte centrale, le bureau du personnel est chargé d\'adresser une demande d\'explications officielle à l\'agent ($name) sous 48h.',
     );
 
     showDialog(
@@ -2165,7 +2152,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                loc.isArabic ? 'Ø£Ù…Ø± Ø¨ØªÙˆØ¬ÙŠÙ‡ Ø§Ø³ØªÙØ³Ø§Ø± â€” $name' : 'Ordre d\'explications â€” $name',
+                loc.isArabic ? 'أمر بتوجيه استفسار — $name' : 'Ordre d\'explications — $name',
                 style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
@@ -2182,8 +2169,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           children: [
             Text(
               loc.isArabic
-                  ? 'Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ ÙŠÙƒÙ„Ù Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø¨Ø¥ØµØ¯Ø§Ø± Ø§Ø³ØªÙØ³Ø§Ø± ÙƒØªØ§Ø¨ÙŠ Ø±Ø³Ù…ÙŠ Ù„Ù„Ù…ÙˆØ¸Ù Ø¹Ø¨Ø± Ø§Ù„Ù…Ù†Ø¸ÙˆÙ…Ø©:'
-                  : 'Le Directeur de Wilaya charge le bureau du personnel d\'Ã©mettre une demande d\'explications :',
+                  ? 'المدير الولائي يكلف مكتب المستخدمين بإصدار استفسار كتابي رسمي للموظف عبر المنظومة:'
+                  : 'Le Directeur de Wilaya charge le bureau du personnel d\'émettre une demande d\'explications :',
               style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
             ),
             const SizedBox(height: 12),
@@ -2191,7 +2178,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               controller: subjectCtrl,
               textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: loc.isArabic ? 'Ø§Ù„Ù…ÙˆØ¶ÙˆØ¹' : 'Objet',
+                labelText: loc.isArabic ? 'الموضوع' : 'Objet',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37)),
                 filled: true,
                 fillColor: Colors.black26,
@@ -2204,7 +2191,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               maxLines: 3,
               textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: loc.isArabic ? 'ØªØ¹Ù„ÙŠÙ…Ø§Øª ÙˆØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø±' : 'Instructions et dÃ©tails',
+                labelText: loc.isArabic ? 'تعليمات وتفاصيل الاستفسار' : 'Instructions et détails',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
                 filled: true,
                 fillColor: Colors.black26,
@@ -2216,7 +2203,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dlgCtx),
-            child: Text(loc.isArabic ? 'Ø¥Ù„ØºØ§Ø¡' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+            child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -2241,8 +2228,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     backgroundColor: AppTheme.SuccessColor,
                     content: Text(
                       loc.isArabic
-                          ? 'âœ… ØªÙ… ØªÙƒÙ„ÙŠÙ Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø¨Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø± Ù„Ù€ $name Ø¨Ù†Ø¬Ø§Ø­'
-                          : 'âœ… Demande transmise au bureau du personnel pour $name',
+                          ? '✅ تم تكليف مكتب المستخدمين بإصدار الاستفسار لـ $name بنجاح'
+                          : '✅ Demande transmise au bureau du personnel pour $name',
                       style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -2254,7 +2241,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     behavior: SnackBarBehavior.floating,
                     margin: const EdgeInsets.all(16),
                     backgroundColor: AppTheme.DangerColor,
-                    content: Text('Ø®Ø·Ø£: $e', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
+                    content: Text('خطأ: $e', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white)),
                   ),
                 );
               }
@@ -2264,7 +2251,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text(loc.isArabic ? 'Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø£Ù…Ø±' : 'Ã‰mettre l\'ordre', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            child: Text(loc.isArabic ? 'إصدار الأمر' : 'Émettre l\'ordre', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -2273,7 +2260,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
   void _showVisitDetailsModal(Map<String, dynamic> v, String inspectorName) {
     final loc = AppLocalizations.of(context);
-    final String shop = (v['shopName'] ?? (loc.isArabic ? 'Ù…Ø­Ù„ ØªØ¬Ø§Ø±ÙŠ' : 'Commerce')).toString();
+    final String shop = (v['shopName'] ?? (loc.isArabic ? 'محل تجاري' : 'Commerce')).toString();
     final String? photo = v['photo']?.toString();
     final bool hasPhoto = v['hasPhoto'] == true || v['HasPhoto'] == true;
     final int visitId = int.tryParse('${v['id'] ?? v['Id'] ?? 0}') ?? 0;
@@ -2307,7 +2294,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(shop, style: const TextStyle(fontFamily: 'Tajawal', fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text('${loc.isArabic ? "Ø§Ù„Ù…ÙØªØ´" : "Inspecteur"}: $inspectorName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
+                      Text('${loc.isArabic ? "المفتش" : "Inspecteur"}: $inspectorName', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: AppTheme.TextSecondary)),
                     ],
                   ),
                 ),
@@ -2361,12 +2348,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             ],
             if (lat != null && lng != null)
               Text(
-                '${loc.isArabic ? "Ø§Ù„Ø¥Ø­Ø¯Ø§Ø«ÙŠØ§Øª Ø§Ù„Ø¬ØºØ±Ø§ÙÙŠØ©" : "CoordonnÃ©es GPS"}: $lat, $lng',
+                '${loc.isArabic ? "الإحداثيات الجغرافية" : "Coordonnées GPS"}: $lat, $lng',
                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
               ),
             const SizedBox(height: 10),
 
-            // ðŸ“‹ Legal Metadata (Paper PV, Partner Inspector, Mission Type)
+            // 📋 Legal Metadata (Paper PV, Partner Inspector, Mission Type)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -2382,12 +2369,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       const Icon(Icons.receipt_long, color: Color(0xFFD4AF37), size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        loc.isArabic ? 'Ø±Ù‚Ù… Ø§Ù„Ù…Ø­Ø¶Ø± Ø§Ù„ÙˆØ±Ù‚ÙŠ (Avis de passage): ' : 'NÂ° PV / Avis : ',
+                        loc.isArabic ? 'رقم المحضر الورقي (Avis de passage): ' : 'N° PV / Avis : ',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
                       ),
                       Expanded(
                         child: Text(
-                          (v['paperPvNumber'] ?? v['PaperPvNumber'] ?? (loc.isArabic ? 'ØºÙŠØ± Ù…Ø³Ø¬Ù„' : 'Non spÃ©cifiÃ©')).toString(),
+                          (v['paperPvNumber'] ?? v['PaperPvNumber'] ?? (loc.isArabic ? 'غير مسجل' : 'Non spécifié')).toString(),
                           style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
@@ -2399,12 +2386,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       const Icon(Icons.people_alt, color: Color(0xFF10B981), size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        loc.isArabic ? 'Ø§Ù„Ø¹ÙˆÙ† Ø§Ù„Ù…Ø±Ø§ÙÙ‚ (Ø§Ù„Ø«Ù†Ø§Ø¦ÙŠ Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠ): ' : 'BinÃ´me : ',
+                        loc.isArabic ? 'العون المرافق (الثنائي الرقابي): ' : 'Binôme : ',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
                       ),
                       Expanded(
                         child: Text(
-                          (v['partnerInspectorName'] ?? v['PartnerInspectorName'] ?? (loc.isArabic ? 'Ù…Ù‡Ù…Ø© ÙØ±Ø¯ÙŠØ©' : 'Mission solo')).toString(),
+                          (v['partnerInspectorName'] ?? v['PartnerInspectorName'] ?? (loc.isArabic ? 'مهمة فردية' : 'Mission solo')).toString(),
                           style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
@@ -2416,16 +2403,16 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       const Icon(Icons.assignment, color: Color(0xFFF59E0B), size: 16),
                       const SizedBox(width: 8),
                       Text(
-                        loc.isArabic ? 'Ø·Ø¨ÙŠØ¹Ø© Ø§Ù„Ù…Ù‡Ù…Ø©: ' : 'Type de mission : ',
+                        loc.isArabic ? 'طبيعة المهمة: ' : 'Type de mission : ',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
                       ),
                       Expanded(
                         child: Text(
                           (v['missionType'] ?? v['MissionType']) == 'market_observation'
-                              ? (loc.isArabic ? 'Ù…Ù„Ø§Ø­Ø¸Ø© Ø§Ù„Ø³ÙˆÙ‚ ÙˆØ§Ø³ØªØ·Ù„Ø§Ø¹ Ø§Ù„Ø£Ø³Ø¹Ø§Ø±' : 'Observation du marchÃ©')
+                              ? (loc.isArabic ? 'ملاحظة السوق واستطلاع الأسعار' : 'Observation du marché')
                               : ((v['missionType'] ?? v['MissionType']) == 'administrative_inquiry'
-                                  ? (loc.isArabic ? 'ØªØ­Ù‚ÙŠÙ‚ Ø¥Ø¯Ø§Ø±ÙŠ ÙˆØ§Ø³ØªØ¯Ø¹Ø§Ø¡' : 'EnquÃªte administrative')
-                                  : (loc.isArabic ? 'Ø±Ù‚Ø§Ø¨Ø© ÙˆÙ‚Ù…Ø¹ Ø§Ù„ØºØ´' : 'ContrÃ´le & RÃ©pression des fraudes')),
+                                  ? (loc.isArabic ? 'تحقيق إداري واستدعاء' : 'Enquête administrative')
+                                  : (loc.isArabic ? 'رقابة وقمع الغش' : 'Contrôle & Répression des fraudes')),
                           style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFFCD34D)),
                         ),
                       ),
@@ -2451,12 +2438,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       'longitude': lng,
                       'id': v['id'] ?? DateTime.now().millisecondsSinceEpoch,
                     },
-                    title: loc.isArabic ? 'Ø¥Ø«Ø¨Ø§Øª Ø§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø© Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠØ© (QR)' : 'Preuve de visite terrain (QR)',
+                    title: loc.isArabic ? 'إثبات المعاينة الميدانية (QR)' : 'Preuve de visite terrain (QR)',
                   );
                 },
                 icon: const Icon(Icons.qr_code),
                 label: Text(
-                  loc.isArabic ? 'Ø¹Ø±Ø¶ Ø±Ù…Ø² Ø§Ù„Ø§Ø³ØªØ¬Ø§Ø¨Ø© Ø§Ù„Ø³Ø±ÙŠØ¹Ø© Ù„Ù„Ø²ÙŠØ§Ø±Ø©' : 'Afficher le QR code de la visite',
+                  loc.isArabic ? 'عرض رمز الاستجابة السريعة للزيارة' : 'Afficher le QR code de la visite',
                   style: const TextStyle(fontFamily: 'Tajawal'),
                 ),
                 style: ElevatedButton.styleFrom(backgroundColor: AppTheme.AccentColor, foregroundColor: Colors.black),
@@ -2540,7 +2527,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          loc.isArabic ? 'Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ø¹ÙˆÙ† ÙˆÙ…ØªØ§Ø¨Ø¹Ø© Ø­Ø§Ù„ØªÙ‡ Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠØ©' : 'Rechercher un agent et suivre son Ã©tat',
+                          loc.isArabic ? 'البحث عن عون ومتابعة حالته الميدانية' : 'Rechercher un agent et suivre son état',
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 15,
@@ -2561,7 +2548,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
                     onChanged: (val) => setSheetState(() => query = val),
                     decoration: InputDecoration(
-                      hintText: loc.isArabic ? 'Ø§Ø¨Ø­Ø« Ø¨Ø§Ù„Ø§Ø³Ù…ØŒ Ø§Ù„Ù„Ù‚Ø¨ Ø£Ùˆ Ø§Ù„Ù…ØµÙ„Ø­Ø©...' : 'Rechercher par nom ou service...',
+                      hintText: loc.isArabic ? 'ابحث بالاسم، اللقب أو المصلحة...' : 'Rechercher par nom ou service...',
                       hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 13),
                       prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
                       filled: true,
@@ -2579,7 +2566,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   child: filtered.isEmpty
                       ? Center(
                           child: Text(
-                            loc.isArabic ? 'Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø£ÙŠ Ø¹ÙˆÙ† ÙŠØ·Ø§Ø¨Ù‚ Ø§Ù„Ø¨Ø­Ø«' : 'Aucun agent trouvÃ©',
+                            loc.isArabic ? 'لم يتم العثور على أي عون يطابق البحث' : 'Aucun agent trouvé',
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               color: AppTheme.TextSecondary,
@@ -2591,17 +2578,17 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
                             final emp = filtered[index];
-                            final name = emp['name']?.toString() ?? (loc.isArabic ? 'Ø¹ÙˆÙ† Ø±Ù‚Ø§Ø¨Ø©' : 'Agent de contrÃ´le');
-                            final service = emp['service']?.toString() ?? (loc.isArabic ? 'Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„ØªØ¬Ø§Ø±Ø©' : 'Direction du Commerce');
+                            final name = emp['name']?.toString() ?? (loc.isArabic ? 'عون رقابة' : 'Agent de contrôle');
+                            final service = emp['service']?.toString() ?? (loc.isArabic ? 'مديرية التجارة' : 'Direction du Commerce');
                             final bool hasCheckedIn = emp['hasCheckedIn'] == true;
                             final bool isCheckedOut = emp['isCheckedOut'] == true;
                             final visits = (emp['visits'] as List?) ?? [];
 
                             final statusStr = hasCheckedIn
                                 ? (isCheckedOut
-                                    ? (loc.isArabic ? 'Ø§Ù†ØµØ±Ù' : 'Sorti')
-                                    : (loc.isArabic ? 'ÙÙŠ Ø§Ù„Ù…ÙŠØ¯Ø§Ù† (${visits.length} Ø²ÙŠØ§Ø±Ø§Øª)' : 'Sur le terrain (${visits.length} v.)'))
-                                : (loc.isArabic ? 'Ù„Ù… ÙŠØ³Ø¬Ù„ Ø§Ù„Ø­Ø¶ÙˆØ± Ø§Ù„ÙŠÙˆÙ…' : 'Non pointÃ©');
+                                    ? (loc.isArabic ? 'انصرف' : 'Sorti')
+                                    : (loc.isArabic ? 'في الميدان (${visits.length} زيارات)' : 'Sur le terrain (${visits.length} v.)'))
+                                : (loc.isArabic ? 'لم يسجل الحضور اليوم' : 'Non pointé');
 
                             return Container(
                               margin: const EdgeInsets.only(bottom: 8),
@@ -2638,7 +2625,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                   ),
                                 ),
                                 subtitle: Text(
-                                  '$service â€¢ $statusStr',
+                                  '$service • $statusStr',
                                   style: TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 11,
@@ -2668,42 +2655,42 @@ class _DirectorMapTabState extends State<DirectorMapTab>
   }
 
   String _getInspectorateLabel(String id, AppLocalizations loc) {
-    if (id == 'Ø§Ù„ÙƒÙ„') return loc.isArabic ? 'ðŸ“Œ ÙƒÙ„ ÙˆÙ„Ø§ÙŠØ© Ø³Ø·ÙŠÙ' : 'ðŸ“Œ Toute la Wilaya';
+    if (id == 'الكل') return loc.isArabic ? '📌 كل ولاية سطيف' : '📌 Toute la Wilaya';
     final matches = AppConstants.allInspectorates.where((i) => i.id == id);
     if (matches.isNotEmpty) {
       final insp = matches.first;
       if (loc.isArabic) {
         String cleanName = insp.nameAr;
         if (insp.isMainDirectorate) {
-          cleanName = 'ðŸ¢ Ø§Ù„Ù…Ù‚Ø± Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ (Ø§Ù„Ù…Ø¹Ø¨ÙˆØ¯Ø©)';
-        } else if (cleanName.contains('Ù…Ø·Ø§Ø±')) {
-          cleanName = 'âœˆï¸ Ù…Ø·Ø§Ø± 8 Ù…Ø§ÙŠ (Ø¹ÙŠÙ† Ø£Ø±Ù†Ø§Øª)';
-        } else if (cleanName.contains('Ø§Ù„Ù…ÙØªØ´ÙŠØ© Ø§Ù„Ø¥Ù‚Ù„ÙŠÙ…ÙŠØ© Ù„Ù„ØªØ¬Ø§Ø±Ø© â€” ')) {
-          cleanName = 'ðŸ›ï¸ Ù…ÙØªØ´ÙŠØ© ${cleanName.replaceAll('Ø§Ù„Ù…ÙØªØ´ÙŠØ© Ø§Ù„Ø¥Ù‚Ù„ÙŠÙ…ÙŠØ© Ù„Ù„ØªØ¬Ø§Ø±Ø© â€” ', '')}';
-        } else if (cleanName.contains('Ø§Ù„Ù…Ù„Ø­Ù‚Ø© Ø§Ù„ØªØ¬Ø§Ø±ÙŠØ© â€” ')) {
-          cleanName = 'ðŸª Ù…Ù„Ø­Ù‚Ø© ${cleanName.replaceAll('Ø§Ù„Ù…Ù„Ø­Ù‚Ø© Ø§Ù„ØªØ¬Ø§Ø±ÙŠØ© â€” ', '')}';
+          cleanName = '🏢 المقر الرئيسي (المعبودة)';
+        } else if (cleanName.contains('مطار')) {
+          cleanName = '✈️ مطار 8 ماي (عين أرنات)';
+        } else if (cleanName.contains('المفتشية الإقليمية للتجارة — ')) {
+          cleanName = '🏛️ مفتشية ${cleanName.replaceAll('المفتشية الإقليمية للتجارة — ', '')}';
+        } else if (cleanName.contains('الملحقة التجارية — ')) {
+          cleanName = '🏪 ملحقة ${cleanName.replaceAll('الملحقة التجارية — ', '')}';
         }
         return cleanName;
       } else {
         String cleanName = insp.nameFr;
         if (insp.isMainDirectorate) {
-          cleanName = 'ðŸ¢ SiÃ¨ge Principal (Maabouda)';
-        } else if (cleanName.contains('AÃ©roport')) {
-          cleanName = 'âœˆï¸ AÃ©roport 8 Mai (Ain Arnat)';
-        } else if (cleanName.contains('Inspection Territoriale â€” ')) {
-          cleanName = 'ðŸ›ï¸ Insp. ${cleanName.replaceAll('Inspection Territoriale â€” ', '')}';
-        } else if (cleanName.contains('Annexe â€” ')) {
-          cleanName = 'ðŸª Annexe ${cleanName.replaceAll('Annexe â€” ', '')}';
+          cleanName = '🏢 Siège Principal (Maabouda)';
+        } else if (cleanName.contains('Aéroport')) {
+          cleanName = '✈️ Aéroport 8 Mai (Ain Arnat)';
+        } else if (cleanName.contains('Inspection Territoriale — ')) {
+          cleanName = '🏛️ Insp. ${cleanName.replaceAll('Inspection Territoriale — ', '')}';
+        } else if (cleanName.contains('Annexe — ')) {
+          cleanName = '🏪 Annexe ${cleanName.replaceAll('Annexe — ', '')}';
         }
         return cleanName;
       }
     }
-    return loc.isArabic ? 'ðŸ“Œ ÙƒÙ„ ÙˆÙ„Ø§ÙŠØ© Ø³Ø·ÙŠÙ' : 'ðŸ“Œ Toute la Wilaya';
+    return loc.isArabic ? '📌 كل ولاية سطيف' : '📌 Toute la Wilaya';
   }
 
   void _selectInspectorate(String id) {
     setState(() => _selectedInspectorateId = id);
-    if (id == 'Ø§Ù„ÙƒÙ„') {
+    if (id == 'الكل') {
       _mapController.move(_setifCenter, 11.0);
     } else {
       final matches = AppConstants.allInspectorates.where((i) => i.id == id);
@@ -2718,7 +2705,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
   Widget _searchAgentButton({bool isCompact = false}) {
     final loc = AppLocalizations.of(context);
     return Tooltip(
-      message: loc.isArabic ? 'Ø¨Ø­Ø« Ø³Ø±ÙŠØ¹ Ø¹Ù† Ø¹ÙˆÙ† Ø±Ù‚Ø§Ø¨Ø©' : 'Rechercher un agent',
+      message: loc.isArabic ? 'بحث سريع عن عون رقابة' : 'Rechercher un agent',
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -2744,7 +2731,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 if (!isCompact) ...[
                   const SizedBox(width: 6),
                   Text(
-                    loc.isArabic ? 'Ø¨Ø­Ø« Ø¹Ù† Ø¹ÙˆÙ†...' : 'Recherche...',
+                    loc.isArabic ? 'بحث عن عون...' : 'Recherche...',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 11,
@@ -2765,7 +2752,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     final loc = AppLocalizations.of(context);
     final currentLabel = _getInspectorateLabel(_selectedInspectorateId, loc);
     return PopupMenuButton<String>(
-      tooltip: loc.isArabic ? 'Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ù…Ù‚Ø± Ø£Ùˆ Ø§Ù„Ù…ÙØªØ´ÙŠØ© Ø§Ù„Ø¥Ù‚Ù„ÙŠÙ…ÙŠØ©' : 'SÃ©lectionner le siÃ¨ge ou l\'inspection',
+      tooltip: loc.isArabic ? 'اختيار المقر أو المفتشية الإقليمية' : 'Sélectionner le siège ou l\'inspection',
       offset: const Offset(0, 42),
       color: const Color(0xFF1E0B26),
       shape: RoundedRectangleBorder(
@@ -2775,18 +2762,18 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       onSelected: _selectInspectorate,
       itemBuilder: (context) => [
         PopupMenuItem<String>(
-          value: 'Ø§Ù„ÙƒÙ„',
+          value: 'الكل',
           child: Row(
             children: [
               const Icon(Icons.public, color: Color(0xFFD4AF37), size: 18),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  loc.isArabic ? 'ðŸ“Œ ÙƒØ§Ù…Ù„ ÙˆÙ„Ø§ÙŠØ© Ø³Ø·ÙŠÙ (Ø§Ù„ÙƒÙ„)' : 'ðŸ“Œ Toute la Wilaya de SÃ©tif',
+                  loc.isArabic ? '📌 كامل ولاية سطيف (الكل)' : '📌 Toute la Wilaya de Sétif',
                   style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
                 ),
               ),
-              if (_selectedInspectorateId == 'Ø§Ù„ÙƒÙ„')
+              if (_selectedInspectorateId == 'الكل')
                 const Icon(Icons.check, color: Color(0xFFD4AF37), size: 16),
             ],
           ),
@@ -2797,7 +2784,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           final label = _getInspectorateLabel(insp.id, loc);
           final IconData icon = insp.isMainDirectorate
               ? Icons.account_balance
-              : (insp.nameAr.contains('Ù…Ø·Ø§Ø±') ? Icons.flight : Icons.apartment);
+              : (insp.nameAr.contains('مطار') ? Icons.flight : Icons.apartment);
           return PopupMenuItem<String>(
             value: insp.id,
             child: Row(
@@ -2820,7 +2807,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       ),
                       Text(
                         loc.isArabic
-                            ? 'Ù†Ø·Ø§Ù‚ Ø§Ù„Ø¨ØµÙ…Ø©: ${insp.radiusMeters.round()}Ù…'
+                            ? 'نطاق البصمة: ${insp.radiusMeters.round()}م'
                             : 'Rayon GPS : ${insp.radiusMeters.round()}m',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: AppTheme.TextSecondary),
                       ),
@@ -2890,8 +2877,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _styleChip('satellite', isCompact ? 'ðŸ›°ï¸' : (loc.isArabic ? 'Ø£Ù‚Ù…Ø§Ø± ØµÙ†Ø§Ø¹ÙŠØ©' : 'Satellite')),
-          _styleChip('osm', isCompact ? 'ðŸ—ºï¸' : (loc.isArabic ? 'Ø®Ø±ÙŠØ·Ø© Ø§Ù„Ø´ÙˆØ§Ø±Ø¹' : 'Rues')),
+          _styleChip('satellite', isCompact ? '🛰️' : (loc.isArabic ? 'أقمار صناعية' : 'Satellite')),
+          _styleChip('osm', isCompact ? '🗺️' : (loc.isArabic ? 'خريطة الشوارع' : 'Rues')),
         ],
       ),
     );
@@ -2923,39 +2910,39 @@ class _DirectorMapTabState extends State<DirectorMapTab>
         mainAxisSize: MainAxisSize.min,
         children: [
           _legend(
-            loc.isArabic ? 'ÙÙŠ Ø§Ù„Ù…ÙŠØ¯Ø§Ù†' : 'Terrain',
+            loc.isArabic ? 'في الميدان' : 'Terrain',
             inFieldList.length,
             const Color(0xFFD4AF37),
             onTap: () => _showCategoryPersonnelModal(
               context,
-              loc.isArabic ? 'Ø§Ù„Ù…ÙØªØ´ÙˆÙ† ÙÙŠ Ø§Ù„Ù…ÙŠØ¯Ø§Ù†' : 'Agents sur le terrain',
+              loc.isArabic ? 'المفتشون في الميدان' : 'Agents sur le terrain',
               inFieldList,
               const Color(0xFFD4AF37),
             ),
           ),
           const SizedBox(width: 8),
           _legend(
-            loc.isArabic ? 'Ø¨Ø§Ù„Ù…Ù‚Ø±' : 'Au siÃ¨ge',
+            loc.isArabic ? 'بالمقر' : 'Au siège',
             atHQList.length,
             AppTheme.SuccessColor,
             onTap: () => _showCategoryPersonnelModal(
               context,
-              loc.isArabic ? 'Ø§Ù„Ù…ÙˆØ¸ÙÙˆÙ† Ø§Ù„Ø­Ø§Ø¶Ø±ÙˆÙ† Ø¨Ø§Ù„Ù…Ù‚Ø±' : 'PrÃ©sents au siÃ¨ge',
+              loc.isArabic ? 'الموظفون الحاضرون بالمقر' : 'Présents au siège',
               atHQList,
               AppTheme.SuccessColor,
             ),
           ),
           const SizedBox(width: 8),
-          _legend(loc.isArabic ? 'Ù…Ø¹Ø§ÙŠÙ†Ø§Øª Ø§Ù„ÙŠÙˆÙ…' : 'Visites', visitsCount, const Color(0xFFF59E0B)),
+          _legend(loc.isArabic ? 'معاينات اليوم' : 'Visites', visitsCount, const Color(0xFFF59E0B)),
           if (checkedOutList.isNotEmpty) ...[
             const SizedBox(width: 8),
             _legend(
-              loc.isArabic ? 'Ø§Ù†ØµØ±Ù' : 'Sortis',
+              loc.isArabic ? 'انصرف' : 'Sortis',
               checkedOutList.length,
               const Color(0xFF94A3B8),
               onTap: () => _showCategoryPersonnelModal(
                 context,
-                loc.isArabic ? 'Ø§Ù„Ù…ÙˆØ¸ÙÙˆÙ† Ø§Ù„Ù…Ù†ØµØ±ÙÙˆÙ† Ø§Ù„ÙŠÙˆÙ…' : 'Agents sortis aujourd\'hui',
+                loc.isArabic ? 'الموظفون المنصرفون اليوم' : 'Agents sortis aujourd\'hui',
                 checkedOutList,
                 const Color(0xFF94A3B8),
                 isCheckout: true,
@@ -2965,13 +2952,13 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           const SizedBox(width: 8),
           _legend(
             isWeekend
-                ? (loc.isArabic ? 'Ù„Ù… ÙŠØ³Ø¬Ù„ (Ø¹Ø·Ù„Ø©)' : 'Non pointÃ© (W-E)')
-                : (loc.isArabic ? 'Ù„Ù… ÙŠØ³Ø¬Ù„' : 'Non pointÃ©'),
+                ? (loc.isArabic ? 'لم يسجل (عطلة)' : 'Non pointé (W-E)')
+                : (loc.isArabic ? 'لم يسجل' : 'Non pointé'),
             notRegisteredList.length,
             isWeekend ? const Color(0xFF64748B) : AppTheme.DangerColor,
             onTap: () => _showCategoryPersonnelModal(
               context,
-              loc.isArabic ? 'ØºÙŠØ± Ø§Ù„Ù…Ø³Ø¬Ù„ÙŠÙ† Ù„Ù„Ø­Ø¶ÙˆØ± Ø§Ù„ÙŠÙˆÙ… (ØºÙŠØ§Ø¨)' : 'Non enregistrÃ©s (absents)',
+              loc.isArabic ? 'غير المسجلين للحضور اليوم (غياب)' : 'Non enregistrés (absents)',
               notRegisteredList,
               AppTheme.DangerColor,
               isAbsent: true,
@@ -3004,26 +2991,26 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     final text = '$service $fonction';
 
     if (insp.id == 'insp_airport_arnat') {
-      return text.contains('Ù…Ø·Ø§Ø±') || text.contains('aÃ©roport') || text.contains('Ø­Ø¯ÙˆØ¯ÙŠØ©') || text.contains('frontaliÃ¨re');
+      return text.contains('مطار') || text.contains('aéroport') || text.contains('حدودية') || text.contains('frontalière');
     } else if (insp.id == 'insp_eulma') {
-      return text.contains('Ø¹Ù„Ù…Ø©') || text.contains('eulma');
+      return text.contains('علمة') || text.contains('eulma');
     } else if (insp.id == 'insp_ain_oulmene') {
-      return text.contains('ÙˆÙ„Ù…Ø§Ù†') || text.contains('oulmene') || text.contains('oulmÃ¨ne');
+      return text.contains('ولمان') || text.contains('oulmene') || text.contains('oulmène');
     } else if (insp.id == 'insp_bougaa') {
-      return text.contains('Ø¨ÙˆÙ‚Ø§Ø¹Ø©') || text.contains('bougaa') || text.contains('bougaÃ¢');
+      return text.contains('بوقاعة') || text.contains('bougaa') || text.contains('bougaâ');
     } else if (insp.id == 'annex_ain_azel') {
-      return text.contains('Ø¢Ø²Ø§Ù„') || text.contains('azel');
+      return text.contains('آزال') || text.contains('azel');
     } else if (insp.id == 'annex_ain_kebira') {
-      return text.contains('ÙƒØ¨ÙŠØ±Ø©') || text.contains('kebira');
+      return text.contains('كبيرة') || text.contains('kebira');
     } else if (insp.id == 'annex_ain_arnat') {
-      return (text.contains('Ø£Ø±Ù†Ø§Øª') || text.contains('arnat')) && !text.contains('Ù…Ø·Ø§Ø±');
+      return (text.contains('أرنات') || text.contains('arnat')) && !text.contains('مطار');
     } else if (insp.isMainDirectorate || insp.id == 'hq_setif') {
-      final isRegional = text.contains('Ø¹Ù„Ù…Ø©') || text.contains('eulma') ||
-                         text.contains('ÙˆÙ„Ù…Ø§Ù†') || text.contains('oulmene') ||
-                         text.contains('Ø¨ÙˆÙ‚Ø§Ø¹Ø©') || text.contains('bougaa') ||
-                         text.contains('Ù…Ø·Ø§Ø±') || text.contains('aÃ©roport') ||
-                         text.contains('Ø¢Ø²Ø§Ù„') || text.contains('azel') ||
-                         text.contains('ÙƒØ¨ÙŠØ±Ø©') || text.contains('kebira');
+      final isRegional = text.contains('علمة') || text.contains('eulma') ||
+                         text.contains('ولمان') || text.contains('oulmene') ||
+                         text.contains('بوقاعة') || text.contains('bougaa') ||
+                         text.contains('مطار') || text.contains('aéroport') ||
+                         text.contains('آزال') || text.contains('azel') ||
+                         text.contains('كبيرة') || text.contains('kebira');
       return !isRegional;
     }
     return false;
@@ -3123,8 +3110,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                             ),
                             Text(
                               loc.isArabic
-                                  ? '${insp.nameFr} â€¢ Ù†Ø·Ø§Ù‚ Ø§Ù„Ø­Ø¶ÙˆØ±: ${insp.radiusMeters.round()}Ù…'
-                                  : '${insp.nameAr} â€¢ Rayon GPS : ${insp.radiusMeters.round()}m',
+                                  ? '${insp.nameFr} • نطاق الحضور: ${insp.radiusMeters.round()}م'
+                                  : '${insp.nameAr} • Rayon GPS : ${insp.radiusMeters.round()}m',
                               style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontSize: 11,
@@ -3153,10 +3140,10 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _hqStatItem(loc.isArabic ? 'Ø§Ù„Ø£Ø¹ÙˆØ§Ù† Ø§Ù„Ù…Ø¹ÙŠÙ†ÙŠÙ†' : 'Effectif', '${assignedEmps.length}', Colors.white),
-                        _hqStatItem(loc.isArabic ? 'Ø­Ø§Ø¶Ø±ÙˆÙ† Ø¨Ø§Ù„Ù…Ù‚Ø±' : 'Au siÃ¨ge', '${presentInHQ.length}', const Color(0xFF10B981)),
-                        _hqStatItem(loc.isArabic ? 'ÙÙŠ Ø§Ù„Ù…ÙŠØ¯Ø§Ù†' : 'Terrain', '${inField.length}', const Color(0xFF38BDF8)),
-                        _hqStatItem(loc.isArabic ? 'ØºØ§Ø¦Ø¨ÙˆÙ†' : 'Absents', '${absent.length}', const Color(0xFFF87171)),
+                        _hqStatItem(loc.isArabic ? 'الأعوان المعينين' : 'Effectif', '${assignedEmps.length}', Colors.white),
+                        _hqStatItem(loc.isArabic ? 'حاضرون بالمقر' : 'Au siège', '${presentInHQ.length}', const Color(0xFF10B981)),
+                        _hqStatItem(loc.isArabic ? 'في الميدان' : 'Terrain', '${inField.length}', const Color(0xFF38BDF8)),
+                        _hqStatItem(loc.isArabic ? 'غائبون' : 'Absents', '${absent.length}', const Color(0xFFF87171)),
                       ],
                     ),
                   ),
@@ -3167,13 +3154,13 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildFilterChip(loc.isArabic ? 'Ø§Ù„ÙƒÙ„ (${assignedEmps.length})' : 'Tous (${assignedEmps.length})', 'all', currentFilter, (v) => setModalState(() => currentFilter = v)),
+                        _buildFilterChip(loc.isArabic ? 'الكل (${assignedEmps.length})' : 'Tous (${assignedEmps.length})', 'all', currentFilter, (v) => setModalState(() => currentFilter = v)),
                         const SizedBox(width: 6),
-                        _buildFilterChip(loc.isArabic ? 'Ø­Ø§Ø¶Ø±ÙˆÙ† Ø¨Ø§Ù„Ù…Ù‚Ø± (${presentInHQ.length})' : 'Au siÃ¨ge (${presentInHQ.length})', 'present', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF10B981)),
+                        _buildFilterChip(loc.isArabic ? 'حاضرون بالمقر (${presentInHQ.length})' : 'Au siège (${presentInHQ.length})', 'present', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF10B981)),
                         const SizedBox(width: 6),
-                        _buildFilterChip(loc.isArabic ? 'ÙÙŠ Ø§Ù„Ù…ÙŠØ¯Ø§Ù† (${inField.length})' : 'Terrain (${inField.length})', 'field', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF38BDF8)),
+                        _buildFilterChip(loc.isArabic ? 'في الميدان (${inField.length})' : 'Terrain (${inField.length})', 'field', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFF38BDF8)),
                         const SizedBox(width: 6),
-                        _buildFilterChip(loc.isArabic ? 'ØºØ§Ø¦Ø¨ÙˆÙ† (${absent.length})' : 'Absents (${absent.length})', 'absent', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFFF87171)),
+                        _buildFilterChip(loc.isArabic ? 'غائبون (${absent.length})' : 'Absents (${absent.length})', 'absent', currentFilter, (v) => setModalState(() => currentFilter = v), color: const Color(0xFFF87171)),
                       ],
                     ),
                   ),
@@ -3189,7 +3176,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                 Icon(Icons.people_outline, color: Colors.white.withValues(alpha: 0.3), size: 40),
                                 const SizedBox(height: 8),
                                 Text(
-                                  loc.isArabic ? 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø£Ø¹ÙˆØ§Ù† ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ØªØµÙ†ÙŠÙ Ø­Ø§Ù„ÙŠØ§Ù‹' : 'Aucun agent dans cette catÃ©gorie',
+                                  loc.isArabic ? 'لا يوجد أعوان في هذا التصنيف حالياً' : 'Aucun agent dans cette catégorie',
                                   style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60, fontSize: 13),
                                 ),
                               ],
@@ -3204,21 +3191,21 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                               final isAbs = absent.contains(emp);
 
                               Color statusColor = const Color(0xFF10B981);
-                              String statusText = loc.isArabic ? 'Ø­Ø§Ø¶Ø± Ø¨Ø§Ù„Ù…Ù‚Ø±' : 'Au siÃ¨ge';
+                              String statusText = loc.isArabic ? 'حاضر بالمقر' : 'Au siège';
                               IconData statusIcon = Icons.check_circle;
 
                               if (isField) {
                                 statusColor = const Color(0xFF38BDF8);
-                                statusText = loc.isArabic ? 'ÙÙŠ Ù…Ù‡Ù…Ø© Ù…ÙŠØ¯Ø§Ù†ÙŠØ©' : 'En mission';
+                                statusText = loc.isArabic ? 'في مهمة ميدانية' : 'En mission';
                                 statusIcon = Icons.explore;
                               } else if (isAbs) {
                                 statusColor = const Color(0xFFF87171);
-                                statusText = loc.isArabic ? 'ØºØ§Ø¦Ø¨ (Ù„Ù… ÙŠØ³Ø¬Ù„)' : 'Absent';
+                                statusText = loc.isArabic ? 'غائب (لم يسجل)' : 'Absent';
                                 statusIcon = Icons.cancel;
                               }
 
-                              final name = (emp['name'] ?? emp['NomAr'] ?? emp['Nom'] ?? (loc.isArabic ? 'Ù…ÙØªØ´' : 'Agent')).toString();
-                              final grade = (emp['grade'] ?? emp['Grade'] ?? (loc.isArabic ? 'Ù…ÙØªØ´ Ø±Ø¦ÙŠØ³ÙŠ' : 'Inspecteur')).toString();
+                              final name = (emp['name'] ?? emp['NomAr'] ?? emp['Nom'] ?? (loc.isArabic ? 'مفتش' : 'Agent')).toString();
+                              final grade = (emp['grade'] ?? emp['Grade'] ?? (loc.isArabic ? 'مفتش رئيسي' : 'Inspecteur')).toString();
                               final service = (emp['service'] ?? emp['Service'] ?? '').toString();
 
                               return InkWell(
@@ -3264,7 +3251,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              '$grade ${service.isNotEmpty ? 'â€¢ $service' : ''}',
+                                              '$grade ${service.isNotEmpty ? '• $service' : ''}',
                                               style: const TextStyle(
                                                 fontFamily: 'Tajawal',
                                                 fontSize: 11,
@@ -3316,7 +3303,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                             },
                             icon: const Icon(Icons.center_focus_strong, color: Colors.black, size: 16),
                             label: Text(
-                              loc.isArabic ? 'ØªØ±ÙƒÙŠØ² Ø§Ù„Ø®Ø±ÙŠØ·Ø©' : 'Centrer la carte',
+                              loc.isArabic ? 'تركيز الخريطة' : 'Centrer la carte',
                               style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontWeight: FontWeight.bold,
@@ -3342,7 +3329,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                             },
                             icon: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37), size: 16),
                             label: Text(
-                              loc.isArabic ? 'Ø§Ù„Ø´Ø§Ø±Ø© Ø§Ù„Ø±Ù‚Ù…ÙŠØ© (QR)' : 'Badge numÃ©rique (QR)',
+                              loc.isArabic ? 'الشارة الرقمية (QR)' : 'Badge numérique (QR)',
                               style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontWeight: FontWeight.bold,
@@ -3422,4 +3409,3 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     );
   }
 }
-
