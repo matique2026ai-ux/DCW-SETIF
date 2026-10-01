@@ -113,6 +113,20 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           _departmentName = 'مصلحة ملاحظة السوق وضبط التموين';
         } else if (user?.username == 'chef_contentieux') {
           _departmentName = 'مصلحة المنازعات والشؤون القانونية';
+        } else if (user?.username == 'chef_eulma') {
+          _departmentName = 'المفتشية الإقليمية للتجارة بالعلمة';
+        } else if (user?.username == 'chef_oulmane') {
+          _departmentName = 'المفتشية الإقليمية للتجارة بعين ولمان';
+        } else if (user?.username == 'chef_bougaa') {
+          _departmentName = 'المفتشية الإقليمية للتجارة ببوقاعة';
+        } else if (user?.username == 'chef_aeroport') {
+          _departmentName = 'المفتشية الحدودية لمراقبة الجودة وقمع الغش بمطار 08 ماي 1945 بسطيف';
+        } else if (user?.username == 'chef_arnat') {
+          _departmentName = 'ملحقة التجارة بعين أرنات';
+        } else if (user?.username == 'chef_azal') {
+          _departmentName = 'ملحقة التجارة بعين أزال';
+        } else if (user?.username == 'chef_kebira') {
+          _departmentName = 'ملحقة التجارة بعين الكبيرة';
         } else {
           _departmentName = 'مصلحة حماية المستهلك وقمع الغش';
         }
@@ -4179,12 +4193,72 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                         ),
                       ),
                       PopupMenuItem(
-                        value: 'مصلحة المنازعات والشؤون القانونية',
+                        value: 'المفتشية الإقليمية للتجارة بالعلمة',
                         child: Row(
                           children: [
-                            const Icon(Icons.gavel, color: Color(0xFFEF4444), size: 16),
+                            const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
                             const SizedBox(width: 8),
-                            Text(isAr ? 'مصلحة المنازعات والشؤون القانونية' : 'Contentieux & Affaires Juridiques', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                            Text(isAr ? 'المفتشية الإقليمية بالعلمة' : 'Inspection Territoriale - El Eulma', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'المفتشية الإقليمية للتجارة بعين ولمان',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'المفتشية الإقليمية بعين ولمان' : 'Inspection Territoriale - Aïn Oulmane', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'المفتشية الإقليمية للتجارة ببوقاعة',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'المفتشية الإقليمية ببوقاعة' : 'Inspection Territoriale - Bougaâ', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'المفتشية الحدودية لمراقبة الجودة وقمع الغش بمطار 08 ماي 1945 بسطيف',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.flight_takeoff, color: Color(0xFF10B981), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'المفتشية الحدودية بمطار 8 ماي' : 'Inspection Frontalière Aéroport', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'ملحقة التجارة بعين أرنات',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'ملحقة التجارة بعين أرنات' : 'Annexe Commerciale - Aïn Arnat', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'ملحقة التجارة بعين أزال',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'ملحقة التجارة بعين أزال' : 'Annexe Commerciale - Aïn Azel', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: 'ملحقة التجارة بعين الكبيرة',
+                        child: Row(
+                          children: [
+                            const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
+                            const SizedBox(width: 8),
+                            Text(isAr ? 'ملحقة التجارة بعين الكبيرة' : 'Annexe Commerciale - Aïn El Kebira', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
                           ],
                         ),
                       ),
@@ -4202,7 +4276,17 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                       ),
                     ),
                     child: Text(
-                      isAr ? 'رئيس مصلحة' : 'Chef Service',
+                      isAr
+                          ? (_departmentName.contains('ملحقة')
+                              ? 'المكلف بالملحقة'
+                              : (_departmentName.contains('المفتشية')
+                                  ? 'رئيس المفتشية'
+                                  : 'رئيس مصلحة'))
+                          : (_departmentName.contains('ملحقة')
+                              ? 'Resp. Annexe'
+                              : (_departmentName.contains('المفتشية')
+                                  ? 'Chef Inspection'
+                                  : 'Chef Service')),
                       style: const TextStyle(
                         fontSize: 8.5,
                         fontWeight: FontWeight.bold,
