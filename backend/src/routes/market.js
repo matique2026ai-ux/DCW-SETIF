@@ -347,4 +347,249 @@ router.get('/bulletin', authMiddleware, async (req, res) => {
   }
 });
 
+// ==========================================
+// 4. ECONOMIC CENSUS & ACCREDITED MERCHANTS REGISTRY (السجل الاقتصادي للتجار والاعتمادات)
+// ==========================================
+
+// GET /api/market/merchants
+router.get('/merchants', authMiddleware, async (req, res) => {
+  try {
+    const db = await getConnection();
+    const pg = isPostgres();
+    const { category, municipality, status, q } = req.query;
+
+    let conditions = ['1=1'];
+    let params = [];
+
+    if (category) {
+      params.push(`%${category}%`);
+      conditions.push(pg ? `"ActivityCategory" ILIKE $${params.length}` : `ActivityCategory LIKE ?`);
+    }
+    if (municipality) {
+      params.push(`%${municipality}%`);
+      conditions.push(pg ? `"Municipality" ILIKE $${params.length}` : `Municipality LIKE ?`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(pg ? `"RegisterStatus" = $${params.length}` : `RegisterStatus = ?`);
+    }
+    if (q) {
+      params.push(`%${q}%`);
+      conditions.push(
+        pg
+          ? `("MerchantName" ILIKE $${params.length} OR "CommercialRegister" ILIKE $${params.length} OR "OwnerName" ILIKE $${params.length})`
+          : `(MerchantName LIKE ? OR CommercialRegister LIKE ? OR OwnerName LIKE ?)`
+      );
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const sql = pg
+      ? `SELECT * FROM "TrackerAccreditedMerchants" WHERE ${whereClause} ORDER BY "Id" DESC`
+      : `SELECT * FROM TrackerAccreditedMerchants WHERE ${whereClause} ORDER BY Id DESC`;
+
+    const rows = await db.query(sql, params);
+    res.json(rows || []);
+  } catch (err) {
+    console.error('Get merchants error:', err.message);
+    res.status(500).json({ error: 'خطأ في جلب سجل التجار: ' + err.message });
+  }
+});
+
+// GET /api/market/merchants/verify/:rc (فحص لحظي للسجل التجاري)
+router.get('/merchants/verify/:rc', authMiddleware, async (req, res) => {
+  try {
+    const db = await getConnection();
+    const pg = isPostgres();
+    const cleanRc = (req.params.rc || '').trim();
+
+    if (!cleanRc) {
+      return res.status(400).json({ error: 'رقم السجل التجاري مطلوب للفحص' });
+    }
+
+    // 1. Search in Accredited Merchants Registry
+    const merchantSql = pg
+      ? `SELECT * FROM "TrackerAccreditedMerchants" WHERE "CommercialRegister" = $1 LIMIT 1`
+      : `SELECT TOP 1 * FROM TrackerAccreditedMerchants WHERE CommercialRegister = ?`;
+    const merchantRows = await db.query(merchantSql, [cleanRc]);
+    const merchant = merchantRows && merchantRows.length > 0 ? merchantRows[0] : null;
+
+    // 2. Cross-check Closure Orders (قرار غلق إداري نافذ)
+    const closureSql = pg
+      ? `SELECT * FROM "TrackerClosureOrders" WHERE "CommercialRegister" = $1 AND "Status" = 'active' LIMIT 1`
+      : `SELECT TOP 1 * FROM TrackerClosureOrders WHERE CommercialRegister = ? AND Status = 'active'`;
+    const closureRows = await db.query(closureSql, [cleanRc]);
+    const activeClosure = closureRows && closureRows.length > 0 ? closureRows[0] : null;
+
+    // 3. Cross-check Court Cases (متابعة قضائية قائمة)
+    const courtSql = pg
+      ? `SELECT * FROM "TrackerCourtCases" WHERE "CommercialRegister" = $1 AND "IsSettled" = false LIMIT 1`
+      : `SELECT TOP 1 * FROM TrackerCourtCases WHERE CommercialRegister = ? AND IsSettled = 0`;
+    const courtRows = await db.query(courtSql, [cleanRc]);
+    const activeCourtCase = courtRows && courtRows.length > 0 ? courtRows[0] : null;
+
+    const isSuspended =
+      (merchant && (merchant.RegisterStatus === 'SUSPENDED' || merchant.RegisterStatus === 'REVOKED')) ||
+      activeClosure != null;
+
+    let warningMessage = null;
+    if (activeClosure) {
+      warningMessage = `🚨 تحذير أمني وقانوني: هذا التاجر صادر بحقه قرار غلق إداري نافذ رقم ${activeClosure.OrderNumber || ''} بسبب: ${activeClosure.InfractionType || 'مخالفة جسيمة'}! يمنع تزويده بالمواد المدعمة أو النشاط!`;
+    } else if (merchant && (merchant.RegisterStatus === 'SUSPENDED' || merchant.RegisterStatus === 'REVOKED')) {
+      warningMessage = `🚨 تنبيه حاسم: السجل التجاري لهذا التاجر موقوف رسمياً! سبب التوقيف: ${merchant.SuspensionReason || 'مخالفة اشتراطات الاعتماد'}. يمنع تسليمه أي حصص!`;
+    } else if (activeCourtCase) {
+      warningMessage = `⚠️ تنبيه استعلامي: التاجر محل متابعة قضائية جارية بمحكمة سطيف (الملف رقم ${activeCourtCase.CaseNumber || ''}).`;
+    }
+
+    res.json({
+      rc: cleanRc,
+      isRegistered: merchant != null,
+      isSuspended: !!isSuspended,
+      status: isSuspended ? 'SUSPENDED' : (merchant?.RegisterStatus || 'ACTIVE'),
+      warningMessage,
+      merchant,
+      activeClosure,
+      activeCourtCase,
+    });
+  } catch (err) {
+    console.error('Verify RC error:', err.message);
+    res.status(500).json({ error: 'خطأ أثناء فحص السجل التجاري: ' + err.message });
+  }
+});
+
+// POST /api/market/merchants (تسجيل تاجر جديد في السجل الاقتصادي)
+router.post('/merchants', authMiddleware, async (req, res) => {
+  try {
+    const db = await getConnection();
+    const pg = isPostgres();
+    const {
+      merchantName,
+      commercialRegister,
+      nif,
+      activityCategory,
+      activityDetails,
+      quotaCommodity,
+      ownerName,
+      phone,
+      address,
+      municipality,
+      allocatedQuota,
+    } = req.body;
+
+    if (!merchantName || !commercialRegister || !activityCategory) {
+      return res.status(400).json({ error: 'اسم التاجر، رقم السجل التجاري، وطبيعة النشاط حقول إلزامية' });
+    }
+
+    const insertSql = pg
+      ? `INSERT INTO "TrackerAccreditedMerchants" (
+          "MerchantName", "CommercialRegister", "NIF", "ActivityCategory", "ActivityDetails",
+          "QuotaCommodity", "OwnerName", "Phone", "Address", "Municipality", "AllocatedQuota"
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING *`
+      : `INSERT INTO TrackerAccreditedMerchants (
+          MerchantName, CommercialRegister, NIF, ActivityCategory, ActivityDetails,
+          QuotaCommodity, OwnerName, Phone, Address, Municipality, AllocatedQuota
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        SELECT TOP 1 * FROM TrackerAccreditedMerchants WHERE CommercialRegister = ? ORDER BY Id DESC;`;
+
+    const params = [
+      merchantName,
+      commercialRegister,
+      nif || null,
+      activityCategory,
+      activityDetails || null,
+      quotaCommodity || null,
+      ownerName || null,
+      phone || null,
+      address || null,
+      municipality || 'سطيف',
+      allocatedQuota || null,
+    ];
+
+    if (!pg) params.push(commercialRegister);
+
+    const result = await db.query(insertSql, params);
+    res.status(201).json(result[0] || { message: 'تم إدراج التاجر بنجاح' });
+  } catch (err) {
+    console.error('Add merchant error:', err.message);
+    res.status(500).json({ error: 'خطأ في تسجيل التاجر: ' + err.message });
+  }
+});
+
+// PUT /api/market/merchants/:id/status (تعديل وتوقيف السجل التجاري / رفع التوقيف)
+router.put('/merchants/:id/status', authMiddleware, async (req, res) => {
+  try {
+    const callerRole = req.user?.role;
+    if (callerRole !== 'director' && callerRole !== 'head_of_department' && callerRole !== 'admin') {
+      return res.status(403).json({ error: 'تعديل وتوقيف السجلات التجارية محصور بالمدير ورؤساء المصالح' });
+    }
+
+    const db = await getConnection();
+    const pg = isPostgres();
+    const id = parseInt(req.params.id, 10);
+    const { status, suspensionReason } = req.body;
+
+    if (!['ACTIVE', 'SUSPENDED', 'REVOKED', 'UNDER_INVESTIGATION'].includes(status)) {
+      return res.status(400).json({ error: 'الحالة غير صالحة' });
+    }
+
+    const sql = pg
+      ? `UPDATE "TrackerAccreditedMerchants"
+         SET "RegisterStatus" = $1, "SuspensionReason" = $2, "SuspensionDate" = CASE WHEN $1 != 'ACTIVE' THEN CURRENT_DATE ELSE NULL END
+         WHERE "Id" = $3 RETURNING *`
+      : `UPDATE TrackerAccreditedMerchants
+         SET RegisterStatus = ?, SuspensionReason = ?, SuspensionDate = CASE WHEN ? != 'ACTIVE' THEN GETDATE() ELSE NULL END
+         WHERE Id = ?;
+         SELECT * FROM TrackerAccreditedMerchants WHERE Id = ?;`;
+
+    const params = pg ? [status, suspensionReason || null, id] : [status, suspensionReason || null, status, id, id];
+    const result = await db.query(sql, params);
+
+    res.json(result[0] || { message: 'تم تحديث حالة السجل بنجاح' });
+  } catch (err) {
+    console.error('Update merchant status error:', err.message);
+    res.status(500).json({ error: 'خطأ أثناء تعديل حالة السجل: ' + err.message });
+  }
+});
+
+// GET /api/market/merchants/census-stats (إحصائيات الإحصاء الاقتصادي الشامل للتجار)
+router.get('/merchants/census-stats', authMiddleware, async (req, res) => {
+  try {
+    const db = await getConnection();
+    const pg = isPostgres();
+
+    const statsSql = pg
+      ? `SELECT 
+           COUNT(*) as total_merchants,
+           COUNT(CASE WHEN "RegisterStatus" = 'ACTIVE' THEN 1 END) as active_merchants,
+           COUNT(CASE WHEN "RegisterStatus" = 'SUSPENDED' THEN 1 END) as suspended_merchants,
+           COUNT(CASE WHEN "RegisterStatus" = 'REVOKED' THEN 1 END) as revoked_merchants,
+           COUNT(DISTINCT "Municipality") as covered_municipalities
+         FROM "TrackerAccreditedMerchants"`
+      : `SELECT 
+           COUNT(*) as total_merchants,
+           SUM(CASE WHEN RegisterStatus = 'ACTIVE' THEN 1 ELSE 0 END) as active_merchants,
+           SUM(CASE WHEN RegisterStatus = 'SUSPENDED' THEN 1 ELSE 0 END) as suspended_merchants,
+           SUM(CASE WHEN RegisterStatus = 'REVOKED' THEN 1 ELSE 0 END) as revoked_merchants,
+           COUNT(DISTINCT Municipality) as covered_municipalities
+         FROM TrackerAccreditedMerchants`;
+
+    const sectorSql = pg
+      ? `SELECT "ActivityCategory", COUNT(*) as count FROM "TrackerAccreditedMerchants" GROUP BY "ActivityCategory" ORDER BY count DESC`
+      : `SELECT ActivityCategory, COUNT(*) as count FROM TrackerAccreditedMerchants GROUP BY ActivityCategory ORDER BY count DESC`;
+
+    const [statsRes, sectorRes] = await Promise.all([
+      db.query(statsSql),
+      db.query(sectorSql),
+    ]);
+
+    res.json({
+      summary: statsRes[0] || {},
+      sectorBreakdown: sectorRes || [],
+    });
+  } catch (err) {
+    console.error('Get census stats error:', err.message);
+    res.status(500).json({ error: 'خطأ في استخراج إحصائيات الإحصاء الاقتصادي: ' + err.message });
+  }
+});
+
 module.exports = router;

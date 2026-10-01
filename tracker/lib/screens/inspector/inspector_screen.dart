@@ -1422,7 +1422,13 @@ class _InspectorScreenState extends State<InspectorScreen> {
     final violationNotesCtrl = TextEditingController();
     final seizureValueCtrl = TextEditingController();
     final paperPvCtrl = TextEditingController();
-    String shopType = 'محل تجزئة / مواد غذائية';
+    final rcCtrl = TextEditingController();
+    final observedPriceCtrl = TextEditingController();
+    String? selectedRegulatedCommodity;
+    String selectedSupplyStatus = 'متوفر وبوفرة';
+    Map<String, dynamic>? rcVerificationResult;
+    bool isCheckingRc = false;
+    String shopType = 'محل تجزئة / مواد غذائية عامة';
     String missionType = 'repressive_inspection';
     int? selectedPartnerId;
     String? selectedPartnerName;
@@ -1606,6 +1612,134 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    // رقم السجل التجاري مع الفحص الفوري المتقاطع (CNRC Shield)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: rcCtrl,
+                            textDirection: TextDirection.ltr,
+                            decoration: InputDecoration(
+                              labelText: 'رقم السجل التجاري (RC / CNRC) *',
+                              hintText: 'مثال: 19/00-0123456B20',
+                              prefixIcon: const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 18),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onChanged: (val) {
+                              if (val.trim().length >= 5 && !isCheckingRc) {
+                                // Auto-reset warning if user changes RC
+                                setDialogState(() => rcVerificationResult = null);
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                            foregroundColor: const Color(0xFFD4AF37),
+                            side: const BorderSide(color: Color(0xFFD4AF37)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: isCheckingRc
+                              ? null
+                              : () async {
+                                  final rcText = rcCtrl.text.trim();
+                                  if (rcText.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('يرجى إدخال رقم السجل التجاري أولاً')),
+                                    );
+                                    return;
+                                  }
+                                  setDialogState(() => isCheckingRc = true);
+                                  try {
+                                    final api = context.read<AuthService>().api;
+                                    final res = await api.verifyCommercialRegister(rcText);
+                                    setDialogState(() {
+                                      rcVerificationResult = res;
+                                      isCheckingRc = false;
+                                      if (res['merchant'] != null) {
+                                        final m = res['merchant'];
+                                        if (nameCtrl.text.trim().isEmpty && m['MerchantName'] != null) {
+                                          nameCtrl.text = m['MerchantName'].toString();
+                                        }
+                                        if (m['ActivityCategory'] != null) {
+                                          shopType = m['ActivityCategory'].toString();
+                                        }
+                                      }
+                                    });
+                                  } catch (_) {
+                                    setDialogState(() => isCheckingRc = false);
+                                  }
+                                },
+                          icon: isCheckingRc
+                              ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFD4AF37)))
+                              : const Icon(Icons.shield_outlined, size: 16),
+                          label: const Text('فحص السجل', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                    if (rcVerificationResult != null) ...[
+                      const SizedBox(height: 8),
+                      if (rcVerificationResult!['isSuspended'] == true || rcVerificationResult!['warningMessage'] != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.redAccent, width: 1.5),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.gavel, color: Colors.redAccent, size: 20),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      rcVerificationResult!['warningMessage']?.toString() ?? '🚨 تحذير: هذا السجل موقوف أو صدر بحقه قرار غلق إداري!',
+                                      style: const TextStyle(fontFamily: 'Tajawal', color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (rcVerificationResult!['merchant'] != null) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  'التاجر: ${rcVerificationResult!['merchant']['MerchantName']} | الحالة: موقوف رسمياً',
+                                  style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70, fontSize: 11),
+                                ),
+                              ],
+                            ],
+                          ),
+                        )
+                      else
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  rcVerificationResult!['merchant'] != null
+                                      ? '✅ سجل معتمد ونشط: ${rcVerificationResult!['merchant']['MerchantName']}'
+                                      : '✅ السجل سليم وغير مسجل عليه أي قرارات غلق نافذة',
+                                  style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                    const SizedBox(height: 12),
                     TextField(
                       controller: nameCtrl,
                       textDirection: TextDirection.rtl,
@@ -1621,23 +1755,130 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       isExpanded: true,
                       dropdownColor: AppTheme.CardColor,
                       decoration: InputDecoration(
-                        labelText: 'طبيعة النشاط التجاري',
+                        labelText: 'طبيعة النشاط التجاري (الإحصاء الاقتصادي)',
                         prefixIcon: const Icon(Icons.category, size: 18),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'محل تجزئة / مواد غذائية', child: Text('محل تجزئة / مواد غذائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                        DropdownMenuItem(value: 'مخبزة / صناعة حلويات', child: Text('مخبزة / صناعة حلويات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                        DropdownMenuItem(value: 'قصابة / لحوم ودواجن', child: Text('قصابة / لحوم ودواجن', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                        DropdownMenuItem(value: 'سوق الجملة للخضر والفواكه', child: Text('سوق الجملة للخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                        DropdownMenuItem(value: 'وحدة إنتاج / تحويل صناعي', child: Text('وحدة إنتاج / تحويل صناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                        DropdownMenuItem(value: 'خدمات وإطعام سريع', child: Text('خدمات وإطعام سريع', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                        DropdownMenuItem(value: 'استيراد وتصدير', child: Text('استيراد وتصدير', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
-                        DropdownMenuItem(value: 'أخرى', child: Text('أخرى', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'محل تجزئة / مواد غذائية عامة', child: Text('محل تجزئة / مواد غذائية عامة (بقالة/سوبرماركت)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'مخبزة / صناعة حلويات', child: Text('مخبزة / صناعة حلويات وعجائن', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'قصابة / لحوم ودواجن', child: Text('قصابة / لحوم حمراء ودواجن وأسماك', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'سوق الجملة للخضر والفواكه', child: Text('سوق الجملة للخضر والفواكه والمربعات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'سوق التجزئة للخضر والفواكه', child: Text('سوق التجزئة ومحلات بيع الخضر والفواكه', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'غرفة تبريد / مستودع تخزين', child: Text('غرفة تبريد / مستودع تخزين مواد غذائية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'مطحنة / وحدة تحويل صناعي', child: Text('مطحنة / وحدة تحويل وإنتاج صناعي', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'ملبنة / موزع حليب ومشتقاته', child: Text('ملبنة / موزع حليب ومشتقاته', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'خدمات وإطعام سريع', child: Text('خدمات وإطعام سريع ومقاهي ومطاعم', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'تجارة مواد البناء والتجهيزات', child: Text('تجارة مواد البناء والعقاقير والتجهيزات', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'مواد صيدلانية وشبه صيدلانية', child: Text('مواد صيدلانية وشبه صيدلانية ومستحضرات تجميل', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'استيراد وتصدير', child: Text('استيراد وتصدير وتجارة خارجية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
+                        DropdownMenuItem(value: 'أخرى', child: Text('نشاط اقتصادي تجاري آخر', style: TextStyle(fontFamily: 'Tajawal', fontSize: 12))),
                       ],
                       onChanged: (val) {
                         if (val != null) setDialogState(() => shopType = val);
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    // قسم رصد أسعار ووفرة المواد المقننة (المرصد الاقتصادي لولاية سطيف)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.analytics_outlined, color: Color(0xFFD4AF37), size: 18),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'رصد الأسعار والمواد المقننة (المرصد الاقتصادي)',
+                                  style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFD4AF37)),
+                                ),
+                              ),
+                              if (selectedRegulatedCommodity != null)
+                                GestureDetector(
+                                  onTap: () => setDialogState(() {
+                                    selectedRegulatedCommodity = null;
+                                    observedPriceCtrl.clear();
+                                  }),
+                                  child: const Text('إلغاء', style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Colors.white60)),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            initialValue: selectedRegulatedCommodity,
+                            isExpanded: true,
+                            dropdownColor: AppTheme.CardColor,
+                            decoration: InputDecoration(
+                              labelText: 'المادة المقننة أو المراقبة (اختياري للرصد)',
+                              prefixIcon: const Icon(Icons.shopping_basket_outlined, size: 16),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: null, child: Text('— بدون تسجيل مادة مقننة —', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white54))),
+                              DropdownMenuItem(value: 'زيت المائدة الغذائي (5 لتر)', child: Text('زيت المائدة الغذائي 5 لتر (مسقف 650 دج)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                              DropdownMenuItem(value: 'السكر الأبيض المبلور (1 كغ)', child: Text('السكر الأبيض المبلور 1 كغ (مسقف 90 دج)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                              DropdownMenuItem(value: 'حليب الأكياس المبستر (1 لتر)', child: Text('حليب الأكياس المبستر 1 لتر (مقنن 25 دج)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                              DropdownMenuItem(value: 'اللحوم الحمراء الطازجة المستوردة', child: Text('اللحوم الحمراء الطازجة المستوردة (مسقف 1,350 دج)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                              DropdownMenuItem(value: 'الفرينة والدقيق المدعم (1 كغ)', child: Text('الفرينة والدقيق المدعم (مقنن 20 دج)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                              DropdownMenuItem(value: 'البطاطا الحقلية للاستهلاك (1 كغ)', child: Text('البطاطا الحقلية للاستهلاك (مرجعي 75 دج)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                              DropdownMenuItem(value: 'البصل الجاف (1 كغ)', child: Text('البصل الجاف 1 كغ', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                              DropdownMenuItem(value: 'الدجاج ولحوم الدواجن (1 كغ)', child: Text('الدجاج ولحوم الدواجن 1 كغ', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                            ],
+                            onChanged: (val) => setDialogState(() => selectedRegulatedCommodity = val),
+                          ),
+                          if (selectedRegulatedCommodity != null) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: TextField(
+                                    controller: observedPriceCtrl,
+                                    keyboardType: TextInputType.number,
+                                    textDirection: TextDirection.ltr,
+                                    decoration: InputDecoration(
+                                      labelText: 'السعر المطبق فعلياً (دج)',
+                                      prefixIcon: const Icon(Icons.attach_money, size: 16),
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  flex: 4,
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: selectedSupplyStatus,
+                                    isExpanded: true,
+                                    dropdownColor: AppTheme.CardColor,
+                                    decoration: InputDecoration(
+                                      labelText: 'حالة الوفرة',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    ),
+                                    items: const [
+                                      DropdownMenuItem(value: 'متوفر وبوفرة', child: Text('متوفر وبوفرة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                                      DropdownMenuItem(value: 'تذبذب ومتابعة', child: Text('تذبذب ومتابعة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11))),
+                                      DropdownMenuItem(value: 'ندرة غير مبررة', child: Text('ندرة غير مبررة', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.orangeAccent))),
+                                    ],
+                                    onChanged: (v) {
+                                      if (v != null) setDialogState(() => selectedSupplyStatus = v);
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 12),
                     // Violation Switch Container
@@ -1895,6 +2136,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     }
                   }
 
+                  final rcVal = rcCtrl.text.trim();
+                  final double? parsedObservedPrice = double.tryParse(observedPriceCtrl.text.trim());
+
                   final payload = {
                     'employeeId': empId,
                     'latitude': posLat,
@@ -1913,6 +2157,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     'partnerInspectorName': selectedPartnerName,
                     'partnerInspectorId': selectedPartnerId,
                     'missionType': missionType,
+                    'commercialRegister': rcVal.isNotEmpty ? rcVal : null,
+                    'regulatedCommodity': selectedRegulatedCommodity,
+                    'observedPrice': parsedObservedPrice,
+                    'supplyStatus': selectedSupplyStatus,
                   };
 
                   bool isOfflineMode = false;
@@ -1935,6 +2183,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       partnerInspectorName: payload['partnerInspectorName'] as String?,
                       partnerInspectorId: payload['partnerInspectorId'] as int?,
                       missionType: payload['missionType'] as String?,
+                      commercialRegister: payload['commercialRegister'] as String?,
+                      regulatedCommodity: payload['regulatedCommodity'] as String?,
+                      observedPrice: payload['observedPrice'] as double?,
+                      supplyStatus: payload['supplyStatus'] as String?,
                     );
                   } catch (e) {
                     isOfflineMode = true;

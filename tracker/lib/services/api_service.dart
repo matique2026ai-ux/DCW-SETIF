@@ -1189,6 +1189,10 @@ class ApiService {
     String? partnerInspectorName,
     int? partnerInspectorId,
     String? missionType,
+    String? commercialRegister,
+    String? regulatedCommodity,
+    double? observedPrice,
+    String? supplyStatus,
   }) async {
     try {
       final response = await http.post(
@@ -1215,6 +1219,10 @@ class ApiService {
           if (partnerInspectorName != null) 'partnerInspectorName': partnerInspectorName,
           if (partnerInspectorId != null) 'partnerInspectorId': partnerInspectorId,
           if (missionType != null) 'missionType': missionType,
+          if (commercialRegister != null) 'commercialRegister': commercialRegister,
+          if (regulatedCommodity != null) 'regulatedCommodity': regulatedCommodity,
+          if (observedPrice != null) 'observedPrice': observedPrice,
+          if (supplyStatus != null) 'supplyStatus': supplyStatus,
         }),
       ).timeout(defaultTimeout);
 
@@ -1790,6 +1798,72 @@ class ApiService {
   Future<Map<String, dynamic>> getMarketBulletin() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/market/bulletin'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  // ==========================================
+  // ECONOMIC CENSUS & ACCREDITED MERCHANTS (السجل الاقتصادي وفحص السجلات التجارية)
+  // ==========================================
+
+  Future<Map<String, dynamic>> verifyCommercialRegister(String rc) async {
+    try {
+      final encodedRc = Uri.encodeComponent(rc.trim());
+      final response = await http.get(Uri.parse('$baseUrl/market/merchants/verify/$encodedRc'), headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      return {'isSuspended': false, 'exists': false};
+    } catch (_) {
+      return {'isSuspended': false, 'exists': false};
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getAccreditedMerchants({String? category, String? municipality, String? status, String? q}) async {
+    try {
+      final queryParams = <String, String>{};
+      if (category != null && category.isNotEmpty) queryParams['category'] = category;
+      if (municipality != null && municipality.isNotEmpty) queryParams['municipality'] = municipality;
+      if (status != null && status.isNotEmpty) queryParams['status'] = status;
+      if (q != null && q.isNotEmpty) queryParams['q'] = q;
+
+      final uri = Uri.parse('$baseUrl/market/merchants').replace(queryParameters: queryParams.isNotEmpty ? queryParams : null);
+      final response = await http.get(uri, headers: _headers).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeList(response.body);
+      return [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> addAccreditedMerchant(Map<String, dynamic> data) async {
+    try {
+      final response = await http.post(Uri.parse('$baseUrl/market/merchants'), headers: _headers, body: jsonEncode(data)).timeout(defaultTimeout);
+      if (response.statusCode == 200 || response.statusCode == 201) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل تسجيل التاجر في السجل الاقتصادي'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تسجيل التاجر');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateMerchantStatus(int id, String status, {String? reason}) async {
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/market/merchants/$id/status'),
+        headers: _headers,
+        body: jsonEncode({'status': status, 'suspensionReason': reason}),
+      ).timeout(defaultTimeout);
+      if (response.statusCode == 200) return _safeDecodeMap(response.body);
+      throw Exception(_parseError(response, 'فشل تعديل حالة السجل التجاري'));
+    } catch (e) {
+      throw _handleNetworkException(e, 'فشل تعديل حالة السجل التجاري');
+    }
+  }
+
+  Future<Map<String, dynamic>> getMerchantsCensusStats() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/market/merchants/census-stats'), headers: _headers).timeout(defaultTimeout);
       if (response.statusCode == 200) return _safeDecodeMap(response.body);
       return {};
     } catch (_) {

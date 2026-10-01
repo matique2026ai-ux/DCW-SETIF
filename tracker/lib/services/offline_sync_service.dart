@@ -197,6 +197,10 @@ class OfflineSyncService {
             partnerInspectorName: payload['partnerInspectorName'] as String?,
             partnerInspectorId: (payload['partnerInspectorId'] as num?)?.toInt(),
             missionType: payload['missionType'] as String?,
+            commercialRegister: payload['commercialRegister'] as String?,
+            regulatedCommodity: payload['regulatedCommodity'] as String?,
+            observedPrice: (payload['observedPrice'] as num?)?.toDouble(),
+            supplyStatus: payload['supplyStatus'] as String?,
           );
           syncedCount++;
         }

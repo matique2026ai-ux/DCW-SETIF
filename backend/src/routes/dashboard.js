@@ -483,10 +483,96 @@ router.get('/analytics', async (req, res) => {
       console.warn('Market prices query in analytics error:', e.message);
     }
 
+    // 📊 Real Cumulative Economic Census of commercial premises from TrackerVisits
+    let economicCensus = {
+      total_merchants: 0,
+      total_butcheries: 0,
+      total_groceries: 0,
+      total_bakeries: 0,
+      total_fruits_markets: 0,
+      total_restaurants: 0,
+    };
+    try {
+      const censusQuery = pg
+        ? `SELECT 
+             COUNT(DISTINCT "ShopName") as total_merchants,
+             COUNT(DISTINCT CASE WHEN "ShopType" LIKE '%قصاب%' OR "ShopType" LIKE '%لحوم%' THEN "ShopName" END) as total_butcheries,
+             COUNT(DISTINCT CASE WHEN "ShopType" LIKE '%مواد غذائية%' OR "ShopType" LIKE '%تجزئة%' THEN "ShopName" END) as total_groceries,
+             COUNT(DISTINCT CASE WHEN "ShopType" LIKE '%مخبز%' THEN "ShopName" END) as total_bakeries,
+             COUNT(DISTINCT CASE WHEN "ShopType" LIKE '%خضر%' OR "ShopType" LIKE '%سوق%' THEN "ShopName" END) as total_fruits_markets,
+             COUNT(DISTINCT CASE WHEN "ShopType" LIKE '%مطعم%' OR "ShopType" LIKE '%إطعام%' THEN "ShopName" END) as total_restaurants
+           FROM "TrackerVisits"`
+        : `SELECT 
+             COUNT(DISTINCT ShopName) as total_merchants,
+             COUNT(DISTINCT CASE WHEN ShopType LIKE '%قصاب%' OR ShopType LIKE '%لحوم%' THEN ShopName END) as total_butcheries,
+             COUNT(DISTINCT CASE WHEN ShopType LIKE '%مواد غذائية%' OR ShopType LIKE '%تجزئة%' THEN ShopName END) as total_groceries,
+             COUNT(DISTINCT CASE WHEN ShopType LIKE '%مخبز%' THEN ShopName END) as total_bakeries,
+             COUNT(DISTINCT CASE WHEN ShopType LIKE '%خضر%' OR ShopType LIKE '%سوق%' THEN ShopName END) as total_fruits_markets,
+             COUNT(DISTINCT CASE WHEN ShopType LIKE '%مطعم%' OR ShopType LIKE '%إطعام%' THEN ShopName END) as total_restaurants
+           FROM TrackerVisits`;
+      const censusRes = await db.query(censusQuery);
+      if (censusRes && censusRes.length > 0) {
+        economicCensus = {
+          total_merchants: parseInt(censusRes[0].total_merchants || censusRes[0].TOTAL_MERCHANTS || 0, 10),
+          total_butcheries: parseInt(censusRes[0].total_butcheries || censusRes[0].TOTAL_BUTCHERIES || 0, 10),
+          total_groceries: parseInt(censusRes[0].total_groceries || censusRes[0].TOTAL_GROCERIES || 0, 10),
+          total_bakeries: parseInt(censusRes[0].total_bakeries || censusRes[0].TOTAL_BAKERIES || 0, 10),
+          total_fruits_markets: parseInt(censusRes[0].total_fruits_markets || censusRes[0].TOTAL_FRUITS_MARKETS || 0, 10),
+          total_restaurants: parseInt(censusRes[0].total_restaurants || censusRes[0].TOTAL_RESTAURANTS || 0, 10),
+        };
+      }
+    } catch (e) {
+      console.warn('Census query error:', e.message);
+    }
+
+    const formattedMarketPrices = (marketPrices || []).map(r => {
+      const name = r.CommodityName || r.commodityName || '';
+      let dynamicPoints = r.Notes || 'شبكة الرصد لولاية سطيف';
+      if (name.includes('لحم') || name.includes('لحوم')) {
+        dynamicPoints = economicCensus.total_butcheries > 0
+          ? `${economicCensus.total_butcheries} قصابة محصاة بولاية سطيف`
+          : 'قصابات سطيف والعلمة (بانتظار تسجيل أول معاينة)';
+      } else if (name.includes('زيت') || name.includes('سكر') || name.includes('حليب')) {
+        dynamicPoints = economicCensus.total_groceries > 0
+          ? `${economicCensus.total_groceries} محل تجزئة ومساحة تجارية محصاة`
+          : 'محلات التجزئة بولاية سطيف';
+      } else if (name.includes('فرينة') || name.includes('دقيق')) {
+        dynamicPoints = economicCensus.total_bakeries > 0
+          ? `${economicCensus.total_bakeries} مخبزة ومطحنة محصاة`
+          : 'مخابز ومطاحن ولاية سطيف';
+      } else if (name.includes('بطاطا') || name.includes('بصل') || name.includes('خضر')) {
+        dynamicPoints = economicCensus.total_fruits_markets > 0
+          ? `${economicCensus.total_fruits_markets} نقطة بيع وأسواق جملة وتجزئة`
+          : 'أسواق الجملة والتجزئة (سطيف والعلمة)';
+      } else if (name.includes('دجاج') || name.includes('دواجن')) {
+        dynamicPoints = economicCensus.total_butcheries > 0
+          ? `${economicCensus.total_butcheries} مذبح وقصابة دواجن محصاة`
+          : 'مذابح وقصابات ولاية سطيف';
+      }
+
+      return {
+        id: r.Id || r.id,
+        name: name,
+        category: r.Category || r.category,
+        statutoryPrice: r.RegulatedPrice != null ? `${Number(r.RegulatedPrice).toLocaleString('fr-DZ')} دج` : 'مقنن',
+        marketPrice: r.RetailPrice != null ? `${Number(r.RetailPrice).toLocaleString('fr-DZ')} دج` : `${Number(r.WholesalePrice || 0).toLocaleString('fr-DZ')} دج`,
+        status: r.SupplyStatus === 'AVAILABLE' || r.SupplyStatus === 'sufficient' ? 'متوفر وبوفرة' : r.SupplyStatus === 'TIGHT' ? 'تحت المتابعة' : 'مستقر',
+        statusColor: r.SupplyStatus === 'AVAILABLE' || r.SupplyStatus === 'sufficient' ? '0xFF10B981' : '0xFFF59E0B',
+        marketLocation: r.MarketLocation || r.marketLocation,
+        wholesalePrice: r.WholesalePrice || r.wholesalePrice,
+        retailPrice: r.RetailPrice || r.retailPrice,
+        unit: r.Unit || r.unit,
+        notes: r.Notes || r.notes,
+        checkedPoints: dynamicPoints,
+        recordedDate: r.RecordedDate || r.recordedDate,
+      };
+    });
+
     res.json({
       selectedDate: queryDate,
       period: effectivePeriod,
-      marketPrices: marketPrices || [],
+      economicCensus,
+      marketPrices: formattedMarketPrices,
       attendance: {
         totalInspectors: targetIds.length,
         presentToday: presentCount,

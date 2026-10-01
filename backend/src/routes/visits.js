@@ -310,26 +310,34 @@ router.post('/', authMiddleware, async (req, res) => {
     const encNotes = encryptText(finalNotes);
     const encViolationNotes = encryptText(finalViolationNotes);
 
+    const finalRc = req.body.commercialRegister || req.body.rc || null;
+    const finalRegulatedCommodity = req.body.regulatedCommodity || null;
+    const finalObservedPrice = req.body.observedPrice ? parseFloat(req.body.observedPrice) : null;
+    const finalSupplyStatus = req.body.supplyStatus || 'sufficient';
+
     await db.query(
       pg
         ? `INSERT INTO "TrackerVisits" (
             "EmployeeId","AssignmentId","Date","Latitude","Longitude","Accuracy",
             "LocationName","ShopName","ShopType","Photo","Notes","Status",
             "ViolationFound","ViolationType","ViolationNotes","LegalAction","SeizureValue","CheckInTime",
-            "DigitalSignature","IsEncrypted","PaperPvNumber","PartnerInspectorName","PartnerInspectorId","MissionType"
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'completed',$12,$13,$14,$15,$16,COALESCE($17::timestamp, NOW()),$18,true,$19,$20,$21,$22)`
+            "DigitalSignature","IsEncrypted","PaperPvNumber","PartnerInspectorName","PartnerInspectorId","MissionType",
+            "CommercialRegister","RegulatedCommodity","ObservedPrice","SupplyStatus"
+          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'completed',$12,$13,$14,$15,$16,COALESCE($17::timestamp, NOW()),$18,true,$19,$20,$21,$22,$23,$24,$25,$26)`
         : `INSERT INTO TrackerVisits (
             EmployeeId,AssignmentId,Date,Latitude,Longitude,Accuracy,
             LocationName,ShopName,ShopType,Photo,Notes,Status,
             ViolationFound,ViolationType,ViolationNotes,LegalAction,SeizureValue,CheckInTime,
-            DigitalSignature,IsEncrypted,PaperPvNumber,PartnerInspectorName,PartnerInspectorId,MissionType
-          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,'completed',?,?,?,?,?,ISNULL(?, GETDATE()),?,1,?,?,?,?)`,
+            DigitalSignature,IsEncrypted,PaperPvNumber,PartnerInspectorName,PartnerInspectorId,MissionType,
+            CommercialRegister,RegulatedCommodity,ObservedPrice,SupplyStatus
+          ) VALUES (?,?,?,?,?,?,?,?,?,?,?,'completed',?,?,?,?,?,ISNULL(?, GETDATE()),?,1,?,?,?,?,?,?,?,?)`,
       [
         finalEmpId, assignmentId || AssignmentId || null, today, finalLat, finalLng, accuracy || Accuracy || null,
         encLoc, encShopName, finalShopType, finalPhoto, encNotes,
         finalViolationFound, finalViolationType, encViolationNotes, finalLegalAction, sValue,
         visitTimestamp, pvSeal,
-        finalPaperPvNumber, finalPartnerInspectorName, finalPartnerInspectorId, finalMissionType
+        finalPaperPvNumber, finalPartnerInspectorName, finalPartnerInspectorId, finalMissionType,
+        finalRc, finalRegulatedCommodity, finalObservedPrice, finalSupplyStatus
       ]
     );
 
@@ -339,6 +347,64 @@ router.post('/', authMiddleware, async (req, res) => {
         : 'SELECT TOP 1 * FROM TrackerVisits WHERE EmployeeId = ? AND Date = ? ORDER BY Id DESC',
       [finalEmpId, today]
     );
+
+    // 📊 If inspector recorded a price on a regulated commodity, feed TrackerMarketPrices permanently
+    if (finalRegulatedCommodity && finalObservedPrice) {
+      try {
+        await db.query(
+          pg
+            ? `INSERT INTO "TrackerMarketPrices" ("CommodityName", "Category", "RegulatedPrice", "RetailPrice", "MarketLocation", "SupplyStatus", "Notes", "RecordedBy", "RecordedDate")
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+            : `INSERT INTO TrackerMarketPrices (CommodityName, Category, RegulatedPrice, RetailPrice, MarketLocation, SupplyStatus, Notes, RecordedBy, RecordedDate)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            finalRegulatedCommodity,
+            'رصد ميداني للمفتشين',
+            finalObservedPrice,
+            finalObservedPrice,
+            finalLoc || 'ولاية سطيف',
+            finalSupplyStatus,
+            `معاينة ميدانية للمحل: ${finalShopName} (المفتش رقم ${finalEmpId})`,
+            finalEmpId,
+            today
+          ]
+        );
+      } catch (mktErr) {
+        console.warn('Auto market price insert warning:', mktErr.message);
+      }
+    }
+
+    // 🏢 If Commercial Register (RC) is provided, auto-sync with Economic Census registry (TrackerAccreditedMerchants)
+    if (finalRc) {
+      try {
+        const checkMerchantSql = pg
+          ? `SELECT "Id" FROM "TrackerAccreditedMerchants" WHERE "CommercialRegister" = $1 LIMIT 1`
+          : `SELECT TOP 1 Id FROM TrackerAccreditedMerchants WHERE CommercialRegister = ?`;
+        const existingM = await db.query(checkMerchantSql, [finalRc]);
+        if (existingM && existingM.length > 0) {
+          const updateMerchantSql = pg
+            ? `UPDATE "TrackerAccreditedMerchants" SET "LastInspectedDate" = $1 WHERE "Id" = $2`
+            : `UPDATE TrackerAccreditedMerchants SET LastInspectedDate = ? WHERE Id = ?`;
+          await db.query(updateMerchantSql, [today, existingM[0].Id || existingM[0].id]);
+        } else if (finalShopName) {
+          const insertMerchantSql = pg
+            ? `INSERT INTO "TrackerAccreditedMerchants" ("MerchantName", "CommercialRegister", "ActivityCategory", "Address", "Municipality", "LastInspectedDate")
+               VALUES ($1, $2, $3, $4, $5, $6)`
+            : `INSERT INTO TrackerAccreditedMerchants (MerchantName, CommercialRegister, ActivityCategory, Address, Municipality, LastInspectedDate)
+               VALUES (?, ?, ?, ?, ?, ?)`;
+          await db.query(insertMerchantSql, [
+            finalShopName,
+            finalRc,
+            finalShopType || 'نشاط تجاري متنوع',
+            finalLoc || 'ولاية سطيف',
+            'سطيف',
+            today
+          ]);
+        }
+      } catch (merchErr) {
+        console.warn('Auto merchant census sync warning:', merchErr.message);
+      }
+    }
 
     invalidateVisitsCache();
 

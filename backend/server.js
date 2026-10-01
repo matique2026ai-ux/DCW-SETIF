@@ -1644,6 +1644,49 @@ async function ensureTables() {
       Date DATE DEFAULT GETDATE(),
       RecordedAt DATETIME DEFAULT GETDATE()
     )`,
+
+    // 19. TrackerAccreditedMerchants (السجل الرقمي الموحد للتجار والقصابات والمخابز والمتعاملين الاقتصاديين)
+    pg ? `CREATE TABLE IF NOT EXISTS "TrackerAccreditedMerchants" (
+      "Id" SERIAL PRIMARY KEY,
+      "MerchantName" VARCHAR(250) NOT NULL,
+      "CommercialRegister" VARCHAR(100) NOT NULL,
+      "NIF" VARCHAR(100),
+      "ActivityCategory" VARCHAR(150) NOT NULL,
+      "ActivityDetails" VARCHAR(250),
+      "QuotaCommodity" VARCHAR(200),
+      "OwnerName" VARCHAR(200),
+      "Phone" VARCHAR(50),
+      "Address" VARCHAR(300),
+      "Municipality" VARCHAR(100) DEFAULT 'سطيف',
+      "Inspectorate" VARCHAR(100) DEFAULT 'سطيف',
+      "RegisterStatus" VARCHAR(50) DEFAULT 'ACTIVE',
+      "SuspensionReason" TEXT,
+      "SuspensionDate" DATE,
+      "AllocatedQuota" VARCHAR(150),
+      "LastInspectedDate" DATE,
+      "LastInspectorName" VARCHAR(150),
+      "CreatedAt" TIMESTAMP DEFAULT NOW()
+    )` : `CREATE TABLE IF NOT EXISTS TrackerAccreditedMerchants (
+      Id INT IDENTITY(1,1) PRIMARY KEY,
+      MerchantName NVARCHAR(250) NOT NULL,
+      CommercialRegister NVARCHAR(100) NOT NULL,
+      NIF NVARCHAR(100) NULL,
+      ActivityCategory NVARCHAR(150) NOT NULL,
+      ActivityDetails NVARCHAR(250) NULL,
+      QuotaCommodity NVARCHAR(200) NULL,
+      OwnerName NVARCHAR(200) NULL,
+      Phone NVARCHAR(50) NULL,
+      Address NVARCHAR(300) NULL,
+      Municipality NVARCHAR(100) DEFAULT 'سطيف',
+      Inspectorate NVARCHAR(100) DEFAULT 'سطيف',
+      RegisterStatus NVARCHAR(50) DEFAULT 'ACTIVE',
+      SuspensionReason NTEXT NULL,
+      SuspensionDate DATE NULL,
+      AllocatedQuota NVARCHAR(150) NULL,
+      LastInspectedDate DATE NULL,
+      LastInspectorName NVARCHAR(150) NULL,
+      CreatedAt DATETIME DEFAULT GETDATE()
+    )`,
   ];
 
   for (const sql of tables) {
@@ -1664,6 +1707,11 @@ async function ensureTables() {
       await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "PartnerInspectorName" VARCHAR(150)`);
       await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "PartnerInspectorId" INT`);
       await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "MissionType" VARCHAR(50) DEFAULT 'repressive_inspection'`);
+      // 📊 Economic Census & Regulated Price Monitoring Columns
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "CommercialRegister" VARCHAR(100)`);
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "RegulatedCommodity" VARCHAR(200)`);
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "ObservedPrice" DECIMAL(10,2)`);
+      await db.query(`ALTER TABLE "TrackerVisits" ADD COLUMN IF NOT EXISTS "SupplyStatus" VARCHAR(50)`);
 
       // 🛡️ Ensure columns are TEXT to safely hold AES-256-GCM ciphertexts
       await db.query(`ALTER TABLE "TrackerVisits" ALTER COLUMN "ShopName" TYPE TEXT`);
