@@ -8,6 +8,7 @@ import 'package:drh_setif_tracker/utils/theme.dart';
 import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:drh_setif_tracker/screens/common/inquiry_letter_dialog.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
+import 'package:drh_setif_tracker/utils/algerian_calendar.dart';
 
 class DirectorDeductionsTab extends StatefulWidget {
   const DirectorDeductionsTab({super.key});
@@ -1347,50 +1348,105 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   }
 
   Widget _buildAutoFlaggedViolationsSection(AppLocalizations loc) {
+    final now = DateTime.now();
+    final isWeekendOrHoliday = AlgerianCalendar.isHolidayOrWeekend(now);
+
     final List<Map<String, dynamic>> flaggedList = [];
 
-    for (final d in _delaysSummary) {
-      final name = (d['name'] ?? '').toString();
-      final empId = (d['employeeId'] as num?)?.toInt() ?? 0;
-      if (empId <= 0) continue;
-      if (name.contains('المدير الولائي')) continue;
-      if (_dismissedEmployeeIds.contains(empId)) continue;
+    if (!isWeekendOrHoliday) {
+      for (final d in _delaysSummary) {
+        final name = (d['name'] ?? '').toString();
+        final empId = (d['employeeId'] as num?)?.toInt() ?? 0;
+        if (empId <= 0) continue;
+        if (name.contains('المدير الولائي')) continue;
+        if (_dismissedEmployeeIds.contains(empId)) continue;
 
-      final hasActiveInquiry = _inquiries.any((inq) =>
-          ((inq['EmployeeId'] as num?)?.toInt() == empId ||
-           (inq['employeeId'] as num?)?.toInt() == empId) &&
-          inq['Status'] == 'sent');
-      if (hasActiveInquiry) continue;
+        // 🏛️ التدقيق في الوضعية القانونية للموظف طبقاً للأمر 06-03
+        // إذا كان الموظف في عطلة سنوية، عطلة مرضية، مأمورية عمل، أو وضعية مرخصة:
+        // يُستبعد فورياً من قائمة المخالفين ولا تسجل عليه أي مخالفة
+        final adminStatus = (d['administrativeStatus'] ?? d['AdministrativeStatus'] ?? 'active').toString();
+        if (CivilServiceStatus.isExcusedLeave(adminStatus)) {
+          continue;
+        }
 
-      final lateMinutes = (d['totalLateMinutes'] as num?)?.toInt() ?? 0;
-      final attendedDays = (d['attendedDaysCount'] as num?)?.toInt() ?? 0;
-      final lateDays = (d['lateDaysCount'] as num?)?.toInt() ?? 0;
-      final lateDetails = (d['lateDetails'] as List<dynamic>?) ?? [];
-      final lastCheckInTime = lateDetails.isNotEmpty ? (lateDetails.last['checkInTime'] ?? '').toString() : '';
+        final hasActiveInquiry = _inquiries.any((inq) =>
+            ((inq['EmployeeId'] as num?)?.toInt() == empId ||
+             (inq['employeeId'] as num?)?.toInt() == empId) &&
+            inq['Status'] == 'sent');
+        if (hasActiveInquiry) continue;
 
-      if (lateMinutes > 0 || lateDays > 0) {
-        flaggedList.add({
-          'employeeId': empId,
-          'name': name,
-          'service': d['service'] ?? 'المصالح الرقابية',
-          'grade': d['grade'] ?? 'مفتش',
-          'violationType': 'late',
-          'lateMinutes': lateMinutes,
-          'checkInTime': lastCheckInTime,
-          'summary': 'تأخر صباحي: $lateMinutes دقيقة (سجل الدخول: $lastCheckInTime)',
-        });
-      } else if (attendedDays == 0) {
-        flaggedList.add({
-          'employeeId': empId,
-          'name': name,
-          'service': d['service'] ?? 'المصالح الرقابية',
-          'grade': d['grade'] ?? 'مفتش',
-          'violationType': 'absent',
-          'lateMinutes': 0,
-          'checkInTime': '',
-          'summary': 'غياب كلي عن تسجيل البصمة الصباحية لليوم',
-        });
+        final lateMinutes = (d['totalLateMinutes'] as num?)?.toInt() ?? 0;
+        final attendedDays = (d['attendedDaysCount'] as num?)?.toInt() ?? 0;
+        final lateDays = (d['lateDaysCount'] as num?)?.toInt() ?? 0;
+        final lateDetails = (d['lateDetails'] as List<dynamic>?) ?? [];
+        final lastCheckInTime = lateDetails.isNotEmpty ? (lateDetails.last['checkInTime'] ?? '').toString() : '';
+
+        if (lateMinutes > 0 || lateDays > 0) {
+          flaggedList.add({
+            'employeeId': empId,
+            'name': name,
+            'service': d['service'] ?? 'المصالح الرقابية',
+            'grade': d['grade'] ?? 'مفتش',
+            'violationType': 'late',
+            'lateMinutes': lateMinutes,
+            'checkInTime': lastCheckInTime,
+            'summary': 'تأخر صباحي: $lateMinutes دقيقة (سجل الدخول: $lastCheckInTime)',
+          });
+        } else if (attendedDays == 0) {
+          flaggedList.add({
+            'employeeId': empId,
+            'name': name,
+            'service': d['service'] ?? 'المصالح الرقابية',
+            'grade': d['grade'] ?? 'مفتش',
+            'violationType': 'absent',
+            'lateMinutes': 0,
+            'checkInTime': '',
+            'summary': 'غياب كلي عن تسجيل البصمة الصباحية لليوم (دون إشعار مسبق)',
+          });
+        }
       }
+    }
+
+    if (isWeekendOrHoliday) {
+      final desc = AlgerianCalendar.getDayOffDescription(now, isArabic: loc.isArabic);
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF10B981).withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.event_available, color: Color(0xFF10B981), size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '🟢 $desc',
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF10B981),
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    loc.isArabic
+                        ? 'طبقاً للأمر 06-03 المتضمن القانون الأساسي العام للوظيفة العمومية، لا تسجل أي مخالفات حضور أو غياب غير مبرر في أيام العطل.'
+                        : 'Conformément à l\'Ordonnance 06-03, aucune infraction d\'absence n\'est retenue les jours fériés ou chômés.',
+                    style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.grey.shade300),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (flaggedList.isEmpty) {
@@ -1409,8 +1465,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             Expanded(
               child: Text(
                 loc.isArabic
-                    ? '✨ الرصد الآلي: لا توجد أي مخالفات حضور مرصودة اليوم — جميع الموظفين في وضعية نظامية أو تم البت فيهم.'
-                    : '✨ Aucune infraction détectée aujourd\'hui — Tous les agents sont en règle.',
+                    ? '✨ الرصد الآلي: لا توجد أي مخالفات حضور مرصودة اليوم — جميع الموظفين في وضعية نظامية أو مرخصة قانوناً (الأمر 06-03).'
+                    : '✨ Aucune infraction détectée aujourd\'hui — Tous les agents sont en règle ou en congé autorisé.',
                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12.5, color: Colors.white),
               ),
             ),

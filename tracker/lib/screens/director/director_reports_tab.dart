@@ -7,6 +7,7 @@ import 'package:drh_setif_tracker/utils/app_localizations.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:drh_setif_tracker/services/pdf_report_service.dart';
 import 'package:drh_setif_tracker/screens/common/justifications_review_screen.dart';
+import 'package:drh_setif_tracker/utils/algerian_calendar.dart';
 
 class DirectorReportsTab extends StatefulWidget {
   const DirectorReportsTab({super.key});
@@ -859,12 +860,25 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
       }
     }
 
+    final isHolidayOrWeekend = AlgerianCalendar.isHolidayOrWeekend(_selectedDate);
+    final holidayDescription = AlgerianCalendar.getDayOffDescription(_selectedDate, isArabic: loc.isArabic);
+
     final present = _employees
         .where((e) => checkedInMap.containsKey(e['Id']))
         .toList();
-    final absent = _employees
-        .where((e) => !checkedInMap.containsKey(e['Id']))
-        .toList();
+
+    final excused = _employees.where((e) {
+      if (checkedInMap.containsKey(e['Id'])) return false;
+      final status = (e['AdministrativeStatus'] ?? e['administrativeStatus'] ?? '').toString();
+      return CivilServiceStatus.isExcusedLeave(status) || isHolidayOrWeekend;
+    }).toList();
+
+    final absent = _employees.where((e) {
+      if (checkedInMap.containsKey(e['Id'])) return false;
+      if (isHolidayOrWeekend) return false;
+      final status = (e['AdministrativeStatus'] ?? e['administrativeStatus'] ?? '').toString();
+      return !CivilServiceStatus.isExcusedLeave(status);
+    }).toList();
 
     List<Map<String, dynamic>> activeList;
     String filterTitle;
@@ -893,6 +907,15 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
           : (loc.isArabic ? 'حاضرون يوم $formattedDateStr (${present.length})' : 'Présents le $formattedDateStr (${present.length})');
       filterSubtitle = loc.isArabic ? 'مسجلون رسمياً بالبصمة الجغرافية والـ GPS' : 'Pointage GPS validé';
       filterColor = AppTheme.SuccessColor;
+    } else if (_selectedFilter == 'excused') {
+      activeList = excused;
+      filterTitle = isToday
+          ? (loc.isArabic ? 'عطل ورخص نظامية (${excused.length})' : 'Congés & Missions (${excused.length})')
+          : (loc.isArabic ? 'عطل ورخص يوم $formattedDateStr (${excused.length})' : 'Congés & Missions le $formattedDateStr (${excused.length})');
+      filterSubtitle = isHolidayOrWeekend
+          ? holidayDescription
+          : (loc.isArabic ? 'معفون قانوناً طبقاً لأحكام الأمر 06-03' : 'Dispensés légalement (Ord. 06-03)');
+      filterColor = const Color(0xFF0EA5E9);
     } else if (_selectedFilter == 'all') {
       activeList = _employees;
       filterTitle = loc.isArabic ? 'كافة موظفي الولاية (${_employees.length})' : 'Tous les agents de la Wilaya (${_employees.length})';
@@ -901,7 +924,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
     } else {
       activeList = absent;
       filterTitle = isToday
-          ? (loc.isArabic ? 'غائبين اليوم (${absent.length})' : 'Absents aujourd\'hui (${absent.length})')
+          ? (loc.isArabic ? 'غير مسجلين اليوم (${absent.length})' : 'Non pointés aujourd\'hui (${absent.length})')
           : (loc.isArabic ? 'غائبون يوم $formattedDateStr (${absent.length})' : 'Absents le $formattedDateStr (${absent.length})');
       filterSubtitle = isToday
           ? (loc.isArabic ? 'لم يسجلوا الحضور اليوم (يتطلب متابعة)' : 'Non pointés aujourd\'hui')
@@ -1044,8 +1067,50 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
           ),
 
           // Top Interactive Stat Cards
-          // ── Context Banner: when 0 present & it's today (before work hours or weekend) ──
-          if (isToday && present.isEmpty) ...[
+          // ── Context Banner: official holidays, weekends, or early morning ──
+          if (isHolidayOrWeekend) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF064E3B).withValues(alpha: 0.35),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.6), width: 1.2),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified, color: Color(0xFF10B981), size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          holidayDescription,
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF34D399),
+                          ),
+                        ),
+                        Text(
+                          loc.isArabic
+                              ? 'تعليق البصمة الجغرافية — كافة الموظفين والمفتشين معفون قانوناً من تسجيل الحضور بموجب الأمر 06-03.'
+                              : 'Suspension automatique du pointage — Tous les agents sont légalement dispensés (Ord. 06-03).',
+                          style: TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (isToday && present.isEmpty) ...[
             Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -1062,9 +1127,7 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                     child: Text(
                       () {
                         final hour = DateTime.now().hour;
-                        if (DateTime.now().weekday == DateTime.friday || DateTime.now().weekday == DateTime.saturday) {
-                          return loc.isArabic ? 'اليوم عطلة أسبوعية — لا تسجيل حضور مطلوب' : 'Jour de repos hebdomadaire — Aucun pointage attendu';
-                        } else if (hour < 7) {
+                        if (hour < 7) {
                           return loc.isArabic ? 'قبل بدء وقت الدوام (07:30) — لا تسجيلات بعد' : 'Avant l\'heure de pointage (07h30) — Aucune présence enregistrée';
                         } else {
                           return loc.isArabic ? 'لا يوجد حضور مسجّل حتى الآن — يتطلب متابعة' : 'Aucune présence enregistrée pour l’instant — Suivi requis';
@@ -1086,27 +1149,35 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
           Row(
             children: [
               _stat(
-                isToday ? loc.presentToday : (loc.isArabic ? 'حاضرون بالسجل' : 'Présents (Registre)'),
+                isToday ? loc.presentToday : (loc.isArabic ? 'حاضرون بالسجل' : 'Présents'),
                 present.length,
                 AppTheme.SuccessColor,
                 Icons.check_circle,
                 'present',
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              _stat(
+                loc.isArabic ? 'عطل ورخص' : 'Congés / Missions',
+                excused.length,
+                const Color(0xFF0EA5E9),
+                Icons.beach_access,
+                'excused',
+              ),
+              const SizedBox(width: 6),
+              _stat(
+                isToday ? loc.absentToday : (loc.isArabic ? 'غير مسجلين' : 'Non pointés'),
+                absent.length,
+                AppTheme.DangerColor,
+                Icons.cancel,
+                'absent',
+              ),
+              const SizedBox(width: 6),
               _stat(
                 loc.totalEmployees,
                 _employees.length,
                 AppTheme.AccentColor,
                 Icons.people,
                 'all',
-              ),
-              const SizedBox(width: 8),
-              _stat(
-                isToday ? loc.absentToday : (loc.isArabic ? 'غائبون بالسجل' : 'Absents (Registre)'),
-                absent.length,
-                AppTheme.DangerColor,
-                Icons.cancel,
-                'absent',
               ),
             ],
           ),
@@ -1335,107 +1406,155 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                     final checkOutTime = attRecord?['CheckOutTime'] != null ? _formatTime(attRecord!['CheckOutTime']) : '';
                     final lateMin = (attRecord?['LateMinutes'] as num?)?.toInt() ?? 0;
 
-                    Color statusColor = AppTheme.DangerColor;
-                    IconData statusIcon = Icons.person_off;
-                    if (isPresent) {
-                      if (isOut) {
-                        statusColor = const Color(0xFF94A3B8);
-                        statusIcon = Icons.exit_to_app;
-                      } else if (lateMin > 0) {
-                        statusColor = const Color(0xFFF59E0B);
-                        statusIcon = Icons.access_time_filled;
-                      } else {
-                        statusColor = AppTheme.SuccessColor;
-                        statusIcon = Icons.check_circle;
-                      }
-                    }
+                      final adminStatus = (e['AdministrativeStatus'] ?? e['administrativeStatus'] ?? '').toString();
+                      final isExcused = !isPresent && (CivilServiceStatus.isExcusedLeave(adminStatus) || isHolidayOrWeekend);
 
-                    return GestureDetector(
-                      onTap: () {
-                        if (isPresent) {
-                          _showPresentEmployeeDetails(e, attRecord);
+                      Color statusColor = AppTheme.DangerColor;
+                      IconData statusIcon = Icons.person_off;
+                      if (isPresent) {
+                        if (isOut) {
+                          statusColor = const Color(0xFF94A3B8);
+                          statusIcon = Icons.exit_to_app;
+                        } else if (lateMin > 0) {
+                          statusColor = const Color(0xFFF59E0B);
+                          statusIcon = Icons.access_time_filled;
                         } else {
-                          _showAbsentEmployeeOptions(e);
+                          statusColor = AppTheme.SuccessColor;
+                          statusIcon = Icons.check_circle;
                         }
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: AppTheme.CardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isPresent
-                                ? statusColor.withValues(alpha: 0.4)
-                                : AppTheme.BorderColor.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: statusColor.withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                statusIcon,
-                                color: statusColor,
-                                size: 20,
-                              ),
+                      } else if (isExcused) {
+                        statusColor = const Color(0xFF0EA5E9);
+                        statusIcon = Icons.beach_access;
+                      }
+
+                      return GestureDetector(
+                        onTap: () {
+                          if (isPresent) {
+                            _showPresentEmployeeDetails(e, attRecord);
+                          } else if (isExcused) {
+                            _showExcusedEmployeeDetails(e, adminStatus);
+                          } else {
+                            _showAbsentEmployeeOptions(e);
+                          }
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppTheme.CardColor,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isPresent
+                                  ? statusColor.withValues(alpha: 0.4)
+                                  : (isExcused
+                                      ? const Color(0xFF0EA5E9).withValues(alpha: 0.4)
+                                      : AppTheme.BorderColor.withValues(alpha: 0.3)),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          name,
-                                          style: const TextStyle(
-                                            fontFamily: 'Tajawal',
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: statusColor.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  statusIcon,
+                                  color: statusColor,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            name,
+                                            style: const TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 14,
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                      if (isPresent)
-                                        if (isOut)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF64748B).withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(color: const Color(0xFF64748B).withValues(alpha: 0.4)),
-                                            ),
-                                            child: Text(
-                                              '⚪ منصرف: $checkOutTime (دخول: $checkInTime)',
-                                              style: const TextStyle(
-                                                fontFamily: 'Tajawal',
-                                                fontSize: 10.5,
-                                                fontWeight: FontWeight.bold,
-                                                color: Color(0xFFCBD5E1),
+                                        if (isPresent)
+                                          if (isOut)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF64748B).withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: const Color(0xFF64748B).withValues(alpha: 0.4)),
                                               ),
-                                            ),
-                                          )
-                                        else if (lateMin > 0)
+                                              child: Text(
+                                                '⚪ منصرف: $checkOutTime (دخول: $checkInTime)',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Tajawal',
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFFCBD5E1),
+                                                ),
+                                              ),
+                                            )
+                                          else if (lateMin > 0)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                                              ),
+                                              child: Text(
+                                                '🟡 متأخر: $checkInTime (+$lateMin د)',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Tajawal',
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFFFBBF24),
+                                                ),
+                                              ),
+                                            )
+                                          else
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
+                                              ),
+                                              child: Text(
+                                                '🟢 حاضر: $checkInTime',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Tajawal',
+                                                  fontSize: 10.5,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Color(0xFF10B981),
+                                                ),
+                                              ),
+                                            )
+                                        else if (isExcused)
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
+                                              color: const Color(0xFF0EA5E9).withValues(alpha: 0.15),
                                               borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                                              border: Border.all(color: const Color(0xFF0EA5E9).withValues(alpha: 0.4)),
                                             ),
                                             child: Text(
-                                              '🟡 متأخر: $checkInTime (+$lateMin د)',
+                                              isHolidayOrWeekend
+                                                  ? (loc.isArabic ? '🌴 عطلة قانونية' : '🌴 Repos légal')
+                                                  : CivilServiceStatus.getStatusLabel(adminStatus, isArabic: loc.isArabic),
                                               style: const TextStyle(
                                                 fontFamily: 'Tajawal',
-                                                fontSize: 10.5,
+                                                fontSize: 10,
+                                                color: Color(0xFF38BDF8),
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFFFBBF24),
                                               ),
                                             ),
                                           )
@@ -1443,93 +1562,280 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                                               borderRadius: BorderRadius.circular(6),
-                                              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4)),
                                             ),
                                             child: Text(
-                                              '🟢 حاضر: $checkInTime',
+                                              loc.isArabic ? '🔴 غير مسجل' : '🔴 Non Enregistré',
                                               style: const TextStyle(
                                                 fontFamily: 'Tajawal',
-                                                fontSize: 10.5,
+                                                fontSize: 10,
+                                                color: Color(0xFFF87171),
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFF10B981),
                                               ),
                                             ),
-                                          )
-                                      else
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFEF4444).withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(6),
                                           ),
-                                          child: Text(
-                                            loc.isArabic ? '🔴 غير مسجل' : '🔴 Non Enregistré',
-                                            style: const TextStyle(
-                                              fontFamily: 'Tajawal',
-                                              fontSize: 10,
-                                              color: Color(0xFFF87171),
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    '${e['Service'] ?? ''} • ${e['Grade'] ?? ''}',
-                                    style: const TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontSize: 11,
-                                      color: AppTheme.TextSecondary,
+                                      ],
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      '${e['Service'] ?? ''} • ${e['Grade'] ?? ''}',
+                                      style: const TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 11,
+                                        color: AppTheme.TextSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 8),
+                              const Icon(
+                                Icons.arrow_back_ios_new,
+                                color: AppTheme.TextSecondary,
+                                size: 14,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    if (!_isListExpanded && filteredList.length > 8)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
+                        child: TextButton.icon(
+                          onPressed: () => setState(() => _isListExpanded = true),
+                          icon: const Icon(Icons.expand_more, color: Color(0xFFD4AF37)),
+                          label: Text(
+                            loc.isArabic ? 'عرض باقي القائمة (${filteredList.length - 8} موظف)' : 'Voir le reste (${filteredList.length - 8} agents)',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              color: Color(0xFFD4AF37),
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(width: 8),
-                            const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: AppTheme.TextSecondary,
-                              size: 14,
+                          ),
+                          style: TextButton.styleFrom(
+                            backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                    );
-                  }),
-                  if (!_isListExpanded && filteredList.length > 8)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0, bottom: 16.0),
-                      child: TextButton.icon(
-                        onPressed: () => setState(() => _isListExpanded = true),
-                        icon: const Icon(Icons.expand_more, color: Color(0xFFD4AF37)),
-                        label: Text(
-                          loc.isArabic ? 'عرض باقي القائمة (${filteredList.length - 8} موظف)' : 'Voir le reste (${filteredList.length - 8} agents)',
+                  ],
+                ),
+          ],
+        ),
+      ),
+    ),
+  );
+  }
+
+  void _showExcusedEmployeeDetails(Map<String, dynamic> emp, String adminStatus) {
+    final loc = AppLocalizations.of(context);
+    final name = !loc.isArabic && emp['Nom'] != null
+        ? '${emp['Prenom'] ?? ''} ${emp['Nom'] ?? ''}'.trim()
+        : (emp['NomAr'] != null
+            ? '${emp['NomAr']} ${emp['PrenomAr'] ?? ''}'.trim()
+            : '${emp['Nom'] ?? ''} ${emp['Prenom'] ?? ''}'.trim());
+    final service = (emp['Service'] ?? '').toString();
+    final grade = (emp['Grade'] ?? emp['FonctionExercee'] ?? '').toString();
+    final statusLabel = CivilServiceStatus.getStatusLabel(adminStatus, isArabic: loc.isArabic);
+    final legalRef = CivilServiceStatus.getLegalReference(adminStatus);
+    final startDate = emp['StatusStartDate']?.toString();
+    final endDate = emp['StatusEndDate']?.toString();
+    final notes = emp['StatusNotes']?.toString();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Directionality(
+        textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Color(0xFF240D2D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0EA5E9).withValues(alpha: 0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.verified_user, color: Color(0xFF0EA5E9), size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
-                            color: Color(0xFFD4AF37),
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.1),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: const Color(0xFFD4AF37).withValues(alpha: 0.3)),
+                        Text(
+                          '$service • $grade',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 11,
+                            color: Color(0xFFD4AF37),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white60),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E0B26),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFF0EA5E9).withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.gavel, color: Color(0xFF0EA5E9), size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          loc.isArabic ? 'الوضعية النظامية المعتمدة:' : 'Statut statutaire validé:',
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      statusLabel,
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF38BDF8),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.menu_book, color: Color(0xFFD4AF37), size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${loc.isArabic ? "السند القانوني" : "Base légale"}: $legalRef',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              color: Color(0xFFFDE68A),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (startDate != null || endDate != null) ...[
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const Icon(Icons.date_range, color: Colors.white60, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${loc.isArabic ? "الفترة المرخصة" : "Période"}: ${startDate ?? "-"} ⬅️ ${endDate ?? "-"}',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (notes != null && notes.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        '${loc.isArabic ? "ملاحظات التأشيرة" : "Observations"}: $notes',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF064E3B).withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.5)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Color(0xFF10B981), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        loc.isArabic
+                            ? 'الموظف في وضعية قانونية سليمة ومبررة رسمياً — لا يترتب على هذا الغياب أي استفسار أو اقتطاع.'
+                            : 'Situation administrative régulière — Aucune retenue ni demande d\'explication n\'est applicable.',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 11,
+                          color: Color(0xFF6EE7B7),
                         ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
-        ],
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
   }
 
   void _showAbsentEmployeeOptions(Map<String, dynamic> emp) {

@@ -167,7 +167,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                     children: [
                       Expanded(
                         flex: 6,
-                        child: _buildInspectoratesDistribution(isArabic, inspectoratesStats),
+                        child: _buildInspectoratesDistribution(isArabic, inspectoratesStats, recentVisits),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -179,7 +179,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                 }
                 return Column(
                   children: [
-                    _buildInspectoratesDistribution(isArabic, inspectoratesStats),
+                    _buildInspectoratesDistribution(isArabic, inspectoratesStats, recentVisits),
                     const SizedBox(height: 16),
                     _buildTopInspectorsCard(isArabic, topInspectors),
                   ],
@@ -596,7 +596,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                 _buildCompactActionTile(
                   title: isArabic ? 'الجاهزية والانتشار' : 'Déploiement',
                   value: '$readinessRate%',
-                  subtext: isArabic ? '${att['presentToday'] ?? 0} حاضر من ${att['totalInspectors'] ?? 5}' : '${att['presentToday'] ?? 0} / ${att['totalInspectors'] ?? 5}',
+                  subtext: isArabic ? '${att['presentToday'] ?? 0} حاضر من ${att['totalInspectors'] ?? 0}' : '${att['presentToday'] ?? 0} / ${att['totalInspectors'] ?? 0}',
                   icon: Icons.people_alt_rounded,
                   color: const Color(0xFF10B981),
                   onTap: () => _showReadinessDetailsSheet(context, att, isArabic),
@@ -2118,7 +2118,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
     );
   }
 
-  Widget _buildInspectoratesDistribution(bool isArabic, Map<String, dynamic> stats) {
+  Widget _buildInspectoratesDistribution(bool isArabic, Map<String, dynamic> stats, List<dynamic> recentVisits) {
     const list = AppConstants.defaultInspectorates;
 
     return Container(
@@ -2172,11 +2172,53 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
               final radius = item.radiusMeters.toInt();
               final isHq = item.isMainDirectorate;
 
-              // Extract actual live visits if reported
-              final inspKey = item.nameFr.toLowerCase();
-              final directData = stats[inspKey] as Map<String, dynamic>? ?? {};
-              final visitsCount = (directData['visits'] as num?)?.toInt() ?? (isHq ? 5 : (idx % 2 == 0 ? 3 : 2));
-              final violationsCount = (directData['violations'] as num?)?.toInt() ?? (isHq ? 1 : (idx % 3 == 0 ? 1 : 0));
+              // Extract actual live visits from backend stats (strictly 100% live)
+              Map<String, dynamic> directData = {};
+              for (final entry in stats.entries) {
+                final k = entry.key.toString().trim();
+                if (k.isNotEmpty) {
+                  if (item.nameAr.contains(k) || k.contains(item.nameAr) ||
+                      (item.id.isNotEmpty && k.toLowerCase() == item.id.toLowerCase())) {
+                    directData = (entry.value as Map<String, dynamic>?) ?? {};
+                    break;
+                  }
+                  final simpleNames = ['العلمة', 'عين ولمان', 'بوقاعة', 'عين آزال', 'عين الكبيرة', 'عين أرنات', 'مطار', 'سطيف'];
+                  for (final sn in simpleNames) {
+                    if (item.nameAr.contains(sn) && k.contains(sn)) {
+                      directData = (entry.value as Map<String, dynamic>?) ?? {};
+                      break;
+                    }
+                  }
+                  if (directData.isNotEmpty) break;
+                }
+              }
+
+              int visitsCount = (directData['visits'] as num?)?.toInt() ?? 0;
+              int violationsCount = (directData['violations'] as num?)?.toInt() ?? 0;
+
+              // Fallback to live recentVisits if directData was zero or empty
+              if (visitsCount == 0 && recentVisits.isNotEmpty) {
+                final simpleNames = ['العلمة', 'عين ولمان', 'بوقاعة', 'عين آزال', 'عين الكبيرة', 'عين أرنات', 'مطار', 'سطيف'];
+                String? cityFilter;
+                for (final sn in simpleNames) {
+                  if (item.nameAr.contains(sn)) {
+                    cityFilter = sn;
+                    break;
+                  }
+                }
+                if (cityFilter != null) {
+                  for (final v in recentVisits) {
+                    final loc = (v['LocationName'] ?? v['locationname'] ?? '').toString();
+                    final srv = (v['Service'] ?? v['service'] ?? '').toString();
+                    if (loc.contains(cityFilter) || srv.contains(cityFilter)) {
+                      visitsCount++;
+                      if (v['ViolationFound'] == true || v['violationfound'] == true || v['ViolationFound'] == 1) {
+                        violationsCount++;
+                      }
+                    }
+                  }
+                }
+              }
 
               return Row(
                 children: [
@@ -2212,8 +2254,14 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                         Row(
                           children: [
                             Text(
-                              isArabic ? '$visitsCount معاينة' : '$visitsCount visites',
-                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
+                              visitsCount > 0
+                                  ? (isArabic ? '$visitsCount معاينة' : '$visitsCount visites')
+                                  : (isArabic ? '0 معاينة' : '0 visite'),
+                              style: TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontSize: 10,
+                                color: visitsCount > 0 ? const Color(0xFFD4AF37) : Colors.grey.shade500,
+                              ),
                             ),
                             if (violationsCount > 0) ...[
                               const SizedBox(width: 6),
@@ -2587,7 +2635,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
   }
 
   void _showReadinessDetailsSheet(BuildContext context, Map<String, dynamic> att, bool isArabic) {
-    final total = att['totalInspectors'] ?? 5;
+    final total = att['totalInspectors'] ?? 0;
     final present = att['presentToday'] ?? 0;
     final absent = att['absentToday'] ?? (total - present);
     final rate = att['readinessRate']?.toString() ?? '0.0';

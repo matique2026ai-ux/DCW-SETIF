@@ -88,15 +88,21 @@ router.get('/delays-summary', async (req, res) => {
     const pg = isPostgres();
     const { month, employeeId } = req.query; // month e.g. '2026-09'
 
-    // Fetch all active inspection employees
+    // Fetch all active inspection employees with their statutory administrative status
     const employees = await db.query(
       pg
-        ? `SELECT e."Id", e."NomAr", e."PrenomAr", e."Nom", e."Prenom", e."Service", e."Grade"
+        ? `SELECT e."Id", e."NomAr", e."PrenomAr", e."Nom", e."Prenom", e."Service", e."Grade",
+                  COALESCE(a."AdministrativeStatus", 'active') as "AdministrativeStatus",
+                  a."StatusStartDate", a."StatusEndDate", a."StatusNotes"
            FROM "Employes" e
-           WHERE e."EstActif" = true`
-        : `SELECT e.Id, e.NomAr, e.PrenomAr, e.Nom, e.Prenom, e.Service, e.Grade
+           LEFT JOIN "TrackerEmployeeAdmin" a ON e."Id" = a."EmployeeId"
+           WHERE e."EstActif" = true AND e."Nom" != 'tracker_admin' AND e."NomAr" != 'tracker_admin'`
+        : `SELECT e.Id, e.NomAr, e.PrenomAr, e.Nom, e.Prenom, e.Service, e.Grade,
+                  COALESCE(a.AdministrativeStatus, 'active') as AdministrativeStatus,
+                  a.StatusStartDate, a.StatusEndDate, a.StatusNotes
            FROM Employes e
-           WHERE e.EstActif = 1`
+           LEFT JOIN TrackerEmployeeAdmin a ON e.Id = a.EmployeeId
+           WHERE e.EstActif = 1 AND e.Nom != 'tracker_admin' AND e.NomAr != 'tracker_admin'`
     );
 
     // Also include any active inspectors from UtilisateursSysteme
@@ -215,6 +221,10 @@ router.get('/delays-summary', async (req, res) => {
         name: name,
         service: emp.Service || emp.service,
         grade: emp.Grade || emp.grade,
+        administrativeStatus: emp.AdministrativeStatus || emp.administrativestatus || 'active',
+        statusStartDate: emp.StatusStartDate || emp.statusstartdate,
+        statusEndDate: emp.StatusEndDate || emp.statusenddate,
+        statusNotes: emp.StatusNotes || emp.statusnotes,
         attendedDaysCount: records.length,
         lateDaysCount: lateDaysCount,
         totalLateMinutes: totalLateMinutes,
@@ -564,6 +574,8 @@ router.get('/map-data', async (req, res) => {
       }
 
       let trackingStatus = 'غير مسجل اليوم';
+      const isApprovedLeave = ['annual_leave', 'sick_leave', 'leave', 'maternity', 'mission', 'special_mission', 'disponibility', 'detachement', 'family_event'].includes(adminStatus.toLowerCase());
+
       if (isCheckedOut) {
         const outTime = att && att.CheckOutTime ? new Date(att.CheckOutTime).toLocaleTimeString('fr-DZ', { hour: '2-digit', minute: '2-digit' }) : '';
         const reason = att && att.EarlyReason ? ` [${att.EarlyReason}]` : '';
@@ -576,6 +588,22 @@ router.get('/map-data', async (req, res) => {
               ? `في الميدان — ${activeProgramData.title}`
               : (empVisits.length > 0 ? `نشط في الميدان (${empVisits.length} معاينات)` : 'في مهمة رقابية ميدانية');
         }
+      } else if (isApprovedLeave) {
+        if (adminStatus === 'annual_leave' || adminStatus === 'leave') {
+          trackingStatus = '🌴 عطلة سنوية قانونية (معفى من الحضور)';
+        } else if (adminStatus === 'sick_leave') {
+          trackingStatus = '🏥 عطلة مرضية مبررة (شهادة طبية)';
+        } else if (adminStatus === 'maternity') {
+          trackingStatus = '🍼 عطلة أمومة قانونية';
+        } else if (adminStatus === 'mission' || adminStatus === 'special_mission') {
+          trackingStatus = '🚗 في مهمة رسمية خارج الولاية';
+        } else if (adminStatus === 'disponibility') {
+          trackingStatus = '⏸️ في حالة استيداع قانوني';
+        } else if (adminStatus === 'detachement') {
+          trackingStatus = '🔄 في حالة انتداب قانوني';
+        } else {
+          trackingStatus = '📄 غياب مبرر قانوناً (الأمر 06-03)';
+        }
       }
 
       return {
@@ -584,6 +612,10 @@ router.get('/map-data', async (req, res) => {
         service: emp.Service || emp.service,
         grade: emp.Grade || emp.grade,
         administrativeStatus: adminStatus,
+        statusStartDate: emp.StatusStartDate || emp.statusstartdate,
+        statusEndDate: emp.StatusEndDate || emp.statusenddate,
+        statusNotes: emp.StatusNotes || emp.statusnotes,
+        isApprovedLeave: isApprovedLeave,
         isBrigadeLeader: isBrigadeLeader,
         brigadeName: emp.BrigadeName || emp.brigadename,
         isNightDuty: isNightDuty,

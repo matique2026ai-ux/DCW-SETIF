@@ -13,6 +13,7 @@ import 'package:drh_setif_tracker/widgets/modern_executive_navbar.dart';
 import 'package:drh_setif_tracker/utils/constants.dart';
 import 'package:drh_setif_tracker/screens/head/market_regulation_view.dart';
 import 'package:drh_setif_tracker/screens/head/contentieux_view.dart';
+import 'package:drh_setif_tracker/utils/algerian_calendar.dart';
 
 class HeadScreen extends StatefulWidget {
   final String? initialDepartment;
@@ -62,6 +63,17 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
       _departmentName.contains('المنازعات') ||
       _departmentName.contains('القانون') ||
       context.read<AuthService>().currentUser?.username == 'chef_contentieux';
+
+  bool get _isTerritorialHead =>
+      _departmentName.contains('المفتشية') ||
+      _departmentName.contains('ملحقة') ||
+      _departmentName.contains('العلمة') ||
+      _departmentName.contains('عين ولمان') ||
+      _departmentName.contains('بوقاعة') ||
+      _departmentName.contains('مطار') ||
+      _departmentName.contains('الكبيرة') ||
+      _departmentName.contains('أزال') ||
+      _departmentName.contains('أرنات');
 
   @override
   void initState() {
@@ -2374,7 +2386,25 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
 
   void _showNewMissionDialog() {
     final titleCtrl = TextEditingController();
-    final areaCtrl = TextEditingController(text: 'بلديات سطيف والعلمة وعين ولمان');
+
+    String defaultArea = 'بلديات سطيف والدوائر التابعة';
+    if (_departmentName.contains('العلمة')) {
+      defaultArea = 'إقليم المفتشية الإقليمية بالعلمة (العلمة، بازر سكرة، القلتة الزرقاء، جميلة، بني فودة)';
+    } else if (_departmentName.contains('عين ولمان')) {
+      defaultArea = 'إقليم المفتشية الإقليمية بعين ولمان (عين ولمان، قصر الأبطال، قلال، عين الحجر، صالح باي، الرصفة)';
+    } else if (_departmentName.contains('بوقاعة')) {
+      defaultArea = 'إقليم المفتشية الإقليمية ببوقاعة (بوقاعة، بني وسين، عين الروى، ماوكلان، قنزات، تالة إيفاسن)';
+    } else if (_departmentName.contains('مطار') || _departmentName.contains('08 ماي')) {
+      defaultArea = 'المحطة الجوية والمستودعات الجمركية بمطار 08 ماي 1945 بسطيف - عين أرنات';
+    } else if (_departmentName.contains('عين الكبيرة')) {
+      defaultArea = 'إقليم ملحقة عين الكبيرة (عين الكبيرة، عموشة، تيزي نبشار، أولاد عدوان، دهامشة)';
+    } else if (_departmentName.contains('عين أزال') || _departmentName.contains('عين ازال')) {
+      defaultArea = 'إقليم ملحقة عين أزال (عين أزال، عين لحجر، بوطالب، الحامة)';
+    } else if (_departmentName.contains('عين أرنات') || _departmentName.contains('عين ارنات')) {
+      defaultArea = 'إقليم ملحقة عين أرنات (عين أرنات، مزلوق، الأوريسيا، عين عباسة)';
+    }
+
+    final areaCtrl = TextEditingController(text: defaultArea);
     final focusCtrl = TextEditingController();
     
     String programCategory = 'برنامج قطاعي وطني مسطر (وزاري / ولائي)';
@@ -2402,6 +2432,12 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     if (_departmentName.contains('المنافسة')) {
       titleCtrl.text = 'مراقبة احترام الأسعار المقننة وهوامش الربح والفوترة';
       focusCtrl.text = 'التأكد من إشهار الأسعار، فواتير التوزيع لمادتي الزيت والحليب، ومكافحة المضاربة';
+    } else if (_departmentName.contains('المطار') || _departmentName.contains('مطار') || _departmentName.contains('08 ماي')) {
+      titleCtrl.text = 'مراقبة مطابقة السلع المستوردة والطرود وشروط الشحن الجوي';
+      focusCtrl.text = 'فحص الوثائق الجمركية، الشهادات الصحية، وتفتيش شحنات المواد الغذائية والتجهيزات الحساسة';
+    } else if (_isTerritorialHead) {
+      titleCtrl.text = 'الرقابة الميدانية وقمع الغش على مستوى إقليم المفتشية';
+      focusCtrl.text = 'مراقبة المحلات التجارية، أسواق الجملة والتجزئة، وشروط النظافة وصلاحية المنتجات المعروضة';
     } else {
       titleCtrl.text = 'مراقبة شروط النظافة الصحية ومطابقة المواد الغذائية الحساسة';
       focusCtrl.text = 'مراقبة سلسلة التبريد، شروط حفظ اللحوم والمشتقات اللبنية، وسحب عينات مخبرية';
@@ -3760,7 +3796,8 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
     final totalCount = _departmentInspectors.length;
     final presentCount = _departmentInspectors.where((e) => e['hasCheckedIn'] == true).length;
     final inFieldCount = _departmentInspectors.where((e) => e['hasCheckedIn'] == true && ((e['visitsCount'] as num?)?.toInt() ?? 0) > 0).length;
-    final absentCount = totalCount - presentCount;
+    final leaveCount = _departmentInspectors.where((e) => e['hasCheckedIn'] != true && CivilServiceStatus.isExcusedLeave(e['administrativeStatus']?.toString())).length;
+    final absentCount = _departmentInspectors.where((e) => e['hasCheckedIn'] != true && !CivilServiceStatus.isExcusedLeave(e['administrativeStatus']?.toString())).length;
 
     final filtered = _departmentInspectors.where((insp) {
       final name = (insp['name'] ?? '').toString().toLowerCase();
@@ -3836,23 +3873,30 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                 icon: Icons.people_alt,
                 color: const Color(0xFFD4AF37),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               _buildMiniStatCard(
-                title: isAr ? 'حاضرون بالمقر' : 'Présents',
+                title: isAr ? 'حاضرون' : 'Présents',
                 value: '$presentCount',
                 icon: Icons.check_circle_outline,
                 color: const Color(0xFF10B981),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               _buildMiniStatCard(
                 title: isAr ? 'في الميدان' : 'En Terrain',
                 value: '$inFieldCount',
                 icon: Icons.travel_explore,
                 color: const Color(0xFFF59E0B),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               _buildMiniStatCard(
-                title: isAr ? 'غير ملتحق' : 'Absents',
+                title: isAr ? 'عطل ورخص' : 'Congés',
+                value: '$leaveCount',
+                icon: Icons.beach_access,
+                color: const Color(0xFF0EA5E9),
+              ),
+              const SizedBox(width: 4),
+              _buildMiniStatCard(
+                title: isAr ? 'غير مسجل' : 'Absents',
                 value: '$absentCount',
                 icon: Icons.timer_outlined,
                 color: Colors.white54,
@@ -3860,6 +3904,33 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
             ],
           ),
         ),
+
+        // ── TERRITORIAL GEOFENCE INFORMATION ──────────────────────────────
+        if (_isTerritorialHead) ...[
+          Container(
+            margin: const EdgeInsets.fromLTRB(14, 6, 14, 2),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.share_location, color: Color(0xFF10B981), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isAr
+                        ? 'النطاق الجغرافي المعتمد للبصمة: المقر الإقليمي بنصف قطر 600 متر • إلزامية البصمة اليومية للأعوان'
+                        : 'Périmètre de pointage validé: Siège territorial (Rayon 600m) • Pointage obligatoire',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Color(0xFF6EE7B7)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
 
         // ── SEARCH & BRIGADE FILTER BAR ──────────────────────────────────
         Container(
@@ -3944,6 +4015,8 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                     final String brigade = (emp['brigade'] ?? 'فرقة الرقابة').toString();
                     final int visitsCount = (emp['visitsCount'] as num?)?.toInt() ?? 0;
                     final String location = (emp['location'] ?? 'المقر الرئيسي للمديرية').toString();
+                    final String adminStatus = (emp['administrativeStatus'] ?? '').toString();
+                    final bool isExcused = !isPresent && CivilServiceStatus.isExcusedLeave(adminStatus);
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -4045,16 +4118,32 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                                 decoration: BoxDecoration(
                                   color: isOut
                                       ? const Color(0xFF6B7280).withValues(alpha: 0.2)
-                                      : (isPresent ? AppTheme.SuccessColor.withValues(alpha: 0.2) : AppTheme.WarningColor.withValues(alpha: 0.2)),
+                                      : (isPresent
+                                          ? AppTheme.SuccessColor.withValues(alpha: 0.2)
+                                          : (isExcused
+                                              ? const Color(0xFF0EA5E9).withValues(alpha: 0.2)
+                                              : AppTheme.WarningColor.withValues(alpha: 0.2))),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
-                                  isOut ? (isAr ? 'انصرف' : 'Sorti') : (isPresent ? (isAr ? 'في الميدان' : 'Actif') : (isAr ? 'غير ملتحق' : 'Absent')),
+                                  isOut
+                                      ? (isAr ? 'انصرف' : 'Sorti')
+                                      : (isPresent
+                                          ? (isAr ? 'في الميدان' : 'Actif')
+                                          : (isExcused
+                                              ? CivilServiceStatus.getStatusLabel(adminStatus, isArabic: isAr)
+                                              : (isAr ? 'غير مسجل' : 'Absent'))),
                                   style: TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 10,
                                     fontWeight: FontWeight.bold,
-                                    color: isOut ? Colors.grey : (isPresent ? AppTheme.SuccessColor : AppTheme.WarningColor),
+                                    color: isOut
+                                        ? Colors.grey
+                                        : (isPresent
+                                            ? AppTheme.SuccessColor
+                                            : (isExcused
+                                                ? const Color(0xFF38BDF8)
+                                                : AppTheme.WarningColor)),
                                   ),
                                 ),
                               ),
@@ -4090,12 +4179,30 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
   }
 
   String _getDisplayDepartmentName(bool isAr) {
-    if (_departmentName.contains('الإدارة')) {
+    if (_departmentName.contains('العلمة')) {
+      return isAr ? 'المفتشية الإقليمية للتجارة بالعلمة' : 'Inspection Territoriale d\'El Eulma';
+    } else if (_departmentName.contains('عين ولمان')) {
+      return isAr ? 'المفتشية الإقليمية للتجارة بعين ولمان' : 'Inspection Territoriale d\'Aïn Oulmene';
+    } else if (_departmentName.contains('بوقاعة')) {
+      return isAr ? 'المفتشية الإقليمية للتجارة ببوقاعة' : 'Inspection Territoriale de Bougaa';
+    } else if (_departmentName.contains('مطار') || _departmentName.contains('08 ماي')) {
+      return isAr ? 'المفتشية الحدودية بمطار 08 ماي 1945' : 'Inspection Frontalière Aéroport 8 Mai 1945';
+    } else if (_departmentName.contains('عين الكبيرة')) {
+      return isAr ? 'ملحقة التجارة بعين الكبيرة' : 'Annexe de Commerce Aïn El Kebira';
+    } else if (_departmentName.contains('عين أزال') || _departmentName.contains('عين ازال')) {
+      return isAr ? 'ملحقة التجارة بعين أزال' : 'Annexe de Commerce Aïn Azel';
+    } else if (_departmentName.contains('عين أرنات') || _departmentName.contains('عين ارنات')) {
+      return isAr ? 'ملحقة التجارة بعين أرنات' : 'Annexe de Commerce Aïn Arnat';
+    } else if (_departmentName.contains('الإدارة')) {
       return isAr ? 'مصلحة الإدارة والوسائل' : 'Service Administration & Moyens';
     } else if (_departmentName.contains('المستهلك')) {
       return isAr ? 'مصلحة حماية المستهلك وقمع الغش' : 'Protection Consommateur & Fraudes';
+    } else if (_departmentName.contains('ملاحظة') || _departmentName.contains('السوق')) {
+      return isAr ? 'مصلحة ملاحظة السوق والإعلام الاقتصادي' : 'Service Observation du Marché';
+    } else if (_departmentName.contains('المنازعات')) {
+      return isAr ? 'مصلحة المنازعات والشؤون القانونية' : 'Service Contentieux & Affaires Juridiques';
     } else {
-      return isAr ? 'مصلحة المنافسة والتحقيقات' : 'Concurrence & Enquêtes Éco.';
+      return isAr ? 'مصلحة الممارسات التجارية والمضادة للمنافسة' : 'Service Pratiques Commerciales';
     }
   }
 
@@ -4113,7 +4220,17 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           subtitle: isAr
               ? 'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف'
               : 'Resp: ${user?.fullName ?? user?.username ?? ''} • Direction Commerce Sétif',
-          badgeText: isAr ? 'رئيس مصلحة' : 'Chef de Service',
+          badgeText: isAr
+              ? (_departmentName.contains('ملحقة')
+                  ? 'المكلف بالملحقة'
+                  : (_departmentName.contains('المفتشية')
+                      ? 'رئيس المفتشية الإقليمية'
+                      : 'رئيس مصلحة'))
+              : (_departmentName.contains('ملحقة')
+                  ? 'Resp. Annexe'
+                  : (_departmentName.contains('المفتشية')
+                      ? 'Chef d\'Inspection'
+                      : 'Chef de Service')),
           showBackButton: Navigator.canPop(context),
           onBack: () => Navigator.pop(context),
           customTitleWidget: Builder(
