@@ -29,6 +29,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   bool _isPrintingReport = false;
   Timer? _pollTimer;
 
+  // --- UX: Quick-jump to pending inquiries ---
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _pendingInquiriesKey = GlobalKey();
+  // --- Violation type filter for auto-flagged list ---
+  String _violationFilter = 'all'; // 'all', 'absent', 'late'
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +47,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -70,7 +77,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       final cleanEmp = emp.where((e) {
         final nom = (e['NomAr'] ?? e['nomAr'] ?? '').toString();
         final service = (e['Service'] ?? e['service'] ?? '').toString();
-        return !nom.contains('المدير الولائي') && !service.contains('المديرية الولائية');
+        return !nom.contains('Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ') && !service.contains('Ø§Ù„Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠØ©');
       }).toList();
       final inqs = await api.getInquiries();
       final settings = await api.getSettings();
@@ -109,8 +116,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           SnackBar(
             content: Text(
               loc.isArabic
-                  ? '✅ تم تعديل فترة التسامح الصباحية إلى $newTime وتحديث حساب التأخرات'
-                  : '✅ Tolérance matinale modifiée à $newTime et retards recalculés',
+                  ? 'âœ… ØªÙ… ØªØ¹Ø¯ÙŠÙ„ ÙØªØ±Ø© Ø§Ù„ØªØ³Ø§Ù…Ø­ Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© Ø¥Ù„Ù‰ $newTime ÙˆØªØ­Ø¯ÙŠØ« Ø­Ø³Ø§Ø¨ Ø§Ù„ØªØ£Ø®Ø±Ø§Øª'
+                  : 'âœ… TolÃ©rance matinale modifiÃ©e Ã  $newTime et retards recalculÃ©s',
             ),
             backgroundColor: AppTheme.SuccessColor,
           ),
@@ -119,7 +126,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+          SnackBar(content: Text('Ø®Ø·Ø£: $e'), backgroundColor: AppTheme.DangerColor),
         );
       }
     }
@@ -140,14 +147,14 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     final subjectCtrl = TextEditingController(
       text: defaultSubject ??
           (loc.isArabic
-              ? 'استفسار وأمر بالانضباط حول الحضور والمردودية'
+              ? 'Ø§Ø³ØªÙØ³Ø§Ø± ÙˆØ£Ù…Ø± Ø¨Ø§Ù„Ø§Ù†Ø¶Ø¨Ø§Ø· Ø­ÙˆÙ„ Ø§Ù„Ø­Ø¶ÙˆØ± ÙˆØ§Ù„Ù…Ø±Ø¯ÙˆØ¯ÙŠØ©'
               : 'Demande d\'explications et ordre de discipline'),
     );
     final detailsCtrl = TextEditingController(
       text: defaultDetails ??
           (loc.isArabic
-              ? 'بناءً على المعطيات الرقابية، يُطلب من مكتب المستخدمين توجيه استفسار كتابي رسمي للموظف المذكور مع منحه 48 ساعة للرد.'
-              : 'Sur la base des données de contrôle, le bureau du personnel est chargé d\'adresser une demande d\'explications officielle à l\'agent concerné (délai de réponse: 48h).'),
+              ? 'Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠØ©ØŒ ÙŠÙØ·Ù„Ø¨ Ù…Ù† Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ØªÙˆØ¬ÙŠÙ‡ Ø§Ø³ØªÙØ³Ø§Ø± ÙƒØªØ§Ø¨ÙŠ Ø±Ø³Ù…ÙŠ Ù„Ù„Ù…ÙˆØ¸Ù Ø§Ù„Ù…Ø°ÙƒÙˆØ± Ù…Ø¹ Ù…Ù†Ø­Ù‡ 48 Ø³Ø§Ø¹Ø© Ù„Ù„Ø±Ø¯.'
+              : 'Sur la base des donnÃ©es de contrÃ´le, le bureau du personnel est chargÃ© d\'adresser une demande d\'explications officielle Ã  l\'agent concernÃ© (dÃ©lai de rÃ©ponse: 48h).'),
     );
 
     showDialog(
@@ -164,7 +171,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                loc.isArabic ? 'أمر بتوجيه استفسار — $name' : 'Ordre d\'explications — $name',
+                loc.isArabic ? 'Ø£Ù…Ø± Ø¨ØªÙˆØ¬ÙŠÙ‡ Ø§Ø³ØªÙØ³Ø§Ø± â€” $name' : 'Ordre d\'explications â€” $name',
                 style: const TextStyle(
                   fontFamily: 'Tajawal',
                   fontWeight: FontWeight.bold,
@@ -181,8 +188,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           children: [
             Text(
               loc.isArabic
-                  ? 'المدير الولائي يكلف مكتب المستخدمين بإصدار استفسار كتابي رسمي للموظف عبر التطبيق:'
-                  : 'Le Directeur de Wilaya charge le bureau du personnel d\'émettre une demande d\'explications officielle via l\'application :',
+                  ? 'Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ ÙŠÙƒÙ„Ù Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø¨Ø¥ØµØ¯Ø§Ø± Ø§Ø³ØªÙØ³Ø§Ø± ÙƒØªØ§Ø¨ÙŠ Ø±Ø³Ù…ÙŠ Ù„Ù„Ù…ÙˆØ¸Ù Ø¹Ø¨Ø± Ø§Ù„ØªØ·Ø¨ÙŠÙ‚:'
+                  : 'Le Directeur de Wilaya charge le bureau du personnel d\'Ã©mettre une demande d\'explications officielle via l\'application :',
               style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
             ),
             const SizedBox(height: 12),
@@ -190,7 +197,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               controller: subjectCtrl,
               textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: loc.isArabic ? 'الموضوع' : 'Objet',
+                labelText: loc.isArabic ? 'Ø§Ù„Ù…ÙˆØ¶ÙˆØ¹' : 'Objet',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFD4AF37)),
                 filled: true,
                 fillColor: Colors.black26,
@@ -203,7 +210,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               maxLines: 3,
               textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
               decoration: InputDecoration(
-                labelText: loc.isArabic ? 'تعليمات وتفاصيل الاستفسار' : 'Instructions et détails',
+                labelText: loc.isArabic ? 'ØªØ¹Ù„ÙŠÙ…Ø§Øª ÙˆØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø±' : 'Instructions et dÃ©tails',
                 labelStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white70),
                 filled: true,
                 fillColor: Colors.black26,
@@ -215,7 +222,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dlgCtx),
-            child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+            child: Text(loc.isArabic ? 'Ø¥Ù„ØºØ§Ø¡' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -237,8 +244,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   SnackBar(
                     content: Text(
                       loc.isArabic
-                          ? '✅ تم تكليف مكتب المستخدمين بإصدار الاستفسار لـ $name'
-                          : '✅ Demande d\'explications transmise au bureau du personnel pour $name',
+                          ? 'âœ… ØªÙ… ØªÙƒÙ„ÙŠÙ Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø¨Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø± Ù„Ù€ $name'
+                          : 'âœ… Demande d\'explications transmise au bureau du personnel pour $name',
                     ),
                     backgroundColor: AppTheme.SuccessColor,
                   ),
@@ -247,7 +254,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               } catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                  SnackBar(content: Text('Ø®Ø·Ø£: $e'), backgroundColor: AppTheme.DangerColor),
                 );
               }
             },
@@ -256,7 +263,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: Text(loc.isArabic ? 'إصدار الأمر' : 'Émettre l\'ordre', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
+            child: Text(loc.isArabic ? 'Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø£Ù…Ø±' : 'Ã‰mettre l\'ordre', style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -267,17 +274,17 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     final loc = AppLocalizations.of(context);
     setState(() => _isPrintingReport = true);
     try {
-      String periodTitle = loc.isArabic ? 'كامل السجل والأرشيف الإداري' : 'Tout l\'historique';
+      String periodTitle = loc.isArabic ? 'ÙƒØ§Ù…Ù„ Ø§Ù„Ø³Ø¬Ù„ ÙˆØ§Ù„Ø£Ø±Ø´ÙŠÙ Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠ' : 'Tout l\'historique';
       if (_archiveTimeFilter == 'today') {
-        periodTitle = loc.isArabic ? 'اليوم (${DateFormat('yyyy/MM/dd').format(DateTime.now())})' : 'Aujourd\'hui';
+        periodTitle = loc.isArabic ? 'Ø§Ù„ÙŠÙˆÙ… (${DateFormat('yyyy/MM/dd').format(DateTime.now())})' : 'Aujourd\'hui';
       } else if (_archiveTimeFilter == 'week') {
-        periodTitle = loc.isArabic ? 'هذا الأسبوع' : 'Cette semaine';
+        periodTitle = loc.isArabic ? 'Ù‡Ø°Ø§ Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹' : 'Cette semaine';
       } else if (_archiveTimeFilter == 'month') {
-        periodTitle = loc.isArabic ? 'شهر ${DateFormat('MM/yyyy').format(DateTime.now())}' : 'Ce mois-ci';
+        periodTitle = loc.isArabic ? 'Ø´Ù‡Ø± ${DateFormat('MM/yyyy').format(DateTime.now())}' : 'Ce mois-ci';
       }
 
       final auth = context.read<AuthService>();
-      final directorName = auth.currentUser?.fullName ?? (loc.isArabic ? 'المدير الولائي للتجارة' : 'Directeur du Commerce');
+      final directorName = auth.currentUser?.fullName ?? (loc.isArabic ? 'Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ Ù„Ù„ØªØ¬Ø§Ø±Ø©' : 'Directeur du Commerce');
 
       await PdfReportService.generateAndPrintDisciplineReport(
         inquiries: inquiriesToPrint,
@@ -287,7 +294,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في الطباعة: $e'), backgroundColor: AppTheme.DangerColor),
+          SnackBar(content: Text('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø·Ø¨Ø§Ø¹Ø©: $e'), backgroundColor: AppTheme.DangerColor),
         );
       }
     } finally {
@@ -347,8 +354,92 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1050),
           child: ListView(
+            controller: _scrollController,
             padding: const EdgeInsets.all(16),
             children: [
+          // â”€â”€ QUICK-JUMP BANNER: only when there are answered inquiries awaiting decision â”€â”€
+          if (answeredInquiries.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                final ctx = _pendingInquiriesKey.currentContext;
+                if (ctx != null) {
+                  Scrollable.ensureVisible(
+                    ctx,
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.easeInOut,
+                    alignment: 0.05,
+                  );
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF7F1D1D), Color(0xFF991B1B)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFEF4444), width: 1.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '${answeredInquiries.length}',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loc.isArabic
+                                ? 'âš¡ Ø§Ø³ØªÙØ³Ø§Ø±${answeredInquiries.length > 1 ? 'Ø§Øª' : ''} Ø¹Ø§Ù„Ù‚Ø© Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ù‚Ø±Ø§Ø±Ùƒ Ø§Ù„Ø¢Ù†!'
+                                : 'âš¡ ${answeredInquiries.length} rÃ©ponse(s) en attente de votre dÃ©cision !',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Colors.white,
+                            ),
+                          ),
+                          Text(
+                            loc.isArabic
+                                ? 'Ø§Ø¶ØºØ· Ù„Ù„Ø§Ù†ØªÙ‚Ø§Ù„ Ù…Ø¨Ø§Ø´Ø±Ø© Ø¥Ù„Ù‰ Ù‚Ø³Ù… Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø±Ø§Øª Ø§Ù„Ø¹Ø§Ù„Ù‚Ø© â†“'
+                                : 'Appuyez pour accÃ©der directement Ã  la section â†“',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 10.5,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.keyboard_double_arrow_down_rounded, color: Colors.white, size: 22),
+                  ],
+                ),
+              ),
+            ),
           // 1. Morning Grace Time Setting Header
           Container(
             padding: const EdgeInsets.all(16),
@@ -382,7 +473,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  loc.isArabic ? 'فترة التسامح الصباحية (Tolérance)' : 'Tolérance Matinale (Tolérance)',
+                                  loc.isArabic ? 'ÙØªØ±Ø© Ø§Ù„ØªØ³Ø§Ù…Ø­ Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© (TolÃ©rance)' : 'TolÃ©rance Matinale (TolÃ©rance)',
                                   style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontWeight: FontWeight.bold,
@@ -414,11 +505,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                                   fontSize: 13,
                                 ),
                                 items: [
-                                  DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 ص' : '08:15')),
-                                  DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 ص' : '08:30')),
-                                  DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 ص (الموصى بها)' : '08:45 (Recommandée)')),
-                                  DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 ص (مرونة قصوى)' : '09:00 (Flexibilité Max)')),
-                                  DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 ص' : '09:15')),
+                                  DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 Øµ' : '08:15')),
+                                  DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 Øµ' : '08:30')),
+                                  DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 Øµ (Ø§Ù„Ù…ÙˆØµÙ‰ Ø¨Ù‡Ø§)' : '08:45 (RecommandÃ©e)')),
+                                  DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 Øµ (Ù…Ø±ÙˆÙ†Ø© Ù‚ØµÙˆÙ‰)' : '09:00 (FlexibilitÃ© Max)')),
+                                  DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 Øµ' : '09:15')),
                                 ],
                                 onChanged: (val) {
                                   if (val != null && val != _morningGraceTime) {
@@ -444,7 +535,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            loc.isArabic ? 'فترة التسامح الصباحية (Tolérance)' : 'Tolérance Matinale (Tolérance)',
+                            loc.isArabic ? 'ÙØªØ±Ø© Ø§Ù„ØªØ³Ø§Ù…Ø­ Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© (TolÃ©rance)' : 'TolÃ©rance Matinale (TolÃ©rance)',
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontWeight: FontWeight.bold,
@@ -473,11 +564,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                                 fontSize: 13,
                               ),
                               items: [
-                                DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 ص' : '08:15')),
-                                DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 ص' : '08:30')),
-                                DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 ص (الموصى بها)' : '08:45 (Recommandée)')),
-                                DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 ص (مرونة قصوى)' : '09:00 (Flexibilité Max)')),
-                                DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 ص' : '09:15')),
+                                DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 Øµ' : '08:15')),
+                                DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 Øµ' : '08:30')),
+                                DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 Øµ (Ø§Ù„Ù…ÙˆØµÙ‰ Ø¨Ù‡Ø§)' : '08:45 (RecommandÃ©e)')),
+                                DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 Øµ (Ù…Ø±ÙˆÙ†Ø© Ù‚ØµÙˆÙ‰)' : '09:00 (FlexibilitÃ© Max)')),
+                                DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 Øµ' : '09:15')),
                               ],
                               onChanged: (val) {
                                 if (val != null && val != _morningGraceTime) {
@@ -494,8 +585,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 const SizedBox(height: 8),
                 Text(
                   loc.isArabic
-                      ? 'التوقيت الحالي: $_morningGraceTime ص — التأخرات الصباحية تُحسب بعده مباشرة.'
-                      : 'Heure actuelle : $_morningGraceTime — Les retards sont comptabilisés au-delà.',
+                      ? 'Ø§Ù„ØªÙˆÙ‚ÙŠØª Ø§Ù„Ø­Ø§Ù„ÙŠ: $_morningGraceTime Øµ â€” Ø§Ù„ØªØ£Ø®Ø±Ø§Øª Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© ØªÙØ­Ø³Ø¨ Ø¨Ø¹Ø¯Ù‡ Ù…Ø¨Ø§Ø´Ø±Ø©.'
+                      : 'Heure actuelle : $_morningGraceTime â€” Les retards sont comptabilisÃ©s au-delÃ .',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 11,
@@ -508,7 +599,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
           const SizedBox(height: 12),
 
-          // 2. Intelligent Auto-Detection Section (الرصد الآلي لمخالفي الحضور ومقترحو الاستفسار)
+          // 2. Intelligent Auto-Detection Section (Ø§Ù„Ø±ØµØ¯ Ø§Ù„Ø¢Ù„ÙŠ Ù„Ù…Ø®Ø§Ù„ÙÙŠ Ø§Ù„Ø­Ø¶ÙˆØ± ÙˆÙ…Ù‚ØªØ±Ø­Ùˆ Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø±)
           _buildAutoFlaggedViolationsSection(loc),
 
           const SizedBox(height: 10),
@@ -522,7 +613,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   onPressed: () => _showEmployeePicker(),
                   icon: const Icon(Icons.person_search, color: Color(0xFFD4AF37), size: 18),
                   label: Text(
-                    loc.isArabic ? 'استفسار يدوي لموظف' : "Ordre manuel",
+                    loc.isArabic ? 'Ø§Ø³ØªÙØ³Ø§Ø± ÙŠØ¯ÙˆÙŠ Ù„Ù…ÙˆØ¸Ù' : "Ordre manuel",
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontWeight: FontWeight.bold,
@@ -556,7 +647,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   ),
                   label: Text(
                     loc.isArabic
-                        ? 'مبررات الغياب والانصراف (${_pendingJustifications.length})'
+                        ? 'Ù…Ø¨Ø±Ø±Ø§Øª Ø§Ù„ØºÙŠØ§Ø¨ ÙˆØ§Ù„Ø§Ù†ØµØ±Ø§Ù (${_pendingJustifications.length})'
                         : 'Justifications (${_pendingJustifications.length})',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
@@ -600,6 +691,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           const SizedBox(height: 18),
 
           // 3. Urgent: Answered Inquiries Awaiting Director Sovereign Decision
+          // --- GlobalKey anchor for quick-jump ---
+          SizedBox(key: _pendingInquiriesKey, height: 0),
           Row(
             children: [
               const Icon(Icons.rate_review, color: Color(0xFFD4AF37), size: 22),
@@ -607,8 +700,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               Expanded(
                 child: Text(
                   loc.isArabic
-                      ? 'ملفات الاستفسارات التي تم الرد عليها وبانتظار قراركم الإداري (${answeredInquiries.length})'
-                      : "Demandes d'explications répondues en attente de décision administrative (${answeredInquiries.length})",
+                      ? 'Ù…Ù„ÙØ§Øª Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø±Ø§Øª Ø§Ù„ØªÙŠ ØªÙ… Ø§Ù„Ø±Ø¯ Ø¹Ù„ÙŠÙ‡Ø§ ÙˆØ¨Ø§Ù†ØªØ¸Ø§Ø± Ù‚Ø±Ø§Ø±ÙƒÙ… Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠ (${answeredInquiries.length})'
+                      : "Demandes d'explications rÃ©pondues en attente de dÃ©cision administrative (${answeredInquiries.length})",
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 14,
@@ -619,7 +712,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               ),
               IconButton(
                 icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 20),
-                tooltip: loc.isArabic ? 'تحديث لحظي' : 'Actualiser',
+                tooltip: loc.isArabic ? 'ØªØ­Ø¯ÙŠØ« Ù„Ø­Ø¸ÙŠ' : 'Actualiser',
                 onPressed: _load,
               ),
             ],
@@ -637,8 +730,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               child: Center(
                 child: Text(
                   loc.isArabic
-                      ? 'لا توجد ردود جديدة معلقة — كافة الملفات تمت معالجتها واتخاذ القرارات بشأنها ✨'
-                      : 'Aucun dossier en attente — Toutes les réponses ont été traitées ✨',
+                      ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø±Ø¯ÙˆØ¯ Ø¬Ø¯ÙŠØ¯Ø© Ù…Ø¹Ù„Ù‚Ø© â€” ÙƒØ§ÙØ© Ø§Ù„Ù…Ù„ÙØ§Øª ØªÙ…Øª Ù…Ø¹Ø§Ù„Ø¬ØªÙ‡Ø§ ÙˆØ§ØªØ®Ø§Ø° Ø§Ù„Ù‚Ø±Ø§Ø±Ø§Øª Ø¨Ø´Ø£Ù†Ù‡Ø§ âœ¨'
+                      : 'Aucun dossier en attente â€” Toutes les rÃ©ponses ont Ã©tÃ© traitÃ©es âœ¨',
                   style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
                 ),
               ),
@@ -656,8 +749,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               Expanded(
                 child: Text(
                   loc.isArabic
-                      ? 'استفسارات موجهة بانتظار رد الموظف خلال 48 ساعة (${sentInquiries.length})'
-                      : 'Demandes envoyées en attente de réponse sous 48h (${sentInquiries.length})',
+                      ? 'Ø§Ø³ØªÙØ³Ø§Ø±Ø§Øª Ù…ÙˆØ¬Ù‡Ø© Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø±Ø¯ Ø§Ù„Ù…ÙˆØ¸Ù Ø®Ù„Ø§Ù„ 48 Ø³Ø§Ø¹Ø© (${sentInquiries.length})'
+                      : 'Demandes envoyÃ©es en attente de rÃ©ponse sous 48h (${sentInquiries.length})',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 13,
@@ -682,8 +775,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               child: Center(
                 child: Text(
                   loc.isArabic
-                      ? 'لا توجد استفسارات قيد الانتظار حالياً ⏳'
-                      : 'Aucune demande en attente de réponse ⏳',
+                      ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø§Ø³ØªÙØ³Ø§Ø±Ø§Øª Ù‚ÙŠØ¯ Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø± Ø­Ø§Ù„ÙŠØ§Ù‹ â³'
+                      : 'Aucune demande en attente de rÃ©ponse â³',
                   style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
                 ),
               ),
@@ -713,8 +806,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         const SizedBox(width: 8),
                         Text(
                           loc.isArabic
-                              ? 'أرشيف قرارات الانضباط والسوابق (${decidedInquiries.length})'
-                              : 'Historique des décisions disciplinaires (${decidedInquiries.length})',
+                              ? 'Ø£Ø±Ø´ÙŠÙ Ù‚Ø±Ø§Ø±Ø§Øª Ø§Ù„Ø§Ù†Ø¶Ø¨Ø§Ø· ÙˆØ§Ù„Ø³ÙˆØ§Ø¨Ù‚ (${decidedInquiries.length})'
+                              : 'Historique des dÃ©cisions disciplinaires (${decidedInquiries.length})',
                           style: const TextStyle(
                             fontFamily: 'Tajawal',
                             fontSize: 14,
@@ -736,7 +829,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                             )
                           : const Icon(Icons.print, size: 16, color: Colors.black),
                       label: Text(
-                        loc.isArabic ? 'طباعة تقرير القرارات (PDF)' : 'Imprimer Rapport (PDF)',
+                        loc.isArabic ? 'Ø·Ø¨Ø§Ø¹Ø© ØªÙ‚Ø±ÙŠØ± Ø§Ù„Ù‚Ø±Ø§Ø±Ø§Øª (PDF)' : 'Imprimer Rapport (PDF)',
                         style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontSize: 11.5,
@@ -759,7 +852,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   onChanged: (val) => setState(() => _archiveSearchQuery = val),
                   style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: loc.isArabic ? 'بحث بالاسم، الرتبة أو المصلحة...' : 'Recherche par nom, grade ou service...',
+                    hintText: loc.isArabic ? 'Ø¨Ø­Ø« Ø¨Ø§Ù„Ø§Ø³Ù…ØŒ Ø§Ù„Ø±ØªØ¨Ø© Ø£Ùˆ Ø§Ù„Ù…ØµÙ„Ø­Ø©...' : 'Recherche par nom, grade ou service...',
                     hintStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white38, fontSize: 12),
                     prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37), size: 20),
                     suffixIcon: _archiveSearchQuery.isNotEmpty
@@ -793,30 +886,30 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   child: Row(
                     children: [
                       Text(
-                        loc.isArabic ? 'الفترة:' : 'Période :',
+                        loc.isArabic ? 'Ø§Ù„ÙØªØ±Ø©:' : 'PÃ©riode :',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
-                        label: loc.isArabic ? 'الكل 🗂️' : 'Tout 🗂️',
+                        label: loc.isArabic ? 'Ø§Ù„ÙƒÙ„ ðŸ—‚ï¸' : 'Tout ðŸ—‚ï¸',
                         isSelected: _archiveTimeFilter == 'all',
                         onSelected: () => setState(() => _archiveTimeFilter = 'all'),
                       ),
                       const SizedBox(width: 6),
                       _buildFilterChip(
-                        label: loc.isArabic ? 'اليوم 📅' : 'Aujourd\'hui 📅',
+                        label: loc.isArabic ? 'Ø§Ù„ÙŠÙˆÙ… ðŸ“…' : 'Aujourd\'hui ðŸ“…',
                         isSelected: _archiveTimeFilter == 'today',
                         onSelected: () => setState(() => _archiveTimeFilter = 'today'),
                       ),
                       const SizedBox(width: 6),
                       _buildFilterChip(
-                        label: loc.isArabic ? 'هذا الأسبوع 🗓️' : 'Cette semaine 🗓️',
+                        label: loc.isArabic ? 'Ù‡Ø°Ø§ Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ ðŸ—“ï¸' : 'Cette semaine ðŸ—“ï¸',
                         isSelected: _archiveTimeFilter == 'week',
                         onSelected: () => setState(() => _archiveTimeFilter = 'week'),
                       ),
                       const SizedBox(width: 6),
                       _buildFilterChip(
-                        label: loc.isArabic ? 'هذا الشهر 📊' : 'Ce mois 📊',
+                        label: loc.isArabic ? 'Ù‡Ø°Ø§ Ø§Ù„Ø´Ù‡Ø± ðŸ“Š' : 'Ce mois ðŸ“Š',
                         isSelected: _archiveTimeFilter == 'month',
                         onSelected: () => setState(() => _archiveTimeFilter = 'month'),
                       ),
@@ -831,32 +924,32 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   child: Row(
                     children: [
                       Text(
-                        loc.isArabic ? 'القرار:' : 'Décision :',
+                        loc.isArabic ? 'Ø§Ù„Ù‚Ø±Ø§Ø±:' : 'DÃ©cision :',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(width: 8),
                       _buildFilterChip(
-                        label: loc.isArabic ? 'الكل' : 'Toutes',
+                        label: loc.isArabic ? 'Ø§Ù„ÙƒÙ„' : 'Toutes',
                         isSelected: _archiveDecisionFilter == 'all',
                         onSelected: () => setState(() => _archiveDecisionFilter = 'all'),
                       ),
                       const SizedBox(width: 6),
                       _buildFilterChip(
-                        label: loc.isArabic ? '✅ تبرير مقبول' : '✅ Justifié',
+                        label: loc.isArabic ? 'âœ… ØªØ¨Ø±ÙŠØ± Ù…Ù‚Ø¨ÙˆÙ„' : 'âœ… JustifiÃ©',
                         isSelected: _archiveDecisionFilter == 'justified',
                         activeColor: AppTheme.SuccessColor,
                         onSelected: () => setState(() => _archiveDecisionFilter = 'justified'),
                       ),
                       const SizedBox(width: 6),
                       _buildFilterChip(
-                        label: loc.isArabic ? '⚠️ إنذار رسمي' : '⚠️ Avertissement',
+                        label: loc.isArabic ? 'âš ï¸ Ø¥Ù†Ø°Ø§Ø± Ø±Ø³Ù…ÙŠ' : 'âš ï¸ Avertissement',
                         isSelected: _archiveDecisionFilter == 'warning',
                         activeColor: AppTheme.WarningColor,
                         onSelected: () => setState(() => _archiveDecisionFilter = 'warning'),
                       ),
                       const SizedBox(width: 6),
                       _buildFilterChip(
-                        label: loc.isArabic ? '⚖️ خصم نافذ' : '⚖️ Déduction',
+                        label: loc.isArabic ? 'âš–ï¸ Ø®ØµÙ… Ù†Ø§ÙØ°' : 'âš–ï¸ DÃ©duction',
                         isSelected: _archiveDecisionFilter == 'deduction',
                         activeColor: AppTheme.DangerColor,
                         onSelected: () => setState(() => _archiveDecisionFilter = 'deduction'),
@@ -881,8 +974,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               child: Center(
                 child: Text(
                   loc.isArabic
-                      ? 'لا توجد قرارات تطابق خيارات الفلترة المحددة 📜'
-                      : 'Aucun dossier ne correspond aux filtres sélectionnés 📜',
+                      ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù‚Ø±Ø§Ø±Ø§Øª ØªØ·Ø§Ø¨Ù‚ Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„ÙÙ„ØªØ±Ø© Ø§Ù„Ù…Ø­Ø¯Ø¯Ø© ðŸ“œ'
+                      : 'Aucun dossier ne correspond aux filtres sÃ©lectionnÃ©s ðŸ“œ',
                   style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
                 ),
               ),
@@ -896,6 +989,39 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   ),
 );
 }
+
+  // \u2500\u2500 Violation type quick-filter chip (used in _buildAutoFlaggedViolationsSection) \u2500\u2500
+  Widget _buildViolationFilterChip({
+    required String label,
+    required bool isSelected,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.22) : Colors.black26,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? color : Colors.white12,
+            width: isSelected ? 1.4 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? color : Colors.white60,
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildFilterChip({
     required String label,
@@ -937,29 +1063,29 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     final prenomAr = inq['PrenomAr'] ?? inq['prenomar'] ?? inq['Prenom'] ?? inq['prenom'] ?? '';
     final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
         ? '$nomAr $prenomAr'.trim()
-        : (inq['EmployeeName'] ?? inq['employee_name'] ?? (loc.isArabic ? 'عضو فرقة الرقابة والتفتيش' : 'Agent de contrôle')).toString();
+        : (inq['EmployeeName'] ?? inq['employee_name'] ?? (loc.isArabic ? 'Ø¹Ø¶Ùˆ ÙØ±Ù‚Ø© Ø§Ù„Ø±Ù‚Ø§Ø¨Ø© ÙˆØ§Ù„ØªÙØªÙŠØ´' : 'Agent de contrÃ´le')).toString();
     final status = (inq['Status'] ?? inq['status'] ?? 'sent').toString();
-    final service = (inq['Service'] ?? inq['service'] ?? (loc.isArabic ? 'مديرية التجارة لولاية سطيف' : 'Direction du Commerce de Sétif')).toString();
-    final subject = (inq['Subject'] ?? inq['subject'] ?? inq['Details'] ?? inq['details'] ?? (loc.isArabic ? 'استفسار إداري حول الانضباط ومواقيت العمل' : 'Demande d\'explications sur la ponctualité')).toString();
+    final service = (inq['Service'] ?? inq['service'] ?? (loc.isArabic ? 'Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„ØªØ¬Ø§Ø±Ø© Ù„ÙˆÙ„Ø§ÙŠØ© Ø³Ø·ÙŠÙ' : 'Direction du Commerce de SÃ©tif')).toString();
+    final subject = (inq['Subject'] ?? inq['subject'] ?? inq['Details'] ?? inq['details'] ?? (loc.isArabic ? 'Ø§Ø³ØªÙØ³Ø§Ø± Ø¥Ø¯Ø§Ø±ÙŠ Ø­ÙˆÙ„ Ø§Ù„Ø§Ù†Ø¶Ø¨Ø§Ø· ÙˆÙ…ÙˆØ§Ù‚ÙŠØª Ø§Ù„Ø¹Ù…Ù„' : 'Demande d\'explications sur la ponctualitÃ©')).toString();
 
     Color statusColor = AppTheme.WarningColor;
-    String statusText = loc.isArabic ? 'بانتظار رد الموظف' : 'En attente de réponse';
+    String statusText = loc.isArabic ? 'Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø±Ø¯ Ø§Ù„Ù…ÙˆØ¸Ù' : 'En attente de rÃ©ponse';
     if (status == 'answered') {
       statusColor = const Color(0xFFD4AF37);
-      statusText = loc.isArabic ? 'ورد الرد — بانتظار الفصل والقرار' : 'Réponse reçue — En attente d\'arbitrage';
+      statusText = loc.isArabic ? 'ÙˆØ±Ø¯ Ø§Ù„Ø±Ø¯ â€” Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø§Ù„ÙØµÙ„ ÙˆØ§Ù„Ù‚Ø±Ø§Ø±' : 'RÃ©ponse reÃ§ue â€” En attente d\'arbitrage';
     } else if (status == 'justified') {
       statusColor = AppTheme.SuccessColor;
-      statusText = loc.isArabic ? 'تم قبول التبرير وحفظ الملف' : 'Justification acceptée — Dossier classé';
+      statusText = loc.isArabic ? 'ØªÙ… Ù‚Ø¨ÙˆÙ„ Ø§Ù„ØªØ¨Ø±ÙŠØ± ÙˆØ­ÙØ¸ Ø§Ù„Ù…Ù„Ù' : 'Justification acceptÃ©e â€” Dossier classÃ©';
     } else if (status == 'warning') {
       statusColor = Colors.orange;
-      statusText = loc.isArabic ? 'تم توجيه تنبيه إداري' : 'Avertissement administratif notifié';
+      statusText = loc.isArabic ? 'ØªÙ… ØªÙˆØ¬ÙŠÙ‡ ØªÙ†Ø¨ÙŠÙ‡ Ø¥Ø¯Ø§Ø±ÙŠ' : 'Avertissement administratif notifiÃ©';
     } else if (status == 'deduction_ordered') {
       statusColor = AppTheme.DangerColor;
       final days = inq['DeductionDays'] ?? inq['deductiondays'] ?? 1;
-      statusText = loc.isArabic ? 'قرار خصم ($days يوم) محال للتنفيذ' : 'Décision de retenue ($days j) transmise';
+      statusText = loc.isArabic ? 'Ù‚Ø±Ø§Ø± Ø®ØµÙ… ($days ÙŠÙˆÙ…) Ù…Ø­Ø§Ù„ Ù„Ù„ØªÙ†ÙÙŠØ°' : 'DÃ©cision de retenue ($days j) transmise';
     } else if (status == 'executed') {
       statusColor = Colors.green;
-      statusText = loc.isArabic ? 'تم تنفيذ الخصم في الراتب' : 'Retenue exécutée sur salaire';
+      statusText = loc.isArabic ? 'ØªÙ… ØªÙ†ÙÙŠØ° Ø§Ù„Ø®ØµÙ… ÙÙŠ Ø§Ù„Ø±Ø§ØªØ¨' : 'Retenue exÃ©cutÃ©e sur salaire';
     }
 
     return GestureDetector(
@@ -1025,7 +1151,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '$service — $subject',
+                    '$service â€” $subject',
                     style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1089,8 +1215,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
     double selectedDays = 1.0;
     final notesCtrl = TextEditingController(
       text: loc.isArabic
-          ? 'خصم من الراتب لعدم كفاية التبريرات المسجلة بناءً على المقتضيات القانونية'
-          : 'Déduction sur salaire pour justifications insuffisantes conformément à la réglementation',
+          ? 'Ø®ØµÙ… Ù…Ù† Ø§Ù„Ø±Ø§ØªØ¨ Ù„Ø¹Ø¯Ù… ÙƒÙØ§ÙŠØ© Ø§Ù„ØªØ¨Ø±ÙŠØ±Ø§Øª Ø§Ù„Ù…Ø³Ø¬Ù„Ø© Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ù‚ØªØ¶ÙŠØ§Øª Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©'
+          : 'DÃ©duction sur salaire pour justifications insuffisantes conformÃ©ment Ã  la rÃ©glementation',
     );
 
     showDialog(
@@ -1108,7 +1234,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  loc.isArabic ? 'إصدار قرار خصم نهائي — $name' : 'Décision de déduction définitive — $name',
+                  loc.isArabic ? 'Ø¥ØµØ¯Ø§Ø± Ù‚Ø±Ø§Ø± Ø®ØµÙ… Ù†Ù‡Ø§Ø¦ÙŠ â€” $name' : 'DÃ©cision de dÃ©duction dÃ©finitive â€” $name',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontWeight: FontWeight.bold,
@@ -1125,8 +1251,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             children: [
               Text(
                 loc.isArabic
-                    ? 'حدد عدد أيام الخصم الواجب اقتطاعها رسمياً وإحالتها لمكتب المستخدمين لتنفيذها في كشف الراتب:'
-                    : 'Indiquez le nombre de jours à déduire officiellement sur la fiche de paie par le bureau du personnel :',
+                    ? 'Ø­Ø¯Ø¯ Ø¹Ø¯Ø¯ Ø£ÙŠØ§Ù… Ø§Ù„Ø®ØµÙ… Ø§Ù„ÙˆØ§Ø¬Ø¨ Ø§Ù‚ØªØ·Ø§Ø¹Ù‡Ø§ Ø±Ø³Ù…ÙŠØ§Ù‹ ÙˆØ¥Ø­Ø§Ù„ØªÙ‡Ø§ Ù„Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ù„ØªÙ†ÙÙŠØ°Ù‡Ø§ ÙÙŠ ÙƒØ´Ù Ø§Ù„Ø±Ø§ØªØ¨:'
+                    : 'Indiquez le nombre de jours Ã  dÃ©duire officiellement sur la fiche de paie par le bureau du personnel :',
                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
               ),
               const SizedBox(height: 14),
@@ -1134,19 +1260,19 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ChoiceChip(
-                    label: Text(loc.isArabic ? 'نصف يوم (0.5)' : '0.5 jour', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                    label: Text(loc.isArabic ? 'Ù†ØµÙ ÙŠÙˆÙ… (0.5)' : '0.5 jour', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                     selected: selectedDays == 0.5,
                     selectedColor: AppTheme.DangerColor,
                     onSelected: (val) => setDlgState(() => selectedDays = 0.5),
                   ),
                   ChoiceChip(
-                    label: Text(loc.isArabic ? 'يوم كامل (1.0)' : '1.0 jour', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                    label: Text(loc.isArabic ? 'ÙŠÙˆÙ… ÙƒØ§Ù…Ù„ (1.0)' : '1.0 jour', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                     selected: selectedDays == 1.0,
                     selectedColor: AppTheme.DangerColor,
                     onSelected: (val) => setDlgState(() => selectedDays = 1.0),
                   ),
                   ChoiceChip(
-                    label: Text(loc.isArabic ? 'يومان (2.0)' : '2.0 jours', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
+                    label: Text(loc.isArabic ? 'ÙŠÙˆÙ…Ø§Ù† (2.0)' : '2.0 jours', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11)),
                     selected: selectedDays == 2.0,
                     selectedColor: AppTheme.DangerColor,
                     onSelected: (val) => setDlgState(() => selectedDays = 2.0),
@@ -1159,7 +1285,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 maxLines: 2,
                 textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
                 decoration: InputDecoration(
-                  labelText: loc.isArabic ? 'ملاحظات وتوجيهات المدير لمكتب المستخدمين' : 'Instructions du Directeur au bureau du personnel',
+                  labelText: loc.isArabic ? 'Ù…Ù„Ø§Ø­Ø¸Ø§Øª ÙˆØªÙˆØ¬ÙŠÙ‡Ø§Øª Ø§Ù„Ù…Ø¯ÙŠØ± Ù„Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†' : 'Instructions du Directeur au bureau du personnel',
                   labelStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white60),
                   filled: true,
                   fillColor: Colors.black26,
@@ -1171,7 +1297,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dlgCtx),
-              child: Text(loc.isArabic ? 'إلغاء' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
+              child: Text(loc.isArabic ? 'Ø¥Ù„ØºØ§Ø¡' : 'Annuler', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white60)),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -1190,8 +1316,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     SnackBar(
                       content: Text(
                         loc.isArabic
-                            ? '✅ تم إصدار قرار الخصم بمقدار $selectedDays يوم وإحالته لمكتب المستخدمين للتنفيذ الفوري'
-                            : '✅ Décision de déduction de $selectedDays jour(s) transmise au bureau du personnel',
+                            ? 'âœ… ØªÙ… Ø¥ØµØ¯Ø§Ø± Ù‚Ø±Ø§Ø± Ø§Ù„Ø®ØµÙ… Ø¨Ù…Ù‚Ø¯Ø§Ø± $selectedDays ÙŠÙˆÙ… ÙˆØ¥Ø­Ø§Ù„ØªÙ‡ Ù„Ù…ÙƒØªØ¨ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ù„Ù„ØªÙ†ÙÙŠØ° Ø§Ù„ÙÙˆØ±ÙŠ'
+                            : 'âœ… DÃ©cision de dÃ©duction de $selectedDays jour(s) transmise au bureau du personnel',
                       ),
                       backgroundColor: AppTheme.SuccessColor,
                     ),
@@ -1199,13 +1325,13 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   if (mounted) _load();
                 } catch (e) {
                   messenger.showSnackBar(
-                    SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+                    SnackBar(content: Text('Ø®Ø·Ø£: $e'), backgroundColor: AppTheme.DangerColor),
                   );
                 }
               },
               style: ElevatedButton.styleFrom(backgroundColor: AppTheme.DangerColor),
               child: Text(
-                loc.isArabic ? 'تأكيد وإصدار القرار النافذ' : 'Confirmer la décision',
+                loc.isArabic ? 'ØªØ£ÙƒÙŠØ¯ ÙˆØ¥ØµØ¯Ø§Ø± Ø§Ù„Ù‚Ø±Ø§Ø± Ø§Ù„Ù†Ø§ÙØ°' : 'Confirmer la dÃ©cision',
                 style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold),
               ),
             ),
@@ -1231,8 +1357,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         SnackBar(
           content: Text(
             decision == 'justified'
-                ? (loc.isArabic ? '✅ تم قبول تبرير $name وحفظ الملف' : '✅ Justification acceptée pour $name (Classé)')
-                : (loc.isArabic ? '⚠️ تم توجيه تنبيه إداري لـ $name' : '⚠️ Avertissement administratif adressé à $name'),
+                ? (loc.isArabic ? 'âœ… ØªÙ… Ù‚Ø¨ÙˆÙ„ ØªØ¨Ø±ÙŠØ± $name ÙˆØ­ÙØ¸ Ø§Ù„Ù…Ù„Ù' : 'âœ… Justification acceptÃ©e pour $name (ClassÃ©)')
+                : (loc.isArabic ? 'âš ï¸ ØªÙ… ØªÙˆØ¬ÙŠÙ‡ ØªÙ†Ø¨ÙŠÙ‡ Ø¥Ø¯Ø§Ø±ÙŠ Ù„Ù€ $name' : 'âš ï¸ Avertissement administratif adressÃ© Ã  $name'),
           ),
           backgroundColor: decision == 'justified' ? AppTheme.SuccessColor : Colors.orange,
         ),
@@ -1240,7 +1366,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       if (mounted) _load();
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('خطأ: $e'), backgroundColor: AppTheme.DangerColor),
+        SnackBar(content: Text('Ø®Ø·Ø£: $e'), backgroundColor: AppTheme.DangerColor),
       );
     }
   }
@@ -1254,7 +1380,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
       final name = (d['name'] ?? '').toString();
       final empId = (d['employeeId'] as num?)?.toInt() ?? 0;
       if (empId <= 0) continue;
-      if (name.contains('المدير الولائي')) continue;
+      if (name.contains('Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ')) continue;
       if (_dismissedEmployeeIds.contains(empId)) continue;
 
       final hasActiveInquiry = _inquiries.any((inq) =>
@@ -1273,23 +1399,23 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         flaggedList.add({
           'employeeId': empId,
           'name': name,
-          'service': d['service'] ?? 'المصالح الرقابية',
-          'grade': d['grade'] ?? 'مفتش',
+          'service': d['service'] ?? 'Ø§Ù„Ù…ØµØ§Ù„Ø­ Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠØ©',
+          'grade': d['grade'] ?? 'Ù…ÙØªØ´',
           'violationType': 'late',
           'lateMinutes': lateMinutes,
           'checkInTime': lastCheckInTime,
-          'summary': 'تأخر صباحي: $lateMinutes دقيقة (سجل الدخول: $lastCheckInTime)',
+          'summary': 'ØªØ£Ø®Ø± ØµØ¨Ø§Ø­ÙŠ: $lateMinutes Ø¯Ù‚ÙŠÙ‚Ø© (Ø³Ø¬Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„: $lastCheckInTime)',
         });
       } else if (attendedDays == 0) {
         flaggedList.add({
           'employeeId': empId,
           'name': name,
-          'service': d['service'] ?? 'المصالح الرقابية',
-          'grade': d['grade'] ?? 'مفتش',
+          'service': d['service'] ?? 'Ø§Ù„Ù…ØµØ§Ù„Ø­ Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠØ©',
+          'grade': d['grade'] ?? 'Ù…ÙØªØ´',
           'violationType': 'absent',
           'lateMinutes': 0,
           'checkInTime': '',
-          'summary': 'غياب كلي عن تسجيل البصمة الصباحية لليوم',
+          'summary': 'ØºÙŠØ§Ø¨ ÙƒÙ„ÙŠ Ø¹Ù† ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¨ØµÙ…Ø© Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© Ù„Ù„ÙŠÙˆÙ…',
         });
       }
     }
@@ -1310,8 +1436,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             Expanded(
               child: Text(
                 loc.isArabic
-                    ? '✨ الرصد الآلي: لا توجد أي مخالفات حضور مرصودة اليوم — جميع الموظفين في وضعية نظامية أو تم البت فيهم.'
-                    : '✨ Aucune infraction détectée aujourd\'hui — Tous les agents sont en règle.',
+                    ? 'âœ¨ Ø§Ù„Ø±ØµØ¯ Ø§Ù„Ø¢Ù„ÙŠ: Ù„Ø§ ØªÙˆØ¬Ø¯ Ø£ÙŠ Ù…Ø®Ø§Ù„ÙØ§Øª Ø­Ø¶ÙˆØ± Ù…Ø±ØµÙˆØ¯Ø© Ø§Ù„ÙŠÙˆÙ… â€” Ø¬Ù…ÙŠØ¹ Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ† ÙÙŠ ÙˆØ¶Ø¹ÙŠØ© Ù†Ø¸Ø§Ù…ÙŠØ© Ø£Ùˆ ØªÙ… Ø§Ù„Ø¨Øª ÙÙŠÙ‡Ù….'
+                    : 'âœ¨ Aucune infraction dÃ©tectÃ©e aujourd\'hui â€” Tous les agents sont en rÃ¨gle.',
                 style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12.5, color: Colors.white),
               ),
             ),
@@ -1344,61 +1470,99 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               border: Border(bottom: BorderSide(color: const Color(0xFFD4AF37).withValues(alpha: 0.3))),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.policy_outlined, color: Color(0xFFD4AF37), size: 18),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 4,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.policy_outlined, color: Color(0xFFD4AF37), size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                loc.isArabic
+                                    ? 'ðŸš¨ Ø§Ù„Ø±ØµØ¯ Ø§Ù„Ø¢Ù„ÙŠ Ù„Ù…Ø®Ø§Ù„ÙÙŠ Ø§Ù„Ø­Ø¶ÙˆØ± â€” Ù…Ù‚ØªØ±Ø­Ùˆ Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø±'
+                                    : 'ðŸš¨ Infractions dÃ©tectÃ©es automatiquement â€” Demandes suggÃ©rÃ©es',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: Color(0xFFD4AF37),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade900,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '${flaggedList.length}',
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
                           Text(
                             loc.isArabic
-                                ? '🚨 الرصد الآلي لمخالفي الحضور — مقترحو الاستفسار'
-                                : '🚨 Infractions détectées automatiquement — Demandes suggérées',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: Color(0xFFD4AF37),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade900,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              '${flaggedList.length}',
-                              style: const TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
+                                ? 'ÙØ±Ø² Ø°ÙƒÙŠ Ø¢Ù„ÙŠ Ù„Ù„Ù…Ø®Ø§Ù„ÙÙŠÙ† Ø§Ù„ÙŠÙˆÙ… Ù„ØªÙˆÙÙŠØ± ÙˆÙ‚Øª Ø§Ù„Ù…Ø¯ÙŠØ±Ø› ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„ØªØºØ§Ø¶ÙŠ Ø£Ùˆ ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø± Ø¨Ù†Ù‚Ø±Ø© ÙˆØ§Ø­Ø¯Ø©:'
+                                : 'Filtrage automatique des contrevenants. Traitez chaque cas (Ordre ou TolÃ©rance) :',
+                            style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        loc.isArabic
-                            ? 'فرز ذكي آلي للمخالفين اليوم لتوفير وقت المدير؛ يمكنك التغاضي أو توجيه الاستفسار بنقرة واحدة:'
-                            : 'Filtrage automatique des contrevenants. Traitez chaque cas (Ordre ou Tolérance) :',
-                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                    ),
+                  ],
+                ),
+                // â”€â”€ Quick filter chips: All / Absent / Late â”€â”€
+                const SizedBox(height: 10),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildViolationFilterChip(
+                        label: loc.isArabic ? 'Ø§Ù„ÙƒÙ„ (${flaggedList.length})' : 'Tous (${flaggedList.length})',
+                        isSelected: _violationFilter == 'all',
+                        color: const Color(0xFFD4AF37),
+                        onTap: () => setState(() => _violationFilter = 'all'),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildViolationFilterChip(
+                        label: loc.isArabic
+                            ? 'ðŸ”´ ØºÙŠØ§Ø¨ (${flaggedList.where((f) => f['violationType'] == 'absent').length})'
+                            : 'ðŸ”´ Absences (${flaggedList.where((f) => f['violationType'] == 'absent').length})',
+                        isSelected: _violationFilter == 'absent',
+                        color: Colors.redAccent,
+                        onTap: () => setState(() => _violationFilter = 'absent'),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildViolationFilterChip(
+                        label: loc.isArabic
+                            ? 'ðŸŸ  ØªØ£Ø®Ø± (${flaggedList.where((f) => f['violationType'] == 'late').length})'
+                            : 'ðŸŸ  Retards (${flaggedList.where((f) => f['violationType'] == 'late').length})',
+                        isSelected: _violationFilter == 'late',
+                        color: Colors.orangeAccent,
+                        onTap: () => setState(() => _violationFilter = 'late'),
                       ),
                     ],
                   ),
@@ -1406,13 +1570,29 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               ],
             ),
           ),
-          ListView.separated(
+          Builder(builder: (context) {
+            // Apply violation type filter
+            final displayList = _violationFilter == 'all'
+                ? flaggedList
+                : flaggedList.where((f) => f['violationType'] == _violationFilter).toList();
+            if (displayList.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(20),
+                child: Center(
+                  child: Text(
+                    loc.isArabic ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø®Ø§Ù„ÙØ§Øª Ù…Ù† Ù‡Ø°Ø§ Ø§Ù„Ù†ÙˆØ¹ âœ…' : 'Aucune infraction de ce type âœ…',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white54),
+                  ),
+                ),
+              );
+            }
+            return ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: flaggedList.length,
+            itemCount: displayList.length,
             separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
             itemBuilder: (context, idx) {
-              final item = flaggedList[idx];
+              final item = displayList[idx];
               final isLate = item['violationType'] == 'late';
               final String name = (item['name'] ?? '').toString();
               final String service = (item['service'] ?? '').toString();
@@ -1452,9 +1632,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     child: Text(
                       isLate
                           ? (checkInTime.isNotEmpty
-                              ? 'تأخر: $lateMinutes دقيقة (دخول: $checkInTime)'
-                              : 'تأخر صباحي: $lateMinutes دقيقة')
-                          : 'غياب كلي اليوم (لم يسجل)',
+                              ? 'ØªØ£Ø®Ø±: $lateMinutes Ø¯Ù‚ÙŠÙ‚Ø© (Ø¯Ø®ÙˆÙ„: $checkInTime)'
+                              : 'ØªØ£Ø®Ø± ØµØ¨Ø§Ø­ÙŠ: $lateMinutes Ø¯Ù‚ÙŠÙ‚Ø©')
+                          : 'ØºÙŠØ§Ø¨ ÙƒÙ„ÙŠ Ø§Ù„ÙŠÙˆÙ… (Ù„Ù… ÙŠØ³Ø¬Ù„)',
                       style: TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 10,
@@ -1473,8 +1653,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         SnackBar(
                           content: Text(
                             loc.isArabic
-                                ? '🤝 تم حفظ ملف $name وقبول التبرير بموجب قرار إداري من السيد المدير الولائي'
-                                : '🤝 Dossier de $name classé et justification acceptée par décision administrative',
+                                ? 'ðŸ¤ ØªÙ… Ø­ÙØ¸ Ù…Ù„Ù $name ÙˆÙ‚Ø¨ÙˆÙ„ Ø§Ù„ØªØ¨Ø±ÙŠØ± Ø¨Ù…ÙˆØ¬Ø¨ Ù‚Ø±Ø§Ø± Ø¥Ø¯Ø§Ø±ÙŠ Ù…Ù† Ø§Ù„Ø³ÙŠØ¯ Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ'
+                                : 'ðŸ¤ Dossier de $name classÃ© et justification acceptÃ©e par dÃ©cision administrative',
                             style: const TextStyle(fontFamily: 'Tajawal'),
                           ),
                           backgroundColor: const Color(0xFF475569),
@@ -1484,7 +1664,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     },
                     icon: const Icon(Icons.thumb_up_alt_outlined, size: 14, color: Colors.white70),
                     label: Text(
-                      loc.isArabic ? 'تغاضي / عذر' : 'Tolérer',
+                      loc.isArabic ? 'ØªØºØ§Ø¶ÙŠ / Ø¹Ø°Ø±' : 'TolÃ©rer',
                       style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 11,
@@ -1508,11 +1688,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         'Grade': grade,
                       };
                       final subject = isLate
-                          ? 'استفسار كتابي رسمي حول التأخر الصباحي عن العمل'
-                          : 'استفسار كتابي رسمي حول الغياب عن العمل وعدم تسجيل البصمة';
+                          ? 'Ø§Ø³ØªÙØ³Ø§Ø± ÙƒØªØ§Ø¨ÙŠ Ø±Ø³Ù…ÙŠ Ø­ÙˆÙ„ Ø§Ù„ØªØ£Ø®Ø± Ø§Ù„ØµØ¨Ø§Ø­ÙŠ Ø¹Ù† Ø§Ù„Ø¹Ù…Ù„'
+                          : 'Ø§Ø³ØªÙØ³Ø§Ø± ÙƒØªØ§Ø¨ÙŠ Ø±Ø³Ù…ÙŠ Ø­ÙˆÙ„ Ø§Ù„ØºÙŠØ§Ø¨ Ø¹Ù† Ø§Ù„Ø¹Ù…Ù„ ÙˆØ¹Ø¯Ù… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¨ØµÙ…Ø©';
                       final details = isLate
-                          ? 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تم تسجيل التحاقكم في تمام الساعة ($checkInTime) متجاوزين فترة التسامح الصباحية المعتمدة بمقدار ($lateMinutes دقيقة). يُطلب منكم تقديم توضيحاتكم وأسباب هذا التأخر خلال المهلة القانونية (48 ساعة).'
-                          : 'بناءً على معطيات الرصد الآلي للدوام بتاريخ اليوم، تبيّن عدم تسجيلكم للبصمة الصباحية أو التحاقكم بالدوام الرسمي حتى الآن. يُطلب منكم تقديم توضيحاتكم الإدارية ومبرراتكم الرسمية خلال مهلة 48 ساعة القانونية.';
+                          ? 'Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ø±ØµØ¯ Ø§Ù„Ø¢Ù„ÙŠ Ù„Ù„Ø¯ÙˆØ§Ù… Ø¨ØªØ§Ø±ÙŠØ® Ø§Ù„ÙŠÙˆÙ…ØŒ ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„ØªØ­Ø§Ù‚ÙƒÙ… ÙÙŠ ØªÙ…Ø§Ù… Ø§Ù„Ø³Ø§Ø¹Ø© ($checkInTime) Ù…ØªØ¬Ø§ÙˆØ²ÙŠÙ† ÙØªØ±Ø© Ø§Ù„ØªØ³Ø§Ù…Ø­ Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© Ø§Ù„Ù…Ø¹ØªÙ…Ø¯Ø© Ø¨Ù…Ù‚Ø¯Ø§Ø± ($lateMinutes Ø¯Ù‚ÙŠÙ‚Ø©). ÙŠÙØ·Ù„Ø¨ Ù…Ù†ÙƒÙ… ØªÙ‚Ø¯ÙŠÙ… ØªÙˆØ¶ÙŠØ­Ø§ØªÙƒÙ… ÙˆØ£Ø³Ø¨Ø§Ø¨ Ù‡Ø°Ø§ Ø§Ù„ØªØ£Ø®Ø± Ø®Ù„Ø§Ù„ Ø§Ù„Ù…Ù‡Ù„Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ© (48 Ø³Ø§Ø¹Ø©).'
+                          : 'Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ù…Ø¹Ø·ÙŠØ§Øª Ø§Ù„Ø±ØµØ¯ Ø§Ù„Ø¢Ù„ÙŠ Ù„Ù„Ø¯ÙˆØ§Ù… Ø¨ØªØ§Ø±ÙŠØ® Ø§Ù„ÙŠÙˆÙ…ØŒ ØªØ¨ÙŠÙ‘Ù† Ø¹Ø¯Ù… ØªØ³Ø¬ÙŠÙ„ÙƒÙ… Ù„Ù„Ø¨ØµÙ…Ø© Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© Ø£Ùˆ Ø§Ù„ØªØ­Ø§Ù‚ÙƒÙ… Ø¨Ø§Ù„Ø¯ÙˆØ§Ù… Ø§Ù„Ø±Ø³Ù…ÙŠ Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†. ÙŠÙØ·Ù„Ø¨ Ù…Ù†ÙƒÙ… ØªÙ‚Ø¯ÙŠÙ… ØªÙˆØ¶ÙŠØ­Ø§ØªÙƒÙ… Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠØ© ÙˆÙ…Ø¨Ø±Ø±Ø§ØªÙƒÙ… Ø§Ù„Ø±Ø³Ù…ÙŠØ© Ø®Ù„Ø§Ù„ Ù…Ù‡Ù„Ø© 48 Ø³Ø§Ø¹Ø© Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠØ©.';
 
                       _showDirectorOrderModal(
                         empObj,
@@ -1524,7 +1704,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     },
                     icon: const Icon(Icons.gavel, size: 14, color: Colors.black),
                     label: Text(
-                      loc.isArabic ? 'توجيه استفسار' : 'Demande d\'explications',
+                      loc.isArabic ? 'ØªÙˆØ¬ÙŠÙ‡ Ø§Ø³ØªÙØ³Ø§Ø±' : 'Demande d\'explications',
                       style: const TextStyle(
                         fontFamily: 'Tajawal',
                         fontSize: 11,
@@ -1573,7 +1753,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                                     ),
                                     const SizedBox(height: 3),
                                     Text(
-                                      '$grade • $service',
+                                      '$grade â€¢ $service',
                                       style: const TextStyle(
                                         fontFamily: 'Tajawal',
                                         fontSize: 11,
@@ -1630,7 +1810,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                '$grade • $service',
+                                '$grade â€¢ $service',
                                 style: const TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontSize: 11,
@@ -1650,7 +1830,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 },
               );
             },
-          ),
+          );
+          }),
         ],
       ),
     );
@@ -1690,7 +1871,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     children: [
                       Expanded(
                         child: Text(
-                          loc.isArabic ? 'اختر موظفاً لإصدار أمر استفسار بشأنه' : 'Sélectionner un agent pour ordonner une demande',
+                          loc.isArabic ? 'Ø§Ø®ØªØ± Ù…ÙˆØ¸ÙØ§Ù‹ Ù„Ø¥ØµØ¯Ø§Ø± Ø£Ù…Ø± Ø§Ø³ØªÙØ³Ø§Ø± Ø¨Ø´Ø£Ù†Ù‡' : 'SÃ©lectionner un agent pour ordonner une demande',
                           style: const TextStyle(fontFamily: 'Tajawal', fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                         ),
                       ),
@@ -1707,7 +1888,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                     textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
                     onChanged: (val) => setSheetState(() => searchQuery = val),
                     decoration: InputDecoration(
-                      hintText: loc.isArabic ? 'ابحث عن مفتش بالاسم أو المصلحة...' : 'Rechercher un agent par nom ou service...',
+                      hintText: loc.isArabic ? 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ù…ÙØªØ´ Ø¨Ø§Ù„Ø§Ø³Ù… Ø£Ùˆ Ø§Ù„Ù…ØµÙ„Ø­Ø©...' : 'Rechercher un agent par nom ou service...',
                       hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white38),
                       prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37)),
                       filled: true,
@@ -1813,22 +1994,22 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
     final now = DateTime.now();
     final timeStr = DateFormat('HH:mm').format(dt);
     if (DateUtils.isSameDay(dt, now)) {
-      return loc.isArabic ? 'اليوم في تمام الساعة $timeStr' : 'Aujourd\'hui à $timeStr';
+      return loc.isArabic ? 'Ø§Ù„ÙŠÙˆÙ… ÙÙŠ ØªÙ…Ø§Ù… Ø§Ù„Ø³Ø§Ø¹Ø© $timeStr' : 'Aujourd\'hui Ã  $timeStr';
     } else if (DateUtils.isSameDay(dt, now.subtract(const Duration(days: 1)))) {
-      return loc.isArabic ? 'أمس في تمام الساعة $timeStr' : 'Hier à $timeStr';
+      return loc.isArabic ? 'Ø£Ù…Ø³ ÙÙŠ ØªÙ…Ø§Ù… Ø§Ù„Ø³Ø§Ø¹Ø© $timeStr' : 'Hier Ã  $timeStr';
     }
     final dateStr = DateFormat('yyyy/MM/dd').format(dt);
-    return loc.isArabic ? '$dateStr — الساعة $timeStr' : '$dateStr à $timeStr';
+    return loc.isArabic ? '$dateStr â€” Ø§Ù„Ø³Ø§Ø¹Ø© $timeStr' : '$dateStr Ã  $timeStr';
   }
 
   String _formatIncidentDate(dynamic raw, AppLocalizations loc) {
-    if (raw == null) return loc.isArabic ? 'اليوم' : 'Aujourd\'hui';
+    if (raw == null) return loc.isArabic ? 'Ø§Ù„ÙŠÙˆÙ…' : 'Aujourd\'hui';
     final dt = (raw is DateTime) ? raw.toLocal() : DateTime.tryParse(raw.toString())?.toLocal();
     if (dt == null) return raw.toString();
 
     final now = DateTime.now();
     if (DateUtils.isSameDay(dt, now)) {
-      return loc.isArabic ? 'اليوم (${DateFormat('yyyy/MM/dd').format(now)})' : 'Aujourd\'hui (${DateFormat('yyyy/MM/dd').format(now)})';
+      return loc.isArabic ? 'Ø§Ù„ÙŠÙˆÙ… (${DateFormat('yyyy/MM/dd').format(now)})' : 'Aujourd\'hui (${DateFormat('yyyy/MM/dd').format(now)})';
     }
     return DateFormat('yyyy/MM/dd').format(dt);
   }
@@ -1840,8 +2021,8 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
     final prenomAr = _inq['PrenomAr'] ?? _inq['prenomar'] ?? _inq['Prenom'] ?? _inq['prenom'] ?? '';
     final name = (nomAr.toString().trim().isNotEmpty || prenomAr.toString().trim().isNotEmpty)
         ? '$nomAr $prenomAr'.trim()
-        : (_inq['EmployeeName'] ?? _inq['employee_name'] ?? (loc.isArabic ? 'عضو فرقة الرقابة والتفتيش' : 'Agent de contrôle')).toString();
-    final service = (_inq['Service'] ?? _inq['service'] ?? (loc.isArabic ? 'مديرية التجارة سطيف' : 'Direction du Commerce Sétif')).toString();
+        : (_inq['EmployeeName'] ?? _inq['employee_name'] ?? (loc.isArabic ? 'Ø¹Ø¶Ùˆ ÙØ±Ù‚Ø© Ø§Ù„Ø±Ù‚Ø§Ø¨Ø© ÙˆØ§Ù„ØªÙØªÙŠØ´' : 'Agent de contrÃ´le')).toString();
+    final service = (_inq['Service'] ?? _inq['service'] ?? (loc.isArabic ? 'Ù…Ø¯ÙŠØ±ÙŠØ© Ø§Ù„ØªØ¬Ø§Ø±Ø© Ø³Ø·ÙŠÙ' : 'Direction du Commerce SÃ©tif')).toString();
     final status = (_inq['Status'] ?? _inq['status'] ?? 'sent').toString();
     final rawDate = (_inq['IncidentDate'] ?? _inq['incidentdate'] ?? _inq['Date'] ?? _inq['date'] ?? _inq['CreatedAt'] ?? '').toString();
     final incidentDateFormatted = _formatIncidentDate(rawDate, loc);
@@ -1852,7 +2033,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
     final inqType = (_inq['Type'] ?? _inq['type'] ?? '').toString();
     final detailsText = (_inq['Details'] ?? _inq['details'] ?? '').toString();
     if (lateMins == 0) {
-      final match = RegExp(r'\((\d+)\s*دقيقة\)').firstMatch(detailsText);
+      final match = RegExp(r'\((\d+)\s*Ø¯Ù‚ÙŠÙ‚Ø©\)').firstMatch(detailsText);
       if (match != null) {
         lateMins = int.tryParse(match.group(1) ?? '0') ?? 0;
       }
@@ -1909,7 +2090,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                       Row(
                         children: [
                           Text(
-                            loc.isArabic ? 'ملف الاستفسار وإصدار القرار الإداري' : 'Dossier d\'explications & Décision Administrative',
+                            loc.isArabic ? 'Ù…Ù„Ù Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø± ÙˆØ¥ØµØ¯Ø§Ø± Ø§Ù„Ù‚Ø±Ø§Ø± Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠ' : 'Dossier d\'explications & DÃ©cision Administrative',
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 15,
@@ -1939,7 +2120,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  loc.isArabic ? 'مباشر' : 'Live',
+                                  loc.isArabic ? 'Ù…Ø¨Ø§Ø´Ø±' : 'Live',
                                   style: const TextStyle(
                                     fontFamily: 'Tajawal',
                                     fontSize: 9.5,
@@ -1955,8 +2136,8 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                       const SizedBox(height: 2),
                       Text(
                         loc.isArabic
-                            ? 'المدير الولائي للتجارة — الآمر بالصرف الوحيد ومالك السلطة التقديرية'
-                            : 'Directeur de Wilaya — Ordonnateur et Pouvoir d\'Appréciation',
+                            ? 'Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ Ù„Ù„ØªØ¬Ø§Ø±Ø© â€” Ø§Ù„Ø¢Ù…Ø± Ø¨Ø§Ù„ØµØ±Ù Ø§Ù„ÙˆØ­ÙŠØ¯ ÙˆÙ…Ø§Ù„Ùƒ Ø§Ù„Ø³Ù„Ø·Ø© Ø§Ù„ØªÙ‚Ø¯ÙŠØ±ÙŠØ©'
+                            : 'Directeur de Wilaya â€” Ordonnateur et Pouvoir d\'ApprÃ©ciation',
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
                       ),
                     ],
@@ -2040,7 +2221,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                                       const Icon(Icons.calendar_today, size: 11, color: Color(0xFFD4AF37)),
                                       const SizedBox(width: 4),
                                       Text(
-                                        'تاريخ الواقعة: $incidentDateFormatted',
+                                        'ØªØ§Ø±ÙŠØ® Ø§Ù„ÙˆØ§Ù‚Ø¹Ø©: $incidentDateFormatted',
                                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Color(0xFFD4AF37), fontWeight: FontWeight.bold),
                                       ),
                                     ],
@@ -2060,7 +2241,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                                         const Icon(Icons.timer, size: 11, color: Color(0xFFF59E0B)),
                                         const SizedBox(width: 4),
                                         Text(
-                                          'تأخر: ${lateMins > 0 ? "$lateMins دقيقة" : "تأخر صباحي"}',
+                                          'ØªØ£Ø®Ø±: ${lateMins > 0 ? "$lateMins Ø¯Ù‚ÙŠÙ‚Ø©" : "ØªØ£Ø®Ø± ØµØ¨Ø§Ø­ÙŠ"}',
                                           style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10.5, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold),
                                         ),
                                       ],
@@ -2113,8 +2294,8 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                           Expanded(
                             child: Text(
                               hasReply
-                                  ? (loc.isArabic ? 'رد وتبريرات الموظف الرسمية الموثقة:' : 'Réponse et justifications écrites :')
-                                  : (loc.isArabic ? 'الموظف لم يرسل رده بعد (ضمن مهلة 48 ساعة)' : 'En attente de réponse (délai légal de 48h)'),
+                                  ? (loc.isArabic ? 'Ø±Ø¯ ÙˆØªØ¨Ø±ÙŠØ±Ø§Øª Ø§Ù„Ù…ÙˆØ¸Ù Ø§Ù„Ø±Ø³Ù…ÙŠØ© Ø§Ù„Ù…ÙˆØ«Ù‚Ø©:' : 'RÃ©ponse et justifications Ã©crites :')
+                                  : (loc.isArabic ? 'Ø§Ù„Ù…ÙˆØ¸Ù Ù„Ù… ÙŠØ±Ø³Ù„ Ø±Ø¯Ù‡ Ø¨Ø¹Ø¯ (Ø¶Ù…Ù† Ù…Ù‡Ù„Ø© 48 Ø³Ø§Ø¹Ø©)' : 'En attente de rÃ©ponse (dÃ©lai lÃ©gal de 48h)'),
                               style: TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontWeight: FontWeight.bold,
@@ -2128,9 +2309,9 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                       const SizedBox(height: 10),
                       Text(
                         hasReply
-                            ? '« $reply »'
+                            ? 'Â« $reply Â»'
                             : (loc.isArabic
-                                ? 'بانتظار إدخال الموظف لمبرراته عبر التطبيق أو تقديم وثيقة رسمية.'
+                                ? 'Ø¨Ø§Ù†ØªØ¸Ø§Ø± Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ù…ÙˆØ¸Ù Ù„Ù…Ø¨Ø±Ø±Ø§ØªÙ‡ Ø¹Ø¨Ø± Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ Ø£Ùˆ ØªÙ‚Ø¯ÙŠÙ… ÙˆØ«ÙŠÙ‚Ø© Ø±Ø³Ù…ÙŠØ©.'
                                 : 'En attente des explications de l\'agent via l\'application ou document officiel.'),
                         style: TextStyle(
                           fontFamily: 'Tajawal',
@@ -2148,8 +2329,8 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                             const SizedBox(width: 6),
                             Text(
                               loc.isArabic
-                                  ? 'تاريخ التسجيل: ${_formatDateTime(_inq['ReplyDate'] ?? _inq['ReplyAt'], loc)}'
-                                  : 'Enregistré : ${_formatDateTime(_inq['ReplyDate'] ?? _inq['ReplyAt'], loc)}',
+                                  ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„ØªØ³Ø¬ÙŠÙ„: ${_formatDateTime(_inq['ReplyDate'] ?? _inq['ReplyAt'], loc)}'
+                                  : 'EnregistrÃ© : ${_formatDateTime(_inq['ReplyDate'] ?? _inq['ReplyAt'], loc)}',
                               style: const TextStyle(
                                 fontFamily: 'Tajawal',
                                 fontSize: 11,
@@ -2168,7 +2349,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
 
                 // 3. Digital Evidence Section
                 Text(
-                  loc.isArabic ? 'أدلة وقرائن الإثبات الرقمية (GPS & الحضور):' : 'Preuves et constats numériques (GPS & Pointage) :',
+                  loc.isArabic ? 'Ø£Ø¯Ù„Ø© ÙˆÙ‚Ø±Ø§Ø¦Ù† Ø§Ù„Ø¥Ø«Ø¨Ø§Øª Ø§Ù„Ø±Ù‚Ù…ÙŠØ© (GPS & Ø§Ù„Ø­Ø¶ÙˆØ±):' : 'Preuves et constats numÃ©riques (GPS & Pointage) :',
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 13,
@@ -2182,18 +2363,18 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                 _evidenceCard(
                   icon: Icons.schedule_outlined,
                   title: loc.isArabic
-                      ? '1. موعد الالتحاق وفترة التسامح (${widget.morningGraceTime} ص)'
-                      : '1. Heure d\'arrivée et tolérance (${widget.morningGraceTime})',
+                      ? '1. Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø§Ù„ØªØ­Ø§Ù‚ ÙˆÙØªØ±Ø© Ø§Ù„ØªØ³Ø§Ù…Ø­ (${widget.morningGraceTime} Øµ)'
+                      : '1. Heure d\'arrivÃ©e et tolÃ©rance (${widget.morningGraceTime})',
                   desc: (hasLateMins || isLateType)
                       ? (loc.isArabic
-                          ? 'تم التحاق الموظف بعد انقضاء فترة التسامح الصباحية المقررة (${widget.morningGraceTime} ص). البصمة موثقة بالـ GPS في المقر.'
-                          : 'Arrivée enregistrée au-delà de la tolérance matinale (${widget.morningGraceTime}). Pointage GPS validé au siège.')
+                          ? 'ØªÙ… Ø§Ù„ØªØ­Ø§Ù‚ Ø§Ù„Ù…ÙˆØ¸Ù Ø¨Ø¹Ø¯ Ø§Ù†Ù‚Ø¶Ø§Ø¡ ÙØªØ±Ø© Ø§Ù„ØªØ³Ø§Ù…Ø­ Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© Ø§Ù„Ù…Ù‚Ø±Ø±Ø© (${widget.morningGraceTime} Øµ). Ø§Ù„Ø¨ØµÙ…Ø© Ù…ÙˆØ«Ù‚Ø© Ø¨Ø§Ù„Ù€ GPS ÙÙŠ Ø§Ù„Ù…Ù‚Ø±.'
+                          : 'ArrivÃ©e enregistrÃ©e au-delÃ  de la tolÃ©rance matinale (${widget.morningGraceTime}). Pointage GPS validÃ© au siÃ¨ge.')
                       : (loc.isArabic
-                          ? 'عدم تسجيل أي حركة حضور أو بصمة داخل النطاق الجغرافي للمقر حتى موعد الاستفسار.'
-                          : 'Aucun pointage dans le périmètre géographique requis.'),
+                          ? 'Ø¹Ø¯Ù… ØªØ³Ø¬ÙŠÙ„ Ø£ÙŠ Ø­Ø±ÙƒØ© Ø­Ø¶ÙˆØ± Ø£Ùˆ Ø¨ØµÙ…Ø© Ø¯Ø§Ø®Ù„ Ø§Ù„Ù†Ø·Ø§Ù‚ Ø§Ù„Ø¬ØºØ±Ø§ÙÙŠ Ù„Ù„Ù…Ù‚Ø± Ø­ØªÙ‰ Ù…ÙˆØ¹Ø¯ Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø±.'
+                          : 'Aucun pointage dans le pÃ©rimÃ¨tre gÃ©ographique requis.'),
                   status: (hasLateMins || isLateType)
-                      ? (loc.isArabic ? '${lateMins > 0 ? "$lateMins دقيقة تأخر" : "تأخر صباحي"} ⚠️' : '${lateMins > 0 ? "$lateMins min" : "En retard"} ⚠️')
-                      : (loc.isArabic ? 'غياب غير مسجل ❌' : 'Non pointé ❌'),
+                      ? (loc.isArabic ? '${lateMins > 0 ? "$lateMins Ø¯Ù‚ÙŠÙ‚Ø© ØªØ£Ø®Ø±" : "ØªØ£Ø®Ø± ØµØ¨Ø§Ø­ÙŠ"} âš ï¸' : '${lateMins > 0 ? "$lateMins min" : "En retard"} âš ï¸')
+                      : (loc.isArabic ? 'ØºÙŠØ§Ø¨ ØºÙŠØ± Ù…Ø³Ø¬Ù„ âŒ' : 'Non pointÃ© âŒ'),
                   statusColor: (hasLateMins || isLateType) ? const Color(0xFFF59E0B) : const Color(0xFFEF4444),
                 ),
                 const SizedBox(height: 8),
@@ -2201,17 +2382,17 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                 // Card 2: Field Operations & Yield
                 _evidenceCard(
                   icon: isLateType ? Icons.domain_outlined : Icons.storefront_outlined,
-                  title: loc.isArabic ? '2. الحالة الميدانية والمردودية الرقابية' : '2. Activité sur le terrain',
+                  title: loc.isArabic ? '2. Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠØ© ÙˆØ§Ù„Ù…Ø±Ø¯ÙˆØ¯ÙŠØ© Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠØ©' : '2. ActivitÃ© sur le terrain',
                   desc: isLateType
                       ? (loc.isArabic
-                          ? 'الاستفسار يخص الانضباط الصباحي. الموظف متواجد بالمقر تحضيراً لمهام التفتيش الميداني.'
-                          : 'Concerne la ponctualité matinale. Agent présent au siège avant les sorties de terrain.')
+                          ? 'Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø± ÙŠØ®Øµ Ø§Ù„Ø§Ù†Ø¶Ø¨Ø§Ø· Ø§Ù„ØµØ¨Ø§Ø­ÙŠ. Ø§Ù„Ù…ÙˆØ¸Ù Ù…ØªÙˆØ§Ø¬Ø¯ Ø¨Ø§Ù„Ù…Ù‚Ø± ØªØ­Ø¶ÙŠØ±Ø§Ù‹ Ù„Ù…Ù‡Ø§Ù… Ø§Ù„ØªÙØªÙŠØ´ Ø§Ù„Ù…ÙŠØ¯Ø§Ù†ÙŠ.'
+                          : 'Concerne la ponctualitÃ© matinale. Agent prÃ©sent au siÃ¨ge avant les sorties de terrain.')
                       : (loc.isArabic
-                          ? 'سجل الزيارات والمعاينات التجارية والمحاضر الرقابية في هذا التاريخ.'
-                          : 'Registre des visites commerciales et PV établis à cette date.'),
+                          ? 'Ø³Ø¬Ù„ Ø§Ù„Ø²ÙŠØ§Ø±Ø§Øª ÙˆØ§Ù„Ù…Ø¹Ø§ÙŠÙ†Ø§Øª Ø§Ù„ØªØ¬Ø§Ø±ÙŠØ© ÙˆØ§Ù„Ù…Ø­Ø§Ø¶Ø± Ø§Ù„Ø±Ù‚Ø§Ø¨ÙŠØ© ÙÙŠ Ù‡Ø°Ø§ Ø§Ù„ØªØ§Ø±ÙŠØ®.'
+                          : 'Registre des visites commerciales et PV Ã©tablis Ã  cette date.'),
                   status: isLateType
-                      ? (loc.isArabic ? 'الفترة الصباحية بالمقر 🏢' : 'Matinée au siège 🏢')
-                      : (loc.isArabic ? '0 زيارات مسجلة ❌' : '0 visites ❌'),
+                      ? (loc.isArabic ? 'Ø§Ù„ÙØªØ±Ø© Ø§Ù„ØµØ¨Ø§Ø­ÙŠØ© Ø¨Ø§Ù„Ù…Ù‚Ø± ðŸ¢' : 'MatinÃ©e au siÃ¨ge ðŸ¢')
+                      : (loc.isArabic ? '0 Ø²ÙŠØ§Ø±Ø§Øª Ù…Ø³Ø¬Ù„Ø© âŒ' : '0 visites âŒ'),
                   statusColor: isLateType ? const Color(0xFF38BDF8) : const Color(0xFFEF4444),
                 ),
 
@@ -2222,7 +2403,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                   onPressed: () => InquiryLetterDialog.show(context, _inq),
                   icon: const Icon(Icons.picture_as_pdf, color: Color(0xFFD4AF37)),
                   label: Text(
-                    loc.isArabic ? 'معاينة استمارة الاستفسار الإداري الرسمية' : 'Aperçu du formulaire officiel de demande d\'explications',
+                    loc.isArabic ? 'Ù…Ø¹Ø§ÙŠÙ†Ø© Ø§Ø³ØªÙ…Ø§Ø±Ø© Ø§Ù„Ø§Ø³ØªÙØ³Ø§Ø± Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠ Ø§Ù„Ø±Ø³Ù…ÙŠØ©' : 'AperÃ§u du formulaire officiel de demande d\'explications',
                     style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
                   ),
                   style: OutlinedButton.styleFrom(
@@ -2238,8 +2419,8 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                 if (status == 'answered' || status == 'sent') ...[
                   Text(
                     loc.isArabic
-                        ? 'القرار الإداري للسيد المدير الولائي (السلطة السلمية والآمر بالصرف):'
-                        : 'Décision administrative du Directeur de Wilaya (Ordonnateur) :',
+                        ? 'Ø§Ù„Ù‚Ø±Ø§Ø± Ø§Ù„Ø¥Ø¯Ø§Ø±ÙŠ Ù„Ù„Ø³ÙŠØ¯ Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„ÙˆÙ„Ø§Ø¦ÙŠ (Ø§Ù„Ø³Ù„Ø·Ø© Ø§Ù„Ø³Ù„Ù…ÙŠØ© ÙˆØ§Ù„Ø¢Ù…Ø± Ø¨Ø§Ù„ØµØ±Ù):'
+                        : 'DÃ©cision administrative du Directeur de Wilaya (Ordonnateur) :',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 13.5,
@@ -2250,7 +2431,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      // Option 1: Justified (Classé sans suite)
+                      // Option 1: Justified (ClassÃ© sans suite)
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () => widget.onDecision(
@@ -2261,7 +2442,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                           ),
                           icon: const Icon(Icons.check_circle_outline, size: 17),
                           label: Text(
-                            loc.isArabic ? 'قبول التبرير (حفظ)' : 'Accepter (Classer)',
+                            loc.isArabic ? 'Ù‚Ø¨ÙˆÙ„ Ø§Ù„ØªØ¨Ø±ÙŠØ± (Ø­ÙØ¸)' : 'Accepter (Classer)',
                             style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -2285,7 +2466,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                           ),
                           icon: const Icon(Icons.warning_amber_rounded, size: 17),
                           label: Text(
-                            loc.isArabic ? 'توجيه إنذار' : 'Avertissement',
+                            loc.isArabic ? 'ØªÙˆØ¬ÙŠÙ‡ Ø¥Ù†Ø°Ø§Ø±' : 'Avertissement',
                             style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
                           ),
                           style: ElevatedButton.styleFrom(
@@ -2308,7 +2489,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                           ),
                           icon: const Icon(Icons.gavel, size: 17),
                           label: Text(
-                            loc.isArabic ? 'قرار خصم نافذ' : 'Ordre de déduction',
+                            loc.isArabic ? 'Ù‚Ø±Ø§Ø± Ø®ØµÙ… Ù†Ø§ÙØ°' : 'Ordre de dÃ©duction',
                             style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
                           ),
                           style: ElevatedButton.styleFrom(
