@@ -2,7 +2,7 @@ name: drh_setif_tracker
 description: "نظام تتبع المفتشين — مديرية التجارة الداخلية وضبط السوق الوطنية لولاية سطيف"
 publish_to: 'none'
 
-version: 1.0.17+18
+version: 1.0.18+19
 
 environment:
   sdk: ^3.11.4
@@ -14,6 +14,7 @@ dependencies:
   provider: ^6.1.1
   geolocator: ^11.0.0
   http: ^1.1.0
+  crypto: ^3.0.3
   intl: ^0.20.2
   shared_preferences: ^2.2.2
   flutter_map: ^7.0.2

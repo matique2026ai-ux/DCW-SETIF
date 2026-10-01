@@ -163,6 +163,31 @@ class _LoginScreenState extends State<LoginScreen>
           nextScreen = const InspectorScreen();
       }
 
+      if (auth.isOfflineLogin && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.wifi_off, color: Color(0xFFD4AF37), size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '🟢 تم تسجيل الدخول بنجاح (وضع العمل الميداني بدون إنترنت)',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF1F0D28),
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: const BorderSide(color: Color(0xFFD4AF37), width: 1),
+            ),
+          ),
+        );
+      }
 
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:drh_setif_tracker/models/user.dart';
 import 'package:drh_setif_tracker/models/employee.dart';
@@ -13,11 +14,13 @@ class AuthService extends ChangeNotifier {
   User? _currentUser;
   Employee? _currentEmployee;
   bool _isLoading = false;
+  bool _isOfflineLogin = false;
 
   User? get currentUser => _currentUser;
   Employee? get currentEmployee => _currentEmployee;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _currentUser != null;
+  bool get isOfflineLogin => _isOfflineLogin;
   ApiService get api => _api;
 
   Future<bool> tryAutoLogin() async {
@@ -153,9 +156,92 @@ class AuthService extends ChangeNotifier {
       await prefs.setString(_authUserKey, jsonEncode(userData));
       await prefs.setString(_authTokenKey, token);
 
+      // 🛡️ Save to Offline Credential Vault for seamless offline login in the field
+      final normalizedUser = username.trim().toLowerCase();
+      const salt = 'dcw_setif_vault_2026';
+      final passHash = sha256.convert(utf8.encode('$password$salt')).toString();
+      final vaultData = {
+        'userData': userData,
+        'token': token,
+        'passwordHash': passHash,
+        'masterPin': effectivePin,
+        'savedAt': DateTime.now().toIso8601String(),
+      };
+      await prefs.setString('offline_vault_$normalizedUser', jsonEncode(vaultData));
+
+      _isOfflineLogin = false;
       _isLoading = false;
       notifyListeners();
     } catch (e) {
+      final errStr = e.toString();
+      final isNetworkError = errStr.contains('تعذر الاتصال بالخادم') ||
+          errStr.contains('SocketException') ||
+          errStr.contains('ClientException') ||
+          errStr.contains('Failed host lookup') ||
+          errStr.contains('TimeoutException') ||
+          errStr.contains('timed out') ||
+          errStr.contains('Network is unreachable') ||
+          errStr.contains('Connection refused');
+
+      if (isNetworkError) {
+        // 🚀 SMART OFFLINE FALLBACK: Check if this user has previously logged in on this device
+        final prefs = await SharedPreferences.getInstance();
+        final normalizedUser = username.trim().toLowerCase();
+        final vaultStr = prefs.getString('offline_vault_$normalizedUser');
+
+        if (vaultStr != null && vaultStr.isNotEmpty) {
+          try {
+            final vault = jsonDecode(vaultStr) as Map<String, dynamic>;
+            const salt = 'dcw_setif_vault_2026';
+            final enteredHash = sha256.convert(utf8.encode('$password$salt')).toString();
+            final storedHash = vault['passwordHash']?.toString();
+
+            if (enteredHash == storedHash) {
+              final userData = Map<String, dynamic>.from(vault['userData'] as Map);
+              final token = (vault['token'] ?? '') as String;
+
+              // Check web ban
+              final userRole = (userData['role'] ?? '').toString();
+              final userRoleId = userData['roleId'] ?? 0;
+              if (kIsWeb && (userRole == 'inspector' || userRoleId == 4)) {
+                _isLoading = false;
+                notifyListeners();
+                throw Exception('🚫 الولوج عبر المتصفح غير مصرّح به للمفتشين الميدانيين: حساب المفتش مقيّد حصرياً بتطبيق الهاتف المحمول المصطب (DCW-SETIF-TRACKER). يمنع منعاً باتاً فتح الحساب من متصفح الهاتف أو الكمبيوتر.');
+              }
+
+              _currentUser = User(
+                id: userData['id'] as int?,
+                username: (userData['username'] ?? '') as String,
+                passwordHash: '',
+                role: (userData['role'] ?? 'inspector') as String,
+                employeeId: userData['employeeId'] as int?,
+                fullName: (userData['fullName'] ?? userData['full_name'] ?? '') as String?,
+                deviceId: userData['deviceId'] as String?,
+                mustChangeCredentials: false,
+              );
+
+              // Restore token and active session
+              _api.setToken(token);
+              await prefs.setString(_authUserKey, jsonEncode(userData));
+              await prefs.setString(_authTokenKey, token);
+
+              _isOfflineLogin = true;
+              _isLoading = false;
+              notifyListeners();
+              return; // Successfully logged in offline!
+            } else {
+              _isLoading = false;
+              notifyListeners();
+              throw Exception('كلمة المرور غير صحيحة ❌ (التحقق بدون اتصال)');
+            }
+          } catch (vaultErr) {
+            if (vaultErr.toString().contains('كلمة المرور غير صحيحة') || vaultErr.toString().contains('المتصفح')) {
+              rethrow;
+            }
+          }
+        }
+      }
+
       _isLoading = false;
       notifyListeners();
       rethrow;
@@ -193,6 +279,19 @@ class AuthService extends ChangeNotifier {
           } catch (_) {}
         }
         await saveMasterPin(newPin);
+
+        // Update offline vault with new credentials
+        final normalizedUser = _currentUser!.username.trim().toLowerCase();
+        final vaultStr = prefs.getString('offline_vault_$normalizedUser');
+        if (vaultStr != null) {
+          try {
+            final vault = jsonDecode(vaultStr) as Map<String, dynamic>;
+            const salt = 'dcw_setif_vault_2026';
+            vault['passwordHash'] = sha256.convert(utf8.encode('$newPassword$salt')).toString();
+            vault['masterPin'] = newPin;
+            await prefs.setString('offline_vault_$normalizedUser', jsonEncode(vault));
+          } catch (_) {}
+        }
       }
       _isLoading = false;
       notifyListeners();
@@ -207,9 +306,11 @@ class AuthService extends ChangeNotifier {
     _api.logout();
     _currentUser = null;
     _currentEmployee = null;
+    _isOfflineLogin = false;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_authUserKey);
     await prefs.remove(_authTokenKey);
+    // Note: We deliberately preserve 'offline_vault_*' on logout so authorized staff can log back in offline in the field!
     notifyListeners();
   }
 
