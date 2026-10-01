@@ -8,6 +8,9 @@ class InspectorateHQ {
   final double longitude;
   final double radiusMeters;
   final bool isMainDirectorate;
+  final String? headNameAr;
+  final String? headTitleAr;
+  final int? headEmpId;
 
   const InspectorateHQ({
     required this.id,
@@ -17,6 +20,9 @@ class InspectorateHQ {
     required this.longitude,
     this.radiusMeters = 600.0,
     this.isMainDirectorate = false,
+    this.headNameAr,
+    this.headTitleAr,
+    this.headEmpId,
   });
 
   Map<String, dynamic> toJson() => {
@@ -27,6 +33,9 @@ class InspectorateHQ {
     'longitude': longitude,
     'radiusMeters': radiusMeters,
     'isMainDirectorate': isMainDirectorate,
+    'headNameAr': headNameAr,
+    'headTitleAr': headTitleAr,
+    'headEmpId': headEmpId,
   };
 
   factory InspectorateHQ.fromJson(Map<String, dynamic> json) {
@@ -38,6 +47,9 @@ class InspectorateHQ {
       longitude: (json['longitude'] is num) ? (json['longitude'] as num).toDouble() : double.tryParse(json['longitude']?.toString() ?? '0') ?? 0.0,
       radiusMeters: (json['radiusMeters'] is num) ? (json['radiusMeters'] as num).toDouble() : double.tryParse(json['radiusMeters']?.toString() ?? '600') ?? 600.0,
       isMainDirectorate: json['isMainDirectorate'] == true,
+      headNameAr: json['headNameAr']?.toString(),
+      headTitleAr: json['headTitleAr']?.toString(),
+      headEmpId: (json['headEmpId'] is num) ? (json['headEmpId'] as num).toInt() : int.tryParse(json['headEmpId']?.toString() ?? ''),
     );
   }
 
@@ -49,6 +61,9 @@ class InspectorateHQ {
     double? longitude,
     double? radiusMeters,
     bool? isMainDirectorate,
+    String? headNameAr,
+    String? headTitleAr,
+    int? headEmpId,
   }) {
     return InspectorateHQ(
       id: id ?? this.id,
@@ -58,6 +73,9 @@ class InspectorateHQ {
       longitude: longitude ?? this.longitude,
       radiusMeters: radiusMeters ?? this.radiusMeters,
       isMainDirectorate: isMainDirectorate ?? this.isMainDirectorate,
+      headNameAr: headNameAr ?? this.headNameAr,
+      headTitleAr: headTitleAr ?? this.headTitleAr,
+      headEmpId: headEmpId ?? this.headEmpId,
     );
   }
 }
@@ -77,6 +95,9 @@ class AppConstants {
       id: 'hq_setif',
       nameAr: 'المقر الرئيسي للمديرية الولائية (سطيف - المعبودة)',
       nameFr: 'Siège de la Direction de Wilaya (Sétif - El Maabouda)',
+      headNameAr: 'حمادي رشيد',
+      headTitleAr: 'المدير الولائي للتجارة (الآمر بالصرف الوحيد)',
+      headEmpId: 335,
       latitude: 36.1900575,
       longitude: 5.3990134,
       radiusMeters: 600.0,
@@ -86,6 +107,9 @@ class AppConstants {
       id: 'insp_airport_arnat',
       nameAr: 'المفتشية الحدودية لمراقبة الجودة — مطار 8 ماي 1945 (عين أرنات)',
       nameFr: 'Inspection Frontalière — Aéroport 8 Mai 1945 (Aïn Arnat)',
+      headNameAr: 'بن يوسف عبد الرحيم',
+      headTitleAr: 'رئيس المفتشية الحدودية بمطار 8 ماي 1945',
+      headEmpId: 22,
       latitude: 36.1781,
       longitude: 5.3247,
       radiusMeters: 1200.0,
@@ -94,6 +118,9 @@ class AppConstants {
       id: 'insp_eulma',
       nameAr: 'المفتشية الإقليمية للتجارة — العلمة',
       nameFr: 'Inspection Territoriale — El Eulma',
+      headNameAr: 'ربيعي حمزة',
+      headTitleAr: 'رئيس المفتشية الإقليمية للتجارة بالعلمة',
+      headEmpId: 87,
       latitude: 36.1554,
       longitude: 5.6908,
       radiusMeters: 1200.0,
@@ -102,6 +129,9 @@ class AppConstants {
       id: 'insp_ain_oulmene',
       nameAr: 'المفتشية الإقليمية للتجارة — عين ولمان',
       nameFr: 'Inspection Territoriale — Aïn Oulmène',
+      headNameAr: 'داودي عبد الرحمان',
+      headTitleAr: 'رئيس المفتشية الإقليمية للتجارة بعين ولمان',
+      headEmpId: 60,
       latitude: 35.9189,
       longitude: 5.2978,
       radiusMeters: 1200.0,
@@ -110,6 +140,9 @@ class AppConstants {
       id: 'insp_bougaa',
       nameAr: 'المفتشية الإقليمية للتجارة — بوقاعة',
       nameFr: 'Inspection Territoriale — Bougaâ',
+      headNameAr: 'ذويبي حسان',
+      headTitleAr: 'رئيس المفتشية الإقليمية للتجارة ببوقاعة',
+      headEmpId: 21,
       latitude: 36.3325,
       longitude: 5.0886,
       radiusMeters: 1200.0,
@@ -118,6 +151,9 @@ class AppConstants {
       id: 'annex_ain_azel',
       nameAr: 'الملحقة التجارية — عين آزال',
       nameFr: 'Annexe Commerciale — Aïn Azel',
+      headNameAr: 'دردوخ بدر الدين',
+      headTitleAr: 'المكلف بتسيير ملحقة التجارة بعين أزال',
+      headEmpId: 143,
       latitude: 35.8686,
       longitude: 5.4667,
       radiusMeters: 1000.0,
@@ -126,6 +162,9 @@ class AppConstants {
       id: 'annex_ain_kebira',
       nameAr: 'الملحقة التجارية — عين الكبيرة',
       nameFr: 'Annexe Commerciale — Aïn El Kebira',
+      headNameAr: 'غرنوس العياشي',
+      headTitleAr: 'المكلف بتسيير ملحقة التجارة بعين الكبيرة',
+      headEmpId: 151,
       latitude: 36.3639,
       longitude: 5.5003,
       radiusMeters: 1000.0,
@@ -134,6 +173,9 @@ class AppConstants {
       id: 'annex_ain_arnat',
       nameAr: 'الملحقة التجارية — عين أرنات',
       nameFr: 'Annexe Commerciale — Aïn Arnat',
+      headNameAr: 'شريفي سمير',
+      headTitleAr: 'المكلف بتسيير ملحقة التجارة بعين أرنات',
+      headEmpId: 91,
       latitude: 36.1833,
       longitude: 5.3167,
       radiusMeters: 1000.0,

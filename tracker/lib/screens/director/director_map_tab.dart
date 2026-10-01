@@ -313,9 +313,9 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   point: LatLng(insp.latitude, insp.longitude),
                   radius: insp.radiusMeters,
                   useRadiusInMeter: true,
-                  color: (insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF10B981)).withValues(alpha: 0.15),
-                  borderColor: insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF10B981),
-                  borderStrokeWidth: 1.5,
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderColor: const Color(0xFF10B981),
+                  borderStrokeWidth: 1.8,
                 );
               }).toList(),
             ),
@@ -362,9 +362,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: insp.isMainDirectorate ? AppTheme.AccentColor : const Color(0xFF881337),
+                            color: const Color(0xFF881337),
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            border: Border.all(
+                              color: insp.isMainDirectorate ? const Color(0xFFD4AF37) : Colors.white,
+                              width: insp.isMainDirectorate ? 2.5 : 2.0,
+                            ),
                             boxShadow: const [
                               BoxShadow(
                                 color: Colors.black54,
@@ -3154,7 +3157,26 @@ class _DirectorMapTabState extends State<DirectorMapTab>
 
     final absent = assignedEmps.where((e) => e['isCheckedIn'] != true).toList();
 
+    // Find Head of Inspectorate in _mapData (by headEmpId or headNameAr)
+    Map<String, dynamic>? headEmpRecord;
+    if (insp.headEmpId != null) {
+      try {
+        headEmpRecord = _mapData.firstWhere(
+          (e) => (e['employeeId'] ?? e['Id'] ?? e['id']) == insp.headEmpId,
+        );
+      } catch (_) {}
+    }
+    if (headEmpRecord == null && insp.headNameAr != null && insp.headNameAr!.isNotEmpty) {
+      try {
+        headEmpRecord = _mapData.firstWhere((e) {
+          final n = (e['name'] ?? e['NomAr'] ?? '').toString();
+          return n.contains(insp.headNameAr!);
+        });
+      } catch (_) {}
+    }
+
     String currentFilter = 'all';
+    String searchQuery = '';
 
     showModalBottomSheet(
       context: context,
@@ -3167,10 +3189,27 @@ class _DirectorMapTabState extends State<DirectorMapTab>
           if (currentFilter == 'field') displayedList = inField;
           if (currentFilter == 'absent') displayedList = absent;
 
+          if (searchQuery.trim().isNotEmpty) {
+            final q = searchQuery.trim().toLowerCase();
+            displayedList = displayedList.where((e) {
+              final n = (e['name'] ?? e['NomAr'] ?? e['Nom'] ?? '').toString().toLowerCase();
+              final g = (e['grade'] ?? e['Grade'] ?? '').toString().toLowerCase();
+              return n.contains(q) || g.contains(q);
+            }).toList();
+          }
+
+          // Sort: Put Head of Inspectorate at the top if present
+          if (headEmpRecord != null && displayedList.contains(headEmpRecord)) {
+            displayedList = [
+              headEmpRecord,
+              ...displayedList.where((e) => e != headEmpRecord),
+            ];
+          }
+
           return Directionality(
             textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
             child: Container(
-              height: MediaQuery.of(context).size.height * 0.85,
+              height: MediaQuery.of(context).size.height * 0.88,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
               decoration: BoxDecoration(
                 color: const Color(0xFF160A1D),
@@ -3199,12 +3238,16 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: (insp.isMainDirectorate ? const Color(0xFFD4AF37) : const Color(0xFF38BDF8)).withValues(alpha: 0.18),
+                          color: (insp.isMainDirectorate ? const Color(0xFFD4AF37) : const Color(0xFF881337)).withValues(alpha: 0.25),
                           shape: BoxShape.circle,
+                          border: Border.all(
+                            color: insp.isMainDirectorate ? const Color(0xFFD4AF37) : const Color(0xFF881337),
+                            width: 1.5,
+                          ),
                         ),
                         child: Icon(
                           insp.isMainDirectorate ? Icons.account_balance : Icons.apartment,
-                          color: insp.isMainDirectorate ? const Color(0xFFD4AF37) : const Color(0xFF38BDF8),
+                          color: insp.isMainDirectorate ? const Color(0xFFD4AF37) : Colors.white,
                           size: 24,
                         ),
                       ),
@@ -3241,7 +3284,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
 
                   // 4-Stats Quick Bar
                   Container(
@@ -3261,7 +3304,149 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+
+                  // 👑 بطاقة مسؤول / رئيس المفتشية الإقليمية الرسمية (مثبتة في الصدارة للمدير)
+                  if (insp.headNameAr != null && insp.headNameAr!.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF2E1238), Color(0xFF1A0A22)],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFD4AF37), width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+                            ),
+                            child: const Center(
+                              child: Icon(Icons.stars, color: Color(0xFFD4AF37), size: 22),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFD4AF37),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        loc.isArabic ? 'مسؤول الهيكل' : 'Chef',
+                                        style: const TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        insp.headTitleAr ?? (loc.isArabic ? 'رئيس المفتشية' : 'Chef d\'inspection'),
+                                        style: const TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 11,
+                                          color: Color(0xFFE2E8F0),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  insp.headNameAr!,
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFD4AF37),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Live Status Pill of the Head
+                          Builder(
+                            builder: (_) {
+                              final isPres = headEmpRecord != null && presentInHQ.contains(headEmpRecord);
+                              final isFld = headEmpRecord != null && inField.contains(headEmpRecord);
+                              Color c = const Color(0xFFF87171);
+                              String t = loc.isArabic ? 'لم يسجل' : 'Absent';
+                              IconData ic = Icons.cancel;
+                              if (isPres) {
+                                c = const Color(0xFF10B981);
+                                t = loc.isArabic ? 'حاضر بالمقر' : 'Au siège';
+                                ic = Icons.check_circle;
+                              } else if (isFld) {
+                                c = const Color(0xFF38BDF8);
+                                t = loc.isArabic ? 'في الميدان' : 'Terrain';
+                                ic = Icons.explore;
+                              }
+                              return InkWell(
+                                onTap: headEmpRecord != null
+                                    ? () {
+                                        Navigator.pop(ctx);
+                                        _showInspectorModal(headEmpRecord!);
+                                      }
+                                    : null,
+                                borderRadius: BorderRadius.circular(8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: c.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: c, width: 1),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(ic, color: c, size: 13),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        t,
+                                        style: TextStyle(
+                                          fontFamily: 'Tajawal',
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: c,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 10),
 
                   // Filter Chips
                   SingleChildScrollView(
@@ -3278,7 +3463,28 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       ],
                     ),
                   ),
-                  const SizedBox(height: 10),
+
+                  // Quick search box inside modal
+                  Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 6),
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1F0D28),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white12),
+                    ),
+                    child: TextField(
+                      style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12.5),
+                      onChanged: (val) => setModalState(() => searchQuery = val),
+                      decoration: InputDecoration(
+                        hintText: loc.isArabic ? 'بحث بالاسم أو الرتبة...' : 'Recherche par nom ou grade...',
+                        hintStyle: const TextStyle(fontFamily: 'Tajawal', color: Colors.white38, fontSize: 11.5),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37), size: 17),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 9),
+                      ),
+                    ),
+                  ),
 
                   // List of Employees in this HQ
                   Expanded(
@@ -3304,6 +3510,13 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                               final isField = inField.contains(emp);
                               final isAbs = absent.contains(emp);
 
+                              final name = (emp['name'] ?? emp['NomAr'] ?? emp['Nom'] ?? (loc.isArabic ? 'مفتش' : 'Agent')).toString();
+                              final grade = (emp['grade'] ?? emp['Grade'] ?? (loc.isArabic ? 'مفتش رئيسي' : 'Inspecteur')).toString();
+                              final service = (emp['service'] ?? emp['Service'] ?? '').toString();
+
+                              final isHead = (insp.headEmpId != null && (emp['employeeId'] ?? emp['Id'] ?? emp['id']) == insp.headEmpId) ||
+                                             (insp.headNameAr != null && insp.headNameAr!.isNotEmpty && name.contains(insp.headNameAr!));
+
                               Color statusColor = const Color(0xFF10B981);
                               String statusText = loc.isArabic ? 'حاضر بالمقر' : 'Au siège';
                               IconData statusIcon = Icons.check_circle;
@@ -3318,10 +3531,6 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                 statusIcon = Icons.cancel;
                               }
 
-                              final name = (emp['name'] ?? emp['NomAr'] ?? emp['Nom'] ?? (loc.isArabic ? 'مفتش' : 'Agent')).toString();
-                              final grade = (emp['grade'] ?? emp['Grade'] ?? (loc.isArabic ? 'مفتش رئيسي' : 'Inspecteur')).toString();
-                              final service = (emp['service'] ?? emp['Service'] ?? '').toString();
-
                               return InkWell(
                                 onTap: () {
                                   Navigator.pop(ctx);
@@ -3331,9 +3540,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1F0D28),
+                                    color: isHead ? const Color(0xFF281133) : const Color(0xFF1F0D28),
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                                    border: Border.all(
+                                      color: isHead ? const Color(0xFFD4AF37) : statusColor.withValues(alpha: 0.3),
+                                      width: isHead ? 1.5 : 1.0,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -3342,11 +3554,20 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                         height: 38,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
-                                          color: statusColor.withValues(alpha: 0.15),
-                                          border: Border.all(color: statusColor, width: 1.5),
+                                          color: isHead
+                                              ? const Color(0xFFD4AF37).withValues(alpha: 0.2)
+                                              : statusColor.withValues(alpha: 0.15),
+                                          border: Border.all(
+                                            color: isHead ? const Color(0xFFD4AF37) : statusColor,
+                                            width: 1.5,
+                                          ),
                                         ),
                                         child: Center(
-                                          child: Icon(statusIcon, color: statusColor, size: 18),
+                                          child: Icon(
+                                            isHead ? Icons.stars : statusIcon,
+                                            color: isHead ? const Color(0xFFD4AF37) : statusColor,
+                                            size: 18,
+                                          ),
                                         ),
                                       ),
                                       const SizedBox(width: 10),
@@ -3354,18 +3575,45 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              name,
-                                              style: const TextStyle(
-                                                fontFamily: 'Tajawal',
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white,
-                                              ),
+                                            Row(
+                                              children: [
+                                                Flexible(
+                                                  child: Text(
+                                                    name,
+                                                    style: TextStyle(
+                                                      fontFamily: 'Tajawal',
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: isHead ? const Color(0xFFD4AF37) : Colors.white,
+                                                    ),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                if (isHead) ...[
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFFD4AF37),
+                                                      borderRadius: BorderRadius.circular(4),
+                                                    ),
+                                                    child: Text(
+                                                      loc.isArabic ? 'مسؤول المفتشية' : 'Chef d\'inspection',
+                                                      style: const TextStyle(
+                                                        fontFamily: 'Tajawal',
+                                                        fontSize: 9,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: Colors.black,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
                                             ),
                                             const SizedBox(height: 2),
                                             Text(
-                                              '$grade ${service.isNotEmpty ? '• $service' : ''}',
+                                              'الرتبة: $grade ${service.isNotEmpty ? '• $service' : ''}',
                                               style: const TextStyle(
                                                 fontFamily: 'Tajawal',
                                                 fontSize: 11,

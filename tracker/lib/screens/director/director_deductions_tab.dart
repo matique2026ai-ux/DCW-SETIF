@@ -31,9 +31,9 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
   // --- UX: Quick-jump to pending inquiries & violation filters ---
   final ScrollController _scrollController = ScrollController();
-  final GlobalKey _pendingInquiriesKey = GlobalKey();
   String _violationFilter = 'all'; // 'all', 'absent', 'late'
   String _violationSearchQuery = '';
+  bool _isFlaggedListExpanded = false;
 
   @override
   void initState() {
@@ -357,105 +357,113 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
             children: [
-          // ── اللافتة الذكية للانتقال المباشر للاستفسارات المعلقة ──
-          if (answeredInquiries.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                final ctx = _pendingInquiriesKey.currentContext;
-                if (ctx != null) {
-                  Scrollable.ensureVisible(
-                    ctx,
-                    duration: const Duration(milliseconds: 450),
-                    curve: Curves.easeInOut,
-                    alignment: 0.05,
-                  );
-                }
-              },
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 14),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF7F1D1D), Color(0xFF991B1B)],
+          // ── 1. ملفات الاستفسارات التي تم الرد عليها وبانتظار قراركم الإداري (الصدارة الفورية للمدير) ──
+          Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: answeredInquiries.isNotEmpty
+                    ? [const Color(0xFF38101E), const Color(0xFF1E0B18)]
+                    : [const Color(0xFF1F1426), const Color(0xFF160D1E)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: answeredInquiries.isNotEmpty ? const Color(0xFFEF4444) : const Color(0xFFD4AF37).withValues(alpha: 0.5),
+                width: answeredInquiries.isNotEmpty ? 1.6 : 1.0,
+              ),
+              boxShadow: [
+                if (answeredInquiries.isNotEmpty)
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFEF4444), width: 1.3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.35),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: answeredInquiries.isNotEmpty
+                            ? const Color(0xFFEF4444).withValues(alpha: 0.2)
+                            : const Color(0xFFD4AF37).withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.rate_review, color: Colors.white, size: 20),
+                      child: Icon(
+                        Icons.rate_review,
+                        color: answeredInquiries.isNotEmpty ? const Color(0xFFEF4444) : const Color(0xFFD4AF37),
+                        size: 20,
+                      ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            loc.isArabic
-                                ? 'يوجد ${answeredInquiries.length} استفسار تم الرد عليه بانتظار قراركم الإداري'
-                                : '${answeredInquiries.length} demandes répondues en attente de décision',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            loc.isArabic
-                                ? 'انقر هنا للانتقال المباشر للبت في الملفات دون الحاجة للتمرير عبر القائمة'
-                                : 'Cliquez ici pour accéder directement sans défiler',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 11,
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        loc.isArabic
+                            ? 'ملفات الاستفسارات بانتظار قراركم الإداري'
+                            : "Demandes d'explications en attente de décision",
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        color: answeredInquiries.isNotEmpty ? Colors.red.shade900 : Colors.white12,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: answeredInquiries.isNotEmpty ? Colors.redAccent : Colors.white24,
+                          width: 0.8,
+                        ),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            loc.isArabic ? 'انتقال فوري' : 'Aller',
-                            style: const TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11.5,
-                              color: Color(0xFF7F1D1D),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.arrow_downward, color: Color(0xFF7F1D1D), size: 14),
-                        ],
+                      child: Text(
+                        '${answeredInquiries.length}',
+                        style: const TextStyle(
+                          fontFamily: 'Tajawal',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 18),
+                      tooltip: loc.isArabic ? 'تحديث لحظي' : 'Actualiser',
+                      onPressed: _load,
                     ),
                   ],
                 ),
-              ),
+                if (answeredInquiries.isEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    loc.isArabic
+                        ? '✨ لا توجد ردود جديدة معلقة — كافة الاستفسارات تمت معالجتها واتخاذ القرارات بشأنها.'
+                        : '✨ Aucun dossier en attente — Toutes les réponses ont été traitées.',
+                    style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 11.5),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    loc.isArabic
+                        ? '🚨 إشعار عاجل: قام الموظفون بالرد على الاستفسارات؛ يرجى مراجعة الإجابات واتخاذ القرار الإداري النافذ (حفظ / إنذار / خصم):'
+                        : '🚨 Urgent : Réponses reçues. Veuillez trancher (Classer / Avertissement / Déduction) :',
+                    style: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFFFCA5A5), fontSize: 11.5, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  ...answeredInquiries.map((inq) => _buildInquiryCard(inq, isActionable: true)),
+                ],
+              ],
             ),
+          ),
           // 1. Morning Grace Time Setting Header
           Container(
             padding: const EdgeInsets.all(16),
@@ -704,57 +712,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             },
           ),
 
-          const SizedBox(height: 18),
 
-          // 3. Urgent: Answered Inquiries Awaiting Director Sovereign Decision
-          SizedBox(key: _pendingInquiriesKey, height: 0),
-          Row(
-            children: [
-              const Icon(Icons.rate_review, color: Color(0xFFD4AF37), size: 22),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  loc.isArabic
-                      ? 'ملفات الاستفسارات التي تم الرد عليها وبانتظار قراركم الإداري (${answeredInquiries.length})'
-                      : "Demandes d'explications répondues en attente de décision administrative (${answeredInquiries.length})",
-                  style: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.refresh, color: Color(0xFFD4AF37), size: 20),
-                tooltip: loc.isArabic ? 'تحديث لحظي' : 'Actualiser',
-                onPressed: _load,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          if (answeredInquiries.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.black12,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white12),
-              ),
-              child: Center(
-                child: Text(
-                  loc.isArabic
-                      ? 'لا توجد ردود جديدة معلقة — كافة الملفات تمت معالجتها واتخاذ القرارات بشأنها ✨'
-                      : 'Aucun dossier en attente — Toutes les réponses ont été traitées ✨',
-                  style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary, fontSize: 12),
-                ),
-              ),
-            )
-          else
-            ...answeredInquiries.map((inq) => _buildInquiryCard(inq, isActionable: true)),
-
-          const SizedBox(height: 20),
 
           // 4. Sent Inquiries (Pending Employee Reply)
           Row(
@@ -1626,13 +1584,18 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               );
             }
 
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: displayList.length,
-              separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
-              itemBuilder: (context, idx) {
-                final item = displayList[idx];
+            final visibleList = _isFlaggedListExpanded ? displayList : displayList.take(6).toList();
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: visibleList.length,
+                  separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+                  itemBuilder: (context, idx) {
+                    final item = visibleList[idx];
               final isLate = item['violationType'] == 'late';
               final String name = (item['name'] ?? '').toString();
               final String service = (item['service'] ?? '').toString();
@@ -1870,9 +1833,41 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 },
               );
             },
-          );
-        }),
-      ],
+          ),
+          if (displayList.length > 6)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: () => setState(() => _isFlaggedListExpanded = !_isFlaggedListExpanded),
+                  icon: Icon(
+                    _isFlaggedListExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: const Color(0xFFD4AF37),
+                    size: 18,
+                  ),
+                  label: Text(
+                    _isFlaggedListExpanded
+                        ? (loc.isArabic ? 'طي القائمة (عرض أول 6 مخالفين فقط)' : 'Réduire la liste')
+                        : (loc.isArabic ? 'عرض باقي المخالفين (${displayList.length - 6} موظف إضافي)' : 'Voir tout (${displayList.length - 6})'),
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: const Color(0xFFD4AF37).withValues(alpha: 0.1),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }),
+  ],
     ),
   );
 }
