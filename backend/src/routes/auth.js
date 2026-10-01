@@ -156,7 +156,7 @@ router.post('/login', async (req, res) => {
           if (!pinValid && adminOverride !== 'admin123' && adminOverride !== 'DCW-OVERRIDE') {
             const boundName = otherUser.NomComplet || otherUser.NomUtilisateur || otherUser.nomcomplet || otherUser.nomutilisateur;
             return res.status(403).json({
-              error: `⛔ حظر أمني صارم: هذا الجهاز مقترن رسمياً بحساب مستخدم آخر ("${boundName}"). يُمنع منعاً باتاً استخدام نفس الجهاز أو المتصفح لتسجيل الدخول بحسابات قيادية متعددة لحماية سرية البيانات ومنع انتحال الصفة الإدارية.`,
+              error: `⛔ حظر أمني صارم: هذا الجهاز مقترن رسمياً بحساب مستخدم آخر ("${boundName}"). يُمنع منعاً باتاً استخدام نفس الجهاز أو المتصفح لتسجيل الدخول بحسابات إدارية متعددة لحماية سرية البيانات ومنع انتحال الصفة الإدارية.`,
               isDeviceMismatch: true,
               boundDeviceId: incomingDeviceId,
               boundUser: boundName,
@@ -606,7 +606,7 @@ router.post('/users/:id/reset-pin', authMiddleware, roleGuard('admin'), async (r
   try {
     const userId = parseInt(req.params.id, 10);
     if (userId === 1) {
-      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي سيادياً وممنوع تصفير رمزه من هنا' });
+      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي إدارياً وتقنياً وممنوع تصفير رمزه من هنا' });
     }
     const { newPin, forceChange } = req.body;
     const db = await getConnection();
@@ -910,7 +910,7 @@ router.post('/users/:id/reset-password', authMiddleware, roleGuard('admin'), asy
   try {
     const userId = parseInt(req.params.id, 10);
     if (userId === 1) {
-      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي سيادياً وممنوع إعادة تعيين كلمة مروره من هنا' });
+      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي إدارياً وتقنياً وممنوع إعادة تعيين كلمة مروره من هنا' });
     }
     const { newPassword } = req.body;
     if (!newPassword || newPassword.trim().length < 4) {

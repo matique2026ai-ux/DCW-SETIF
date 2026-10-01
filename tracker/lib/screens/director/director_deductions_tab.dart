@@ -607,8 +607,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               Expanded(
                 child: Text(
                   loc.isArabic
-                      ? 'ملفات الاستفسارات التي تم الرد عليها وبانتظار قراركم السيادي (${answeredInquiries.length})'
-                      : "Demandes d'explications répondues en attente de décision (${answeredInquiries.length})",
+                      ? 'ملفات الاستفسارات التي تم الرد عليها وبانتظار قراركم الإداري (${answeredInquiries.length})'
+                      : "Demandes d'explications répondues en attente de décision administrative (${answeredInquiries.length})",
                   style: const TextStyle(
                     fontFamily: 'Tajawal',
                     fontSize: 14,
@@ -1473,8 +1473,8 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         SnackBar(
                           content: Text(
                             loc.isArabic
-                                ? '🤝 تم التغاضي عن مخالفة $name اليوم بقرار سيادي من المدير الولائي'
-                                : '🤝 Infraction de $name tolérée par décision du Directeur',
+                                ? '🤝 تم حفظ ملف $name وقبول التبرير بموجب قرار إداري من السيد المدير الولائي'
+                                : '🤝 Dossier de $name classé et justification acceptée par décision administrative',
                             style: const TextStyle(fontFamily: 'Tajawal'),
                           ),
                           backgroundColor: const Color(0xFF475569),
@@ -1909,7 +1909,7 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                       Row(
                         children: [
                           Text(
-                            loc.isArabic ? 'ملف الاستفسار واتخاذ القرار السيادي' : 'Dossier d\'explications & Décision',
+                            loc.isArabic ? 'ملف الاستفسار وإصدار القرار الإداري' : 'Dossier d\'explications & Décision Administrative',
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 15,
@@ -2238,8 +2238,8 @@ class _InquiryDossierModalState extends State<_InquiryDossierModal> {
                 if (status == 'answered' || status == 'sent') ...[
                   Text(
                     loc.isArabic
-                        ? 'القرار السيادي للمدير الولائي (صاحب السلطة والآمر بالصرف):'
-                        : 'Décision souveraine du Directeur de Wilaya (Ordonnateur) :',
+                        ? 'القرار الإداري للسيد المدير الولائي (السلطة السلمية والآمر بالصرف):'
+                        : 'Décision administrative du Directeur de Wilaya (Ordonnateur) :',
                     style: const TextStyle(
                       fontFamily: 'Tajawal',
                       fontSize: 13.5,

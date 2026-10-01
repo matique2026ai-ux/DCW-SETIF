@@ -464,7 +464,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const callerRole = req.user?.role;
     if (callerRole !== 'director' && callerRole !== 'admin') {
-      return res.status(403).json({ error: 'غير مصرح: حذف أو إلغاء محاضر المعاينة الرسمية محصور سيادياً بالسيد المدير الولائي أو مدير النظام' });
+      return res.status(403).json({ error: 'غير مصرح: حذف أو إلغاء محاضر المعاينة الرسمية محصور قانوناً وإدارياً بالسيد المدير الولائي أو مدير النظام' });
     }
 
     const { id } = req.params;

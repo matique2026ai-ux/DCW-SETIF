@@ -218,7 +218,7 @@ router.post('/closures/:id/sign', authMiddleware, async (req, res) => {
   try {
     const callerRole = req.user?.role;
     if (callerRole !== 'director' && callerRole !== 'admin') {
-      return res.status(403).json({ error: 'صلاحية سيادية محظورة: توقيع واعتماد قرارات الغلق الإداري محصورة قانوناً بالسيد المدير الولائي للتجارة فقط (الآمر بالصرف)' });
+      return res.status(403).json({ error: 'صلاحية إدارية محصورة: توقيع واعتماد قرارات الغلق الإداري محصورة قانوناً بالسيد المدير الولائي للتجارة فقط (الآمر بالصرف)' });
     }
 
     const { id } = req.params;

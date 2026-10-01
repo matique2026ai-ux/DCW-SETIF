@@ -250,7 +250,7 @@ class _DirectorAnalyticsTabState extends State<DirectorAnalyticsTab> {
                             runSpacing: 4,
                             children: [
                               Text(
-                                isArabic ? 'لوحة القيادة والمؤشرات الرقابية الميدانية' : 'Tableau de Bord & Indicateurs de Contrôle',
+                                isArabic ? 'لوحة التسيير والمؤشرات الرقابية الميدانية' : 'Tableau de Bord & Indicateurs de Contrôle',
                                 style: const TextStyle(
                                   fontFamily: 'Tajawal',
                                   fontSize: 16,

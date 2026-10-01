@@ -1346,7 +1346,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   dropdownColor: const Color(0xFF2D1035),
                   style: const TextStyle(color: Colors.white, fontFamily: 'Tajawal', fontSize: 12),
                   decoration: InputDecoration(
-                    labelText: 'السائق أو المفتش المكلف بالقيادة *',
+                    labelText: 'السائق أو المفتش المكلف بسياقة المركبة *',
                     prefixIcon: const Icon(Icons.person, color: Color(0xFFD4AF37), size: 18),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                   ),
@@ -1818,7 +1818,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            isAr ? 'السلطة السيادية للمدير الولائي (الآمر بالصرف الوحيد) • الأمر 06-03' : 'Autorité Souveraine de l\'Ordonnateur • Ordonnance 06-03',
+                            isAr ? 'السلطة السلمية والإدارية للمدير الولائي (الآمر بالصرف) • الأمر 06-03' : 'Autorité Hiérarchique de l\'Ordonnateur • Ordonnance 06-03',
                             style: const TextStyle(fontSize: 11, color: Color(0xFFD4AF37)),
                           ),
                         ],
@@ -2148,7 +2148,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                       style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     subtitle: const Text(
-                      'يمنحه شارة القيادة ⭐ وصلاحية قيادة الثنائي الميداني وتنسيق المحاضر',
+                      'يمنحه صفة رئيس الفرقة ⭐ وصلاحية تأطير الثنائي الميداني وتنسيق المحاضر',
                       style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white54),
                     ),
                     value: isLeader,
@@ -2320,7 +2320,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('تعيين كرئيس فرقة (Chef de brigade)', style: TextStyle(fontFamily: 'Tajawal', fontSize: 13, fontWeight: FontWeight.bold)),
-                    subtitle: const Text('يتولى قيادة الثنائي وتنسيق المحاضر الميدانية', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary)),
+                    subtitle: const Text('يتولى تأطير الفرقة الميدانية وتنسيق المحاضر', style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: AppTheme.TextSecondary)),
                     value: isLeader,
                     activeThumbColor: AppTheme.AccentColor,
                     onChanged: (val) => setModalState(() => isLeader = val),
@@ -2556,7 +2556,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
                         return DropdownMenuItem(
                           value: bName,
                           child: Text(
-                            '$bName (${members.length} أعضاء • بقيادة: $leaderName)',
+                            '$bName (${members.length} أعضاء • برئاسة: $leaderName)',
                             style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),

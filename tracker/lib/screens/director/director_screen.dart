@@ -144,8 +144,8 @@ class _DirectorScreenState extends State<DirectorScreen>
                         Expanded(
                           child: Text(
                             loc.isArabic
-                                ? '⚠️ تنبيه سيادي: يوجد ($_pendingDecisionsCount) رد على استفسار كتابي بانتظار قراركم الإداري'
-                                : '⚠️ Alerte : ($_pendingDecisionsCount) réponse(s) d\'explications en attente de votre décision',
+                                ? '⚠️ إشعار إداري عاجل: يوجد ($_pendingDecisionsCount) رد على استفسار كتابي بانتظار قراركم الإداري'
+                                : '⚠️ Notification administrative : ($_pendingDecisionsCount) réponse(s) d\'explications en attente de votre décision',
                             style: const TextStyle(
                               fontFamily: 'Tajawal',
                               color: Colors.white,

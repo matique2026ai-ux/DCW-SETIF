@@ -1088,7 +1088,7 @@ class _AdminScreenState extends State<AdminScreen>
     if (user['username'] == 'tracker_admin') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('حساب مدير النظام التقني (tracker_admin) محمي سيادياً وممنوع إعادة ضبط رمزه من هنا'),
+          content: Text('حساب مدير النظام التقني (tracker_admin) محمي إدارياً وتقنياً وممنوع إعادة ضبط رمزه من هنا'),
           backgroundColor: AppTheme.DangerColor,
         ),
       );

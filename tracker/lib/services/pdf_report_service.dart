@@ -1430,7 +1430,7 @@ class PdfReportService {
                   pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('الوثيقة: تقرير انضباط وقرارات سيادية', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
+                      pw.Text('الوثيقة: تقرير الانضباط والقرارات الإدارية', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900)),
                       pw.Text('الفترة: $periodTitle', style: pw.TextStyle(fontSize: 8, color: PdfColors.grey800)),
                       pw.Text('تاريخ الطباعة: $dateStr $timeStr', style: pw.TextStyle(fontSize: 7.5, color: PdfColors.grey600)),
                     ],
@@ -1447,7 +1447,7 @@ class PdfReportService {
           return pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('منظومة المراقبة الميدانية الرقمية DCW-SETIF-TRACKER — سجل القرارات السيادية', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
+              pw.Text('منظومة المراقبة والتفتيش الميداني DCW-SETIF-TRACKER — سجل القرارات الإدارية', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
               pw.Text('صفحة ${context.pageNumber} من ${context.pagesCount}', style: pw.TextStyle(fontSize: 7, color: PdfColors.grey600)),
             ],
           );
@@ -1466,7 +1466,7 @@ class PdfReportService {
                 mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                 children: [
                   pw.Text(
-                    'سجل الإجراءات الانضباطية والقرارات السيادية — $periodTitle',
+                    'سجل الإجراءات الانضباطية والقرارات الإدارية — $periodTitle',
                     style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: PdfColors.amber900),
                   ),
                   pw.Row(
@@ -1515,7 +1515,7 @@ class PdfReportService {
                   'المصلحة / الفرقة',
                   'موضوع الاستفسار',
                   'المبرر والرد المسجل',
-                  'القرار السيادي',
+                  'القرار الإداري',
                   'تاريخ القرار',
                 ],
                 data: inquiries.asMap().entries.map((entry) {

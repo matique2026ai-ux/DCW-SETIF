@@ -305,7 +305,7 @@ class _MandatorySecuritySetupDialogState extends State<MandatorySecuritySetupDia
                         ),
                         const SizedBox(height: 4),
                         const Text(
-                          'مطلوب للتحقق عند تسجيل الدخول من المتصفح والعمليات السيادية الحساسة.',
+                          'مطلوب للتحقق عند تسجيل الدخول من المتصفح والعمليات الإدارية الحساسة.',
                           style: TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white54),
                         ),
                         const SizedBox(height: 10),

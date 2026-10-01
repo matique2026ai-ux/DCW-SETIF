@@ -372,7 +372,7 @@ app.all(['/api/auth/users/:id/reset-password', '/api/users/:id/reset-password'],
   try {
     const userId = parseInt(req.params.id, 10);
     if (userId === 1) {
-      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي سيادياً وممنوع إعادة تعيين كلمة مروره من هنا' });
+      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي إدارياً وتقنياً وممنوع إعادة تعيين كلمة مروره من هنا' });
     }
     const { newPassword } = req.body;
     if (!newPassword || newPassword.trim().length < 4) {
@@ -421,7 +421,7 @@ app.all(['/api/auth/users/:id/reset-pin', '/api/users/:id/reset-pin'], async (re
   try {
     const userId = parseInt(req.params.id, 10);
     if (userId === 1) {
-      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي سيادياً وممنوع إعادة ضبط رمزه من هنا' });
+      return res.status(403).json({ error: 'حساب مدير النظام التقني (tracker_admin) محمي إدارياً وتقنياً وممنوع إعادة ضبط رمزه من هنا' });
     }
     const { newPin } = req.body;
     const pinToSet = (newPin && newPin.toString().trim().length >= 4) ? newPin.toString().trim() : '202600';
@@ -1129,7 +1129,7 @@ app.delete('/api/visits/:id', authMiddleware, async (req, res) => {
   try {
     const callerRole = req.user?.role;
     if (callerRole !== 'director' && callerRole !== 'admin') {
-      return res.status(403).json({ error: 'غير مصرح: حذف أو إلغاء محاضر المعاينة الرسمية محصور سيادياً بالسيد المدير الولائي أو مدير النظام' });
+      return res.status(403).json({ error: 'غير مصرح: حذف أو إلغاء محاضر المعاينة الرسمية محصور قانوناً وإدارياً بالسيد المدير الولائي أو مدير النظام' });
     }
 
     const numId = parseInt(req.params.id, 10);
@@ -1162,7 +1162,7 @@ const handlePurgeAllData = async (req, res) => {
     const callerRole = req.user?.role;
     const isTrackerAdmin = req.user?.username?.toLowerCase() === 'tracker_admin' || callerRole === 'admin';
     if (!isTrackerAdmin) {
-      return res.status(403).json({ error: 'عملية سيادية محظورة: تصفير قاعدة البيانات محصور بمدير النظام التقني الرئيسي فقط' });
+      return res.status(403).json({ error: 'عملية إدارية محظورة: تصفير قاعدة البيانات محصور بمدير النظام التقني الرئيسي فقط' });
     }
 
     const db = await getConnection();
