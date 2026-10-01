@@ -362,7 +362,7 @@ class ModernExecutiveNavbar extends StatelessWidget implements PreferredSizeWidg
           ),
           const SizedBox(width: 12),
           if (customTitleWidget != null)
-            customTitleWidget!
+            Flexible(child: customTitleWidget!)
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,

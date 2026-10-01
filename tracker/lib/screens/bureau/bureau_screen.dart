@@ -1146,6 +1146,8 @@ class _BureauScreenState extends State<BureauScreen>
             ),
             Text(
               label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
               style: const TextStyle(
                 fontFamily: 'Tajawal',
                 fontSize: 10,
@@ -1298,8 +1300,11 @@ class _BureauScreenState extends State<BureauScreen>
                                 fontSize: 15,
                                 color: Colors.white,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -1334,6 +1339,8 @@ class _BureauScreenState extends State<BureauScreen>
                       const SizedBox(height: 3),
                       Text(
                         'رقم التسجيل: $matricule | $grade',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontFamily: 'Tajawal',
                           fontSize: 12,
@@ -1438,6 +1445,8 @@ class _BureauScreenState extends State<BureauScreen>
                 icon: const Icon(Icons.edit_note, size: 18),
                 label: const Text(
                   'تعديل الوضعية الإدارية والتكليف (رئيس فرقة / عطلة / منصب)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: 'Tajawal',
                     fontWeight: FontWeight.bold,
@@ -1473,10 +1482,10 @@ class _BureauScreenState extends State<BureauScreen>
                 color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 400;
+                final titleWidget = Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
@@ -1496,54 +1505,75 @@ class _BureauScreenState extends State<BureauScreen>
                           fontSize: 14,
                           color: Color(0xFFD4AF37),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black38,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFD4AF37)),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _morningGraceTime,
-                          dropdownColor: const Color(0xFF1E1026),
-                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
-                            fontSize: 13,
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
-                            DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
-                            DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
-                            DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
-                            DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null && val != _morningGraceTime) {
-                              _updateGraceTime(val);
-                            }
-                          },
-                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'الحضور بين 08:00 و $_morningGraceTime نظامي ومقبول، والتأخر يُحسب بعده.',
-                  style: const TextStyle(
-                    fontFamily: 'Tajawal',
-                    fontSize: 11,
-                    color: Colors.white70,
+                );
+
+                final dropdownWidget = Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.black38,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFD4AF37)),
                   ),
-                ),
-              ],
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _morningGraceTime,
+                      dropdownColor: const Color(0xFF1E1026),
+                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFD4AF37),
+                        fontSize: 13,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: '08:15', child: Text('08:15 ص')),
+                        DropdownMenuItem(value: '08:30', child: Text('08:30 ص')),
+                        DropdownMenuItem(value: '08:45', child: Text('08:45 ص (الموصى بها)')),
+                        DropdownMenuItem(value: '09:00', child: Text('09:00 ص (مرونة قصوى)')),
+                        DropdownMenuItem(value: '09:15', child: Text('09:15 ص')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null && val != _morningGraceTime) {
+                          _updateGraceTime(val);
+                        }
+                      },
+                    ),
+                  ),
+                );
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isNarrow) ...[
+                      titleWidget,
+                      const SizedBox(height: 10),
+                      Align(alignment: Alignment.centerLeft, child: dropdownWidget),
+                    ] else ...[
+                      Row(
+                        children: [
+                          Expanded(child: titleWidget),
+                          const SizedBox(width: 8),
+                          dropdownWidget,
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'الحضور بين 08:00 و $_morningGraceTime نظامي ومقبول، والتأخر يُحسب بعده.',
+                      style: const TextStyle(
+                        fontFamily: 'Tajawal',
+                        fontSize: 11,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
 
@@ -1595,16 +1625,20 @@ class _BureauScreenState extends State<BureauScreen>
                   children: [
                     Row(
                       children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            color: Colors.white,
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
@@ -1634,7 +1668,11 @@ class _BureauScreenState extends State<BureauScreen>
                         style: const TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFFD4AF37)),
                       ),
                     const SizedBox(height: 12),
-                    Row(
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         OutlinedButton.icon(
                           onPressed: () => InquiryLetterDialog.show(context, inq),
@@ -1645,7 +1683,6 @@ class _BureauScreenState extends State<BureauScreen>
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           ),
                         ),
-                        const Spacer(),
                         ElevatedButton.icon(
                           onPressed: () => _executeDeductionInPayroll(inq['Id'] as int, name),
                           icon: const Icon(Icons.check_circle, size: 16),
@@ -1702,88 +1739,113 @@ class _BureauScreenState extends State<BureauScreen>
             final suggestedDays = (del['suggestedDeductionDays'] as num?)?.toDouble() ?? 0.0;
             final bool hasDeduction = suggestedDays > 0;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppTheme.CardColor,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: (hasDeduction ? AppTheme.WarningColor : AppTheme.BorderColor).withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: (hasDeduction ? AppTheme.WarningColor : AppTheme.AccentColor).withValues(alpha: 0.15),
-                    child: Icon(
-                      Icons.schedule,
-                      color: hasDeduction ? AppTheme.WarningColor : AppTheme.AccentColor,
-                      size: 20,
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 420;
+                final infoWidget = Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: (hasDeduction ? AppTheme.WarningColor : AppTheme.AccentColor).withValues(alpha: 0.15),
+                      child: Icon(
+                        Icons.schedule,
+                        color: hasDeduction ? AppTheme.WarningColor : AppTheme.AccentColor,
+                        size: 18,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: Colors.white,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '$lateDays أيام تأخر بعد $_morningGraceTime — إجمالي: $lateHours ساعة ($lateMins دقيقة)',
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 10,
-                            color: AppTheme.TextSecondary,
-                          ),
-                        ),
-                        if (hasDeduction)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              'مقترح الخصم القانوني المحسوب: $suggestedDays يوم عمل',
-                              style: const TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFFD4AF37),
-                              ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '$lateDays أيام تأخر بعد $_morningGraceTime — إجمالي: $lateHours ساعة ($lateMins دقيقة)',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 10.5,
+                              color: AppTheme.TextSecondary,
                             ),
                           ),
-                      ],
+                          if (hasDeduction)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                'مقترح الخصم القانوني المحسوب: $suggestedDays يوم عمل',
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFD4AF37),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+
+                final actionBtn = ElevatedButton.icon(
+                  onPressed: () => _showSendInquiryDialog(
+                    del,
+                    lateMinutes: lateMins,
+                    defaultSubject: 'استفسار كتابي حول تراكم $lateHours ساعات تأخر صباحي',
+                    defaultDetails: 'سُجل بحقكم تراكم $lateHours ساعات تأخر عن موعد العمل وفترة التسامح ($lateDays مرات). يرجى تقديم التبريرات خلال 48 ساعة.',
+                  ),
+                  icon: const Icon(Icons.send, size: 14),
+                  label: const Text(
+                    'توجيه استفسار',
+                    style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFD4AF37),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                );
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.CardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: (hasDeduction ? AppTheme.WarningColor : AppTheme.BorderColor).withValues(alpha: 0.3),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton.icon(
-                    onPressed: () => _showSendInquiryDialog(
-                      del,
-                      lateMinutes: lateMins,
-                      defaultSubject: 'استفسار كتابي حول تراكم $lateHours ساعات تأخر صباحي',
-                      defaultDetails: 'سُجل بحقكم تراكم $lateHours ساعات تأخر عن موعد العمل وفترة التسامح ($lateDays مرات). يرجى تقديم التبريرات خلال 48 ساعة.',
-                    ),
-                    icon: const Icon(Icons.send, size: 14),
-                    label: const Text(
-                      'توجيه استفسار',
-                      style: TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 11),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
-                ],
-              ),
+                  child: isNarrow
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            infoWidget,
+                            const SizedBox(height: 10),
+                            SizedBox(width: double.infinity, child: actionBtn),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(child: infoWidget),
+                            const SizedBox(width: 8),
+                            actionBtn,
+                          ],
+                        ),
+                );
+              },
             );
           })),
 
@@ -1794,13 +1856,16 @@ class _BureauScreenState extends State<BureauScreen>
             children: [
               const Icon(Icons.mail, color: Color(0xFFD4AF37), size: 20),
               const SizedBox(width: 8),
-              Text(
-                'سجل الاستفسارات الإدارية ومتابعة الردود (${_inquiries.length})',
-                style: const TextStyle(
-                  fontFamily: 'Tajawal',
-                  fontWeight: FontWeight.bold,
-                  fontSize: 15,
-                  color: Colors.white,
+              Expanded(
+                child: Text(
+                  'سجل الاستفسارات الإدارية ومتابعة الردود (${_inquiries.length})',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -1870,11 +1935,15 @@ class _BureauScreenState extends State<BureauScreen>
                         children: [
                           Row(
                             children: [
-                              Text(
-                                name,
-                                style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: const TextStyle(fontFamily: 'Tajawal', fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
-                              const Spacer(),
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(

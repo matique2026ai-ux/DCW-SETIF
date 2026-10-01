@@ -4116,199 +4116,213 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
           badgeText: isAr ? 'رئيس مصلحة' : 'Chef de Service',
           showBackButton: Navigator.canPop(context),
           onBack: () => Navigator.pop(context),
-          customTitleWidget: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Row(
+          customTitleWidget: Builder(
+            builder: (ctx) {
+              final isMobile = MediaQuery.of(ctx).size.width < 600;
+              final roleTitle = isAr
+                  ? (_departmentName.contains('ملحقة')
+                      ? 'المكلف بالملحقة'
+                      : (_departmentName.contains('المفتشية')
+                          ? 'رئيس المفتشية'
+                          : 'رئيس مصلحة'))
+                  : (_departmentName.contains('ملحقة')
+                      ? 'Resp. Annexe'
+                      : (_departmentName.contains('المفتشية')
+                          ? 'Chef Inspection'
+                          : 'Chef Service'));
+
+              return Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Flexible(
-                    child: Text(
-                      _getDisplayDepartmentName(isAr),
-                      style: const TextStyle(
-                        fontSize: 12.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.1,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 16),
-                    tooltip: isAr ? 'تبديل المصلحة المعاينة' : 'Changer de service',
-                    color: const Color(0xFF2D1035),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
-                    onSelected: (val) {
-                      setState(() {
-                        _departmentName = val;
-                        _isLoading = true;
-                      });
-                      _loadAllData();
-                    },
-                    itemBuilder: (ctx) => [
-                      PopupMenuItem(
-                        value: 'مصلحة الإدارة والوسائل',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'مصلحة الإدارة والوسائل (المستخدمين والوسائل)' : 'Administration & Moyens', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          _getDisplayDepartmentName(isAr),
+                          style: const TextStyle(
+                            fontFamily: 'Tajawal',
+                            fontSize: 12.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.1,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ),
-                      PopupMenuItem(
-                        value: 'مصلحة حماية المستهلك وقمع الغش',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'مصلحة حماية المستهلك وقمع الغش' : 'Protection Consommateur & Fraudes', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
+                      const SizedBox(width: 3),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.swap_horiz, color: Color(0xFFD4AF37), size: 16),
+                        tooltip: isAr ? 'تبديل المصلحة المعاينة' : 'Changer de service',
+                        color: const Color(0xFF2D1035),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                        onSelected: (val) {
+                          setState(() {
+                            _departmentName = val;
+                            _isLoading = true;
+                          });
+                          _loadAllData();
+                        },
+                        itemBuilder: (ctx) => [
+                          PopupMenuItem(
+                            value: 'مصلحة الإدارة والوسائل',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.badge, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'مصلحة الإدارة والوسائل (المستخدمين والوسائل)' : 'Administration & Moyens', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'مصلحة حماية المستهلك وقمع الغش',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.shield, color: Color(0xFF10B981), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'مصلحة حماية المستهلك وقمع الغش' : 'Protection Consommateur & Fraudes', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.query_stats, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'مصلحة المنافسة والتحقيقات الاقتصادية' : 'Concurrence & Enquêtes Éco.', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'مصلحة ملاحظة السوق وضبط التموين',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.storefront, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'مصلحة ملاحظة السوق وضبط التموين والأسعار' : 'Régulation du Marché & Prix', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'المفتشية الإقليمية للتجارة بالعلمة',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'المفتشية الإقليمية بالعلمة' : 'Inspection Territoriale - El Eulma', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'المفتشية الإقليمية للتجارة بعين ولمان',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'المفتشية الإقليمية بعين ولمان' : 'Inspection Territoriale - Aïn Oulmane', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'المفتشية الإقليمية للتجارة ببوقاعة',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'المفتشية الإقليمية ببوقاعة' : 'Inspection Territoriale - Bougaâ', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'المفتشية الحدودية لمراقبة الجودة وقمع الغش بمطار 08 ماي 1945 بسطيف',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.flight_takeoff, color: Color(0xFF10B981), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'المفتشية الحدودية بمطار 8 ماي' : 'Inspection Frontalière Aéroport', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'ملحقة التجارة بعين أرنات',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'ملحقة التجارة بعين أرنات' : 'Annexe Commerciale - Aïn Arnat', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'ملحقة التجارة بعين أزال',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'ملحقة التجارة بعين أزال' : 'Annexe Commerciale - Aïn Azel', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'ملحقة التجارة بعين الكبيرة',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
+                                const SizedBox(width: 8),
+                                Text(isAr ? 'ملحقة التجارة بعين الكبيرة' : 'Annexe Commerciale - Aïn El Kebira', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      PopupMenuItem(
-                        value: 'مصلحة المنافسة والتحقيقات الاقتصادية',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.query_stats, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'مصلحة المنافسة والتحقيقات الاقتصادية' : 'Concurrence & Enquêtes Éco.', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
+                      if (!isMobile) ...[
+                        const SizedBox(width: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Text(
+                            roleTitle,
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 8.5,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFD4AF37),
+                            ),
+                          ),
                         ),
-                      ),
-                      PopupMenuItem(
-                        value: 'مصلحة ملاحظة السوق وضبط التموين',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.storefront, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'مصلحة ملاحظة السوق وضبط التموين والأسعار' : 'Régulation du Marché & Prix', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'المفتشية الإقليمية للتجارة بالعلمة',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'المفتشية الإقليمية بالعلمة' : 'Inspection Territoriale - El Eulma', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'المفتشية الإقليمية للتجارة بعين ولمان',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'المفتشية الإقليمية بعين ولمان' : 'Inspection Territoriale - Aïn Oulmane', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'المفتشية الإقليمية للتجارة ببوقاعة',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.location_city, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'المفتشية الإقليمية ببوقاعة' : 'Inspection Territoriale - Bougaâ', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'المفتشية الحدودية لمراقبة الجودة وقمع الغش بمطار 08 ماي 1945 بسطيف',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.flight_takeoff, color: Color(0xFF10B981), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'المفتشية الحدودية بمطار 8 ماي' : 'Inspection Frontalière Aéroport', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'ملحقة التجارة بعين أرنات',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'ملحقة التجارة بعين أرنات' : 'Annexe Commerciale - Aïn Arnat', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'ملحقة التجارة بعين أزال',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'ملحقة التجارة بعين أزال' : 'Annexe Commerciale - Aïn Azel', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'ملحقة التجارة بعين الكبيرة',
-                        child: Row(
-                          children: [
-                            const Icon(Icons.store, color: Color(0xFFD4AF37), size: 16),
-                            const SizedBox(width: 8),
-                            Text(isAr ? 'ملحقة التجارة بعين الكبيرة' : 'Annexe Commerciale - Aïn El Kebira', style: const TextStyle(fontFamily: 'Tajawal', color: Colors.white, fontSize: 12)),
-                          ],
-                        ),
-                      ),
+                      ],
                     ],
                   ),
-                  const SizedBox(width: 3),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                        width: 0.5,
-                      ),
+                  Text(
+                    isMobile
+                        ? '$roleTitle: ${user?.fullName ?? user?.username ?? ''}'
+                        : (isAr
+                            ? 'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف'
+                            : 'Resp: ${user?.fullName ?? user?.username ?? ''} • Dir. Commerce Sétif'),
+                    style: const TextStyle(
+                      fontFamily: 'Tajawal',
+                      fontSize: 9.0,
+                      color: Color(0xFFD4AF37),
+                      fontWeight: FontWeight.w500,
                     ),
-                    child: Text(
-                      isAr
-                          ? (_departmentName.contains('ملحقة')
-                              ? 'المكلف بالملحقة'
-                              : (_departmentName.contains('المفتشية')
-                                  ? 'رئيس المفتشية'
-                                  : 'رئيس مصلحة'))
-                          : (_departmentName.contains('ملحقة')
-                              ? 'Resp. Annexe'
-                              : (_departmentName.contains('المفتشية')
-                                  ? 'Chef Inspection'
-                                  : 'Chef Service')),
-                      style: const TextStyle(
-                        fontSize: 8.5,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFFD4AF37),
-                      ),
-                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ],
-              ),
-              Text(
-                isAr
-                    ? 'المسؤول: ${user?.fullName ?? user?.username ?? ''} • مديرية التجارة سطيف'
-                    : 'Resp: ${user?.fullName ?? user?.username ?? ''} • Dir. Commerce Sétif',
-                style: const TextStyle(
-                  fontSize: 9.0,
-                  color: Color(0xFFD4AF37),
-                  fontWeight: FontWeight.w500,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ],
+              );
+            },
           ),
           selectedIndex: _tabController.index,
           onTabSelected: (idx) {

@@ -362,63 +362,134 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.tune, color: Color(0xFFD4AF37), size: 20),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        loc.isArabic ? 'فترة التسامح الصباحية (Tolérance)' : 'Tolérance Matinale (Tolérance)',
-                        style: const TextStyle(
-                          fontFamily: 'Tajawal',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: Color(0xFFD4AF37),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.black38,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFD4AF37)),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _morningGraceTime,
-                          dropdownColor: const Color(0xFF1E1026),
-                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFD4AF37),
-                            fontSize: 13,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 390;
+                    if (isNarrow) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(Icons.tune, color: Color(0xFFD4AF37), size: 20),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  loc.isArabic ? 'فترة التسامح الصباحية (Tolérance)' : 'Tolérance Matinale (Tolérance)',
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13.5,
+                                    color: Color(0xFFD4AF37),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          items: [
-                            DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 ص' : '08:15')),
-                            DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 ص' : '08:30')),
-                            DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 ص (الموصى بها)' : '08:45 (Recommandée)')),
-                            DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 ص (مرونة قصوى)' : '09:00 (Flexibilité Max)')),
-                            DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 ص' : '09:15')),
-                          ],
-                          onChanged: (val) {
-                            if (val != null && val != _morningGraceTime) {
-                              _updateGraceTime(val);
-                            }
-                          },
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black38,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: const Color(0xFFD4AF37)),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _morningGraceTime,
+                                dropdownColor: const Color(0xFF1E1026),
+                                isExpanded: true,
+                                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFD4AF37),
+                                  fontSize: 13,
+                                ),
+                                items: [
+                                  DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 ص' : '08:15')),
+                                  DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 ص' : '08:30')),
+                                  DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 ص (الموصى بها)' : '08:45 (Recommandée)')),
+                                  DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 ص (مرونة قصوى)' : '09:00 (Flexibilité Max)')),
+                                  DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 ص' : '09:15')),
+                                ],
+                                onChanged: (val) {
+                                  if (val != null && val != _morningGraceTime) {
+                                    _updateGraceTime(val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.tune, color: Color(0xFFD4AF37), size: 20),
                         ),
-                      ),
-                    ),
-                  ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            loc.isArabic ? 'فترة التسامح الصباحية (Tolérance)' : 'Tolérance Matinale (Tolérance)',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Color(0xFFD4AF37),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFD4AF37)),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _morningGraceTime,
+                              dropdownColor: const Color(0xFF1E1026),
+                              icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFD4AF37)),
+                              style: const TextStyle(
+                                fontFamily: 'Tajawal',
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFD4AF37),
+                                fontSize: 13,
+                              ),
+                              items: [
+                                DropdownMenuItem(value: '08:15', child: Text(loc.isArabic ? '08:15 ص' : '08:15')),
+                                DropdownMenuItem(value: '08:30', child: Text(loc.isArabic ? '08:30 ص' : '08:30')),
+                                DropdownMenuItem(value: '08:45', child: Text(loc.isArabic ? '08:45 ص (الموصى بها)' : '08:45 (Recommandée)')),
+                                DropdownMenuItem(value: '09:00', child: Text(loc.isArabic ? '09:00 ص (مرونة قصوى)' : '09:00 (Flexibilité Max)')),
+                                DropdownMenuItem(value: '09:15', child: Text(loc.isArabic ? '09:15 ص' : '09:15')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null && val != _morningGraceTime) {
+                                  _updateGraceTime(val);
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -442,10 +513,11 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
           const SizedBox(height: 10),
 
-          // 3. Action Buttons & Justifications Review
-          Row(
-            children: [
-              Expanded(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 460;
+              final button1 = SizedBox(
+                width: isNarrow ? double.infinity : null,
                 child: OutlinedButton.icon(
                   onPressed: () => _showEmployeePicker(),
                   icon: const Icon(Icons.person_search, color: Color(0xFFD4AF37), size: 18),
@@ -460,13 +532,14 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                   ),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0x66D4AF37), width: 1.2),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
+              );
+
+              final button2 = SizedBox(
+                width: isNarrow ? double.infinity : null,
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     await Navigator.push(
@@ -498,12 +571,30 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                       color: _pendingJustifications.isNotEmpty ? AppTheme.DangerColor : const Color(0xFFD4AF37),
                       width: 1.2,
                     ),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
-              ),
-            ],
+              );
+
+              if (isNarrow) {
+                return Column(
+                  children: [
+                    button1,
+                    const SizedBox(height: 8),
+                    button2,
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: button1),
+                  const SizedBox(width: 10),
+                  Expanded(child: button2),
+                ],
+              );
+            },
           ),
 
           const SizedBox(height: 18),

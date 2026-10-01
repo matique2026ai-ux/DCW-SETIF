@@ -1865,16 +1865,18 @@ class _InspectorScreenState extends State<InspectorScreen> {
           titleSpacing: 8,
           title: LayoutBuilder(
             builder: (context, constraints) {
-              final isSmall = MediaQuery.of(context).size.width < 400;
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isSmall = screenWidth < 400;
+              final isVerySmall = screenWidth < 360;
               return Row(
                 children: [
                   GoldenEmblemCoin(
-                    size: isSmall ? 28 : 34,
+                    size: isVerySmall ? 24 : (isSmall ? 28 : 34),
                     showOuterGlow: false,
                     enableFloating: false,
                     animateGleam: false,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: isVerySmall ? 5 : 8),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -1888,36 +1890,38 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                 isAr ? 'المفتشية الميدانية' : 'Contrôle Terrain',
                                 style: TextStyle(
                                   fontFamily: 'Tajawal',
-                                  fontSize: isSmall ? 13.0 : 14.5,
+                                  fontSize: isVerySmall ? 12.0 : (isSmall ? 13.0 : 14.5),
                                   fontWeight: FontWeight.bold,
                                   color: Colors.white,
-                                  letterSpacing: 0.2,
+                                  letterSpacing: 0.1,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
-                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
-                                  width: 0.5,
+                            if (!isSmall) ...[
+                              const SizedBox(width: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.4),
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Text(
+                                  isAr ? 'مفتش' : 'Inspecteur',
+                                  style: const TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFD4AF37),
+                                  ),
                                 ),
                               ),
-                              child: Text(
-                                isAr ? 'مفتش' : 'Inspecteur',
-                                style: const TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFD4AF37),
-                                ),
-                              ),
-                            ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 1),
@@ -1927,7 +1931,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               : (isAr ? 'مديرية التجارة وضبط السوق — سطيف' : 'Direction du Commerce — Sétif'),
                           style: TextStyle(
                             fontFamily: 'Tajawal',
-                            fontSize: isSmall ? 9.5 : 10.5,
+                            fontSize: isVerySmall ? 8.5 : (isSmall ? 9.5 : 10.5),
                             color: const Color(0xFFD4AF37),
                             fontWeight: FontWeight.w500,
                           ),
@@ -1946,9 +1950,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
               builder: (context) {
                 final screenWidth = MediaQuery.of(context).size.width;
                 final isCompact = screenWidth < 500;
+                final isNarrow = screenWidth < 390;
 
                 return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                  margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   padding: const EdgeInsets.symmetric(horizontal: 2),
                   decoration: BoxDecoration(
                     color: Colors.black38,
@@ -1963,7 +1968,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                           onTap: _isSyncing ? null : () => _syncPendingItems(silent: false),
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            padding: EdgeInsets.symmetric(horizontal: isNarrow ? 4 : 6, vertical: 3),
                             margin: const EdgeInsets.symmetric(horizontal: 2),
                             decoration: BoxDecoration(
                               color: const Color(0xFFD97706),
@@ -1999,9 +2004,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       else
                         IconButton(
                           visualDensity: VisualDensity.compact,
-                          padding: const EdgeInsets.all(4),
-                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                          icon: const Icon(Icons.cloud_done, color: Color(0xFF10B981), size: 17),
+                          padding: const EdgeInsets.all(2),
+                          constraints: BoxConstraints(minWidth: isNarrow ? 26 : 30, minHeight: 28),
+                          icon: const Icon(Icons.cloud_done, color: Color(0xFF10B981), size: 16),
                           tooltip: 'جميع البيانات متزامنة',
                           onPressed: () => _syncPendingItems(silent: false),
                         ),
@@ -2011,9 +2016,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         children: [
                           IconButton(
                             visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.all(4),
-                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                            icon: const Icon(Icons.mark_email_unread, color: Color(0xFFD4AF37), size: 17),
+                            padding: const EdgeInsets.all(2),
+                            constraints: BoxConstraints(minWidth: isNarrow ? 26 : 30, minHeight: 28),
+                            icon: const Icon(Icons.mark_email_unread, color: Color(0xFFD4AF37), size: 16),
                             tooltip: 'الاستفسارات الإدارية',
                             onPressed: () => InspectorInquiriesSheet.show(context, user?.employeeId ?? user?.id ?? 1),
                           ),
@@ -2046,7 +2051,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         onTap: () => context.read<LanguageProvider>().toggleLanguage(),
                         borderRadius: BorderRadius.circular(6),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2.5),
+                          padding: EdgeInsets.symmetric(horizontal: isNarrow ? 4 : 5, vertical: 2.5),
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
                             color: const Color(0xFFD4AF37).withValues(alpha: 0.18),
@@ -2056,8 +2061,10 @@ class _InspectorScreenState extends State<InspectorScreen> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.language, color: Color(0xFFD4AF37), size: 12),
-                              const SizedBox(width: 3),
+                              if (!isNarrow) ...[
+                                const Icon(Icons.language, color: Color(0xFFD4AF37), size: 12),
+                                const SizedBox(width: 3),
+                              ],
                               Text(
                                 isAr ? 'FR' : 'عربي',
                                 style: const TextStyle(
@@ -2313,6 +2320,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -2322,6 +2331,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               fontSize: 12,
                               color: Colors.white70,
                             ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
                         ],
                       ),
@@ -2330,7 +2341,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: _isCheckedOut
-                            ? const Color(0xFF6366F1)
+                            ? const Color(0xFF881337)
                             : (_isCheckedIn ? AppTheme.SuccessColor : AppTheme.WarningColor),
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -2356,16 +2367,16 @@ class _InspectorScreenState extends State<InspectorScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
+                  color: const Color(0xFF1E1026),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
+                  border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.35)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.assignment, color: Color(0xFF38BDF8), size: 20),
+                        const Icon(Icons.assignment, color: Color(0xFFD4AF37), size: 20),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
@@ -2374,7 +2385,7 @@ class _InspectorScreenState extends State<InspectorScreen> {
                               fontFamily: 'Tajawal',
                               fontSize: 13.5,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF38BDF8),
+                              color: Color(0xFFD4AF37),
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -2384,12 +2395,13 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF38BDF8).withValues(alpha: 0.15),
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.4), width: 0.8),
                           ),
                           child: const Text(
                             'ساري المفعول',
-                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
+                            style: TextStyle(fontFamily: 'Tajawal', fontSize: 10, color: Color(0xFF10B981), fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -2421,61 +2433,130 @@ class _InspectorScreenState extends State<InspectorScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF312E81), Color(0xFF1E1B4B)],
+                      colors: [Color(0xFF280D2E), Color(0xFF1A0720)],
                     ),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF818CF8).withValues(alpha: 0.4)),
+                    border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.4)),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF818CF8).withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.qr_code_2, color: Color(0xFFA5B4FC), size: 28),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isNarrow = constraints.maxWidth < 360;
+                      if (isNarrow) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              'محفظة الإثباتات الرقمية (QR Pass)',
-                              style: TextStyle(
-                                fontFamily: 'Tajawal',
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37), size: 24),
+                                ),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Text(
+                                    'محفظة الإثباتات الرقمية (QR Pass)',
+                                    style: TextStyle(
+                                      fontFamily: 'Tajawal',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ),
+                              ],
                             ),
-                            SizedBox(height: 2),
-                            Text(
+                            const SizedBox(height: 6),
+                            const Text(
                               'عرض بطاقة الحضور والزيارات المثبتة للمسؤولين',
                               style: TextStyle(
                                 fontFamily: 'Tajawal',
-                                fontSize: 11,
+                                fontSize: 10.5,
                                 color: Colors.white70,
                               ),
                             ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: () => _showAttendanceProof(isOffline: false),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFD4AF37),
+                                  foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: const Text(
+                                  'عرض البطاقة',
+                                  style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
                           ],
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => _showAttendanceProof(isOffline: false),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF818CF8),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        ),
-                        child: const Text(
-                          'عرض البطاقة',
-                          style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
+                        );
+                      }
+                      return Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.qr_code_2, color: Color(0xFFD4AF37), size: 26),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'محفظة الإثباتات الرقمية (QR Pass)',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'عرض بطاقة الحضور والزيارات المثبتة للمسؤولين',
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 11,
+                                    color: Colors.white70,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => _showAttendanceProof(isOffline: false),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFD4AF37),
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: const Text(
+                              'عرض البطاقة',
+                              style: TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
 
@@ -2669,13 +2750,17 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                           ),
                                         )
                                       : const Icon(Icons.emergency_outlined, color: AppTheme.WarningColor, size: 20),
-                                  label: const Text(
-                                    'تصريح بمغادرة استعجالية اضطرارية',
-                                    style: TextStyle(
-                                      fontFamily: 'Tajawal',
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: AppTheme.WarningColor,
+                                  label: const Flexible(
+                                    child: Text(
+                                      'تصريح بمغادرة استعجالية اضطرارية',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: AppTheme.WarningColor,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
                                     ),
                                   ),
                                   style: OutlinedButton.styleFrom(
@@ -2834,50 +2919,136 @@ class _InspectorScreenState extends State<InspectorScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => JustificationSubmissionModal.show(context),
-                          icon: const Icon(Icons.file_present_outlined, color: Color(0xFFD4AF37), size: 18),
-                          label: const Text(
-                            'تقديم مبرر غياب / عطلة قانونية (شهادة طبية، وفاة، زواج...)',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 12,
-                              color: Color(0xFFD4AF37),
-                              fontWeight: FontWeight.bold,
-                            ),
+                      InkWell(
+                        onTap: () => JustificationSubmissionModal.show(context),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5), width: 1.2),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.file_present_outlined, color: Color(0xFFD4AF37), size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'تقديم مبرر غياب أو عطلة قانونية',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFFD4AF37),
+                                      ),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'شهادة طبية، وفاة، زواج، عطلة خاصة...',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 10.5,
+                                        color: Colors.white60,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios, size: 13, color: Color(0xFFD4AF37)),
+                            ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            final user = context.read<AuthService>().currentUser;
-                            final empId = user?.employeeId ?? 1;
-                            InspectorInquiriesSheet.show(context, empId);
-                          },
-                          icon: const Icon(Icons.mail_outline, color: Color(0xFFD4AF37), size: 18),
-                          label: const Text(
-                            'الاستفسارات الإدارية الواردة والردود (Demandes d\'Explications)',
-                            style: TextStyle(
-                              fontFamily: 'Tajawal',
-                              fontSize: 12,
-                              color: Color(0xFFD4AF37),
-                              fontWeight: FontWeight.bold,
-                            ),
+                      InkWell(
+                        onTap: () {
+                          final user = context.read<AuthService>().currentUser;
+                          final empId = user?.employeeId ?? 1;
+                          InspectorInquiriesSheet.show(context, empId);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD4AF37).withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFD4AF37).withValues(alpha: 0.5), width: 1.2),
                           ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.mail_outline, color: Color(0xFFD4AF37), size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Flexible(
+                                          child: Text(
+                                            'الاستفسارات الإدارية والردود',
+                                            style: TextStyle(
+                                              fontFamily: 'Tajawal',
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFD4AF37),
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                        ),
+                                        if (_pendingInquiryCount > 0) ...[
+                                          const SizedBox(width: 6),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                            decoration: BoxDecoration(
+                                              color: Colors.red,
+                                              borderRadius: BorderRadius.circular(10),
+                                            ),
+                                            child: Text(
+                                              '$_pendingInquiryCount جديدة',
+                                              style: const TextStyle(fontFamily: 'Tajawal', fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    const Text(
+                                      'Demandes d\'Explications — متابعة وتبرير',
+                                      style: TextStyle(
+                                        fontFamily: 'Tajawal',
+                                        fontSize: 10.5,
+                                        color: Colors.white60,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios, size: 13, color: Color(0xFFD4AF37)),
+                            ],
                           ),
                         ),
                       ),
@@ -3003,6 +3174,8 @@ class _InspectorScreenState extends State<InspectorScreen> {
                                               fontWeight: FontWeight.bold,
                                               fontSize: 13,
                                             ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
                                         if (isItemOffline) ...[

@@ -193,22 +193,26 @@ class QRCodeScreen extends StatelessWidget {
                           const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              GoldenEmblemCoin(size: 28, showOuterGlow: false, enableFloating: false),
+                              GoldenEmblemCoin(size: 26, showOuterGlow: false, enableFloating: false),
                               SizedBox(width: 8),
-                              Text(
-                                'الجمهورية الجزائرية الديمقراطية الشعبية',
-                                style: TextStyle(
-                                  fontFamily: 'Tajawal',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFFDE68A),
+                              Flexible(
+                                child: Text(
+                                  'الجمهورية الجزائرية الديمقراطية الشعبية',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Tajawal',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFFDE68A),
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 3),
+                          const SizedBox(height: 4),
                           Text(
                             'مديرية التجارة وضبط السوق الوطنية — ولاية سطيف',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'Tajawal',
                               fontSize: 11,
@@ -375,8 +379,9 @@ class QRCodeScreen extends StatelessWidget {
               Column(
                 children: [
                   if (!isInspectorateBadge) ...[
-                    SizedBox(
-                      width: 340,
+                    Container(
+                      constraints: const BoxConstraints(maxWidth: 360),
+                      width: double.infinity,
                       height: 48,
                       child: ElevatedButton.icon(
                         onPressed: () async {
@@ -396,9 +401,11 @@ class QRCodeScreen extends StatelessWidget {
                           'تحميل وطباعة وصل الإثبات المادي (PDF)',
                           style: TextStyle(
                             fontFamily: 'Tajawal',
-                            fontSize: 13,
+                            fontSize: 12.5,
                             fontWeight: FontWeight.bold,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFD4AF37),
@@ -412,8 +419,9 @@ class QRCodeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                   ],
-                  SizedBox(
-                    width: 340,
+                  Container(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    width: double.infinity,
                     height: 44,
                     child: OutlinedButton.icon(
                       onPressed: () => Navigator.of(context).pop(),

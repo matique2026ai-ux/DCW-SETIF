@@ -1073,81 +1073,108 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
           const SizedBox(height: 16),
 
           // Action Buttons: PDF Export, Programs Review, Justifications Review
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    PdfReportService.generateAndPrintDailyReport(
-                      employees: _employees,
-                      attendance: _attendance,
-                      visits: _visits,
-                      directorName: loc.isArabic ? 'السيد المدير الولائي' : 'Monsieur le Directeur de Wilaya',
-                      reportDate: _selectedDate,
-                    );
-                  },
-                  icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 16),
-                  label: Text(
-                    isToday
-                        ? (loc.isArabic ? 'تصدير محضر PDF' : 'Exporter PV (PDF)')
-                        : (loc.isArabic ? 'تصدير أرشيف PDF' : 'Exporter Archive (PDF)'),
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      color: Colors.black,
-                    ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmall = constraints.maxWidth < 520;
+              final pdfBtn = ElevatedButton.icon(
+                onPressed: () {
+                  PdfReportService.generateAndPrintDailyReport(
+                    employees: _employees,
+                    attendance: _attendance,
+                    visits: _visits,
+                    directorName: loc.isArabic ? 'السيد المدير الولائي' : 'Monsieur le Directeur de Wilaya',
+                    reportDate: _selectedDate,
+                  );
+                },
+                icon: const Icon(Icons.picture_as_pdf, color: Colors.black, size: 16),
+                label: Text(
+                  isToday
+                      ? (loc.isArabic ? 'تصدير محضر PDF' : 'Exporter PV (PDF)')
+                      : (loc.isArabic ? 'تصدير أرشيف PDF' : 'Exporter Archive (PDF)'),
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: Colors.black,
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _showProgramsDialog,
-                  icon: const Icon(Icons.assignment, color: Colors.white, size: 16),
-                  label: Text(
-                    loc.isArabic ? 'البرامج الرقابية' : 'Programmes',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF881337),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => JustificationsReviewScreen.show(context),
-                  icon: const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFFD4AF37), size: 16),
-                  label: Text(
-                    loc.isArabic ? 'مبررات الغياب' : 'Justifications',
-                    style: const TextStyle(
-                      fontFamily: 'Tajawal',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 11,
-                      color: Color(0xFFD4AF37),
-                    ),
+              );
+
+              final progBtn = ElevatedButton.icon(
+                onPressed: _showProgramsDialog,
+                icon: const Icon(Icons.assignment, color: Colors.white, size: 16),
+                label: Text(
+                  loc.isArabic ? 'البرامج الرقابية' : 'Programmes',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: Colors.white,
                   ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
-              ),
-            ],
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF881337),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+
+              final justBtn = OutlinedButton.icon(
+                onPressed: () => JustificationsReviewScreen.show(context),
+                icon: const Icon(Icons.assignment_turned_in_outlined, color: Color(0xFFD4AF37), size: 16),
+                label: Text(
+                  loc.isArabic ? 'مبررات الغياب' : 'Justifications',
+                  style: const TextStyle(
+                    fontFamily: 'Tajawal',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 11,
+                    color: Color(0xFFD4AF37),
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+
+              if (isSmall) {
+                return Column(
+                  children: [
+                    SizedBox(width: double.infinity, child: pdfBtn),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: progBtn),
+                        const SizedBox(width: 8),
+                        Expanded(child: justBtn),
+                      ],
+                    ),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: pdfBtn),
+                  const SizedBox(width: 8),
+                  Expanded(child: progBtn),
+                  const SizedBox(width: 8),
+                  Expanded(child: justBtn),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 20),
 
@@ -2335,6 +2362,8 @@ class _DirectorReportsTabState extends State<DirectorReportsTab> {
               Text(
                 label,
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: 'Tajawal',
                   fontSize: 10,
