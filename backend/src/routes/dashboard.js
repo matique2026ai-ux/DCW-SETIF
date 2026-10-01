@@ -437,9 +437,56 @@ router.get('/analytics', async (req, res) => {
       rate: s.visits > 0 ? parseFloat(((s.violations / s.visits) * 100).toFixed(1)) : 0,
     })).sort((a, b) => b.visits - a.visits);
 
+    let marketPrices = [];
+    try {
+      marketPrices = await db.query(
+        pg
+          ? `SELECT "Id", "CommodityName", "Category", "RegulatedPrice", "WholesalePrice", "RetailPrice", "Unit", "MarketLocation", "SupplyStatus", "Notes", "RecordedDate"
+             FROM "TrackerMarketPrices"
+             ORDER BY "Id" ASC`
+          : `SELECT Id, CommodityName, Category, RegulatedPrice, WholesalePrice, RetailPrice, Unit, MarketLocation, SupplyStatus, Notes, RecordedDate
+             FROM TrackerMarketPrices
+             ORDER BY Id ASC`
+      );
+      if (!marketPrices || marketPrices.length === 0) {
+        const defaultCommodities = [
+          { name: 'زيت المائدة الغذائي (5 لتر)', cat: 'مواد مقننة واسعة الاستهلاك', reg: 650.00, whole: 610.00, retail: 650.00, unit: 'صفيحة 5 لتر', loc: 'ولاية سطيف', status: 'sufficient', notes: 'المرسوم التنفيذي 21-125' },
+          { name: 'السكر الأبيض المبلور (1 كغ)', cat: 'مواد مقننة واسعة الاستهلاك', reg: 90.00, whole: 85.00, retail: 90.00, unit: '1 كلغ معبأ', loc: 'ولاية سطيف', status: 'sufficient', notes: 'المرسوم التنفيذي 11-108' },
+          { name: 'حليب الأكياس المبستر (1 لتر)', cat: 'مواد مقننة واسعة الاستهلاك', reg: 25.00, whole: 24.50, retail: 25.00, unit: 'كيس 1 لتر', loc: 'ولاية سطيف', status: 'sufficient', notes: 'المرسوم التنفيذي 01-50' },
+          { name: 'الفرينة والدقيق المدعم (1 كغ)', cat: 'مواد مقننة واسعة الاستهلاك', reg: 20.00, whole: 19.00, retail: 20.00, unit: '1 كلغ', loc: 'مطاحن سطيف والعلمة', status: 'sufficient', notes: 'المرسوم التنفيذي 96-132' },
+          { name: 'اللحوم الحمراء الطازجة المستوردة', cat: 'لحوم ودواجن', reg: 1350.00, whole: 1250.00, retail: 1350.00, unit: '1 كلغ', loc: 'القصابات المعتمدة بسطيف والعلمة', status: 'sufficient', notes: 'سعر مسقف رسمي لضبط السوق' },
+          { name: 'البطاطا الحقلية للاستهلاك', cat: 'خضر وفواكه طازجة', reg: 75.00, whole: 65.00, retail: 75.00, unit: '1 كلغ', loc: 'سوق الجملة للخضر والفواكه سطيف', status: 'sufficient', notes: 'جهاز ضبط المنتجات الفلاحية (سيرباك)' },
+          { name: 'البصل الجاف', cat: 'خضر وفواكه طازجة', reg: 60.00, whole: 50.00, retail: 60.00, unit: '1 كلغ', loc: 'أسواق ولاية سطيف', status: 'sufficient', notes: 'مخزون استراتيجي كافٍ' },
+          { name: 'الدجاج ولحوم الدواجن', cat: 'لحوم ودواجن', reg: 370.00, whole: 330.00, retail: 370.00, unit: '1 كلغ', loc: 'مذابح وقصابات ولاية سطيف', status: 'sufficient', notes: 'شعبة الدواجن وتربية الطيور' },
+        ];
+        for (const item of defaultCommodities) {
+          await db.query(
+            pg
+              ? `INSERT INTO "TrackerMarketPrices" ("CommodityName", "Category", "RegulatedPrice", "WholesalePrice", "RetailPrice", "Unit", "MarketLocation", "SupplyStatus", "Notes")
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+              : `INSERT INTO TrackerMarketPrices (CommodityName, Category, RegulatedPrice, WholesalePrice, RetailPrice, Unit, MarketLocation, SupplyStatus, Notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [item.name, item.cat, item.reg, item.whole, item.retail, item.unit, item.loc, item.status, item.notes]
+          );
+        }
+        marketPrices = await db.query(
+          pg
+            ? `SELECT "Id", "CommodityName", "Category", "RegulatedPrice", "WholesalePrice", "RetailPrice", "Unit", "MarketLocation", "SupplyStatus", "Notes", "RecordedDate"
+               FROM "TrackerMarketPrices"
+               ORDER BY "Id" ASC`
+            : `SELECT Id, CommodityName, Category, RegulatedPrice, WholesalePrice, RetailPrice, Unit, MarketLocation, SupplyStatus, Notes, RecordedDate
+               FROM TrackerMarketPrices
+               ORDER BY Id ASC`
+        );
+      }
+    } catch (e) {
+      console.warn('Market prices query in analytics error:', e.message);
+    }
+
     res.json({
       selectedDate: queryDate,
       period: effectivePeriod,
+      marketPrices: marketPrices || [],
       attendance: {
         totalInspectors: targetIds.length,
         presentToday: presentCount,
