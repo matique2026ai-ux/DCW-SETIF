@@ -50,8 +50,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     );
 
     _loadData();
-    // Live Auto-Refresh every 12 seconds
-    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+    // Live Auto-Refresh every 20 seconds (balanced for high-speed responsiveness and zero UI stutter)
+    _liveRefreshTimer = Timer.periodic(const Duration(seconds: 20), (_) {
       if (mounted) _loadData(silent: true);
     });
   }
@@ -1711,6 +1711,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     final bool isOut = emp['isCheckedOut'] == true;
     final List<dynamic> visits = (emp['visits'] as List<dynamic>?) ?? [];
     final String? checkInPhoto = emp['checkInPhoto']?.toString();
+    final bool hasCheckInPhoto = emp['hasCheckInPhoto'] == true;
+    final int empId = int.tryParse('${emp['employeeId'] ?? emp['Id'] ?? emp['id'] ?? 0}') ?? 0;
 
     // Precise administrative status:
     String statusText = loc.isArabic ? 'غائب (لم يسجل)' : 'Absent (Non pointé)';
@@ -1911,6 +1913,38 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                 ),
+              ),
+            ] else if (hasCheckInPhoto && empId > 0) ...[
+              const SizedBox(height: 12),
+              Text(loc.isArabic ? 'صورة إثبات الحضور الميداني:' : 'Photo de présence terrain :', style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 6),
+              FutureBuilder<String?>(
+                future: context.read<AuthService>().api.getAttendancePhoto(empId),
+                builder: (ctx, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return Container(
+                      height: 80,
+                      alignment: Alignment.center,
+                      child: const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFD4AF37)),
+                      ),
+                    );
+                  }
+                  final p = snap.data;
+                  if (p == null || p.isEmpty) return const SizedBox.shrink();
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.memory(
+                      base64Decode(p),
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                    ),
+                  );
+                },
               ),
             ],
             const SizedBox(height: 16),
@@ -2228,6 +2262,8 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     final loc = AppLocalizations.of(context);
     final String shop = (v['shopName'] ?? (loc.isArabic ? 'محل تجاري' : 'Commerce')).toString();
     final String? photo = v['photo']?.toString();
+    final bool hasPhoto = v['hasPhoto'] == true || v['HasPhoto'] == true;
+    final int visitId = int.tryParse('${v['id'] ?? v['Id'] ?? 0}') ?? 0;
     final dynamic lat = v['latitude'];
     final dynamic lng = v['longitude'];
 
@@ -2277,6 +2313,38 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 ),
               ),
               const SizedBox(height: 12),
+            ] else if (hasPhoto && visitId > 0) ...[
+              FutureBuilder<Map<String, dynamic>?>(
+                future: context.read<AuthService>().api.getVisitDetails(visitId),
+                builder: (ctx, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return Container(
+                      height: 90,
+                      alignment: Alignment.center,
+                      child: const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFD4AF37)),
+                      ),
+                    );
+                  }
+                  final p = snap.data?['Photo']?.toString() ?? snap.data?['photo']?.toString();
+                  if (p == null || p.isEmpty) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.memory(
+                        base64Decode(p),
+                        height: 180,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  );
+                },
+              ),
             ],
             if (lat != null && lng != null)
               Text(

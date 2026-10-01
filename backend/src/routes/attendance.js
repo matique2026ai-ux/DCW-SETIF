@@ -306,8 +306,23 @@ function isWithinMorningWindow(dateObj) {
   };
 }
 
+// ⚡ Ultra-fast in-memory micro-cache for map-data (TTL: 5 seconds)
+let _mapCacheData = null;
+let _mapCacheTime = 0;
+const MAP_CACHE_TTL = 5000;
+
+function invalidateMapCache() {
+  _mapCacheData = null;
+  _mapCacheTime = 0;
+}
+
 router.get('/map-data', async (req, res) => {
   try {
+    const now = Date.now();
+    if (_mapCacheData && (now - _mapCacheTime < MAP_CACHE_TTL)) {
+      return res.json(_mapCacheData);
+    }
+
     const db = await getConnection();
     const pg = isPostgres();
     const today = getTodayAlgeria();
@@ -346,15 +361,23 @@ router.get('/map-data', async (req, res) => {
 
     const attendance = await db.query(
       pg
-        ? `SELECT "EmployeeId","CheckInTime","CheckOutTime","IsCheckedOut","CheckInLatitude","CheckInLongitude","CheckInPhoto","Notes","CheckOutLatitude","CheckOutLongitude","CheckOutLocation","EarlyReason" FROM "TrackerAttendance" WHERE "Date" = $1`
-        : 'SELECT EmployeeId,CheckInTime,CheckOutTime,IsCheckedOut,CheckInLatitude,CheckInLongitude,CheckInPhoto,Notes,CheckOutLatitude,CheckOutLongitude,CheckOutLocation,EarlyReason FROM TrackerAttendance WHERE Date = ?',
+        ? `SELECT "EmployeeId","CheckInTime","CheckOutTime","IsCheckedOut","CheckInLatitude","CheckInLongitude","Notes","CheckOutLatitude","CheckOutLongitude","CheckOutLocation","EarlyReason",
+                  CASE WHEN "CheckInPhoto" IS NOT NULL AND "CheckInPhoto" != '' THEN true ELSE false END AS "HasCheckInPhoto"
+           FROM "TrackerAttendance" WHERE "Date" = $1`
+        : `SELECT EmployeeId,CheckInTime,CheckOutTime,IsCheckedOut,CheckInLatitude,CheckInLongitude,Notes,CheckOutLatitude,CheckOutLongitude,CheckOutLocation,EarlyReason,
+                  CASE WHEN CheckInPhoto IS NOT NULL AND CheckInPhoto != '' THEN 1 ELSE 0 END AS HasCheckInPhoto
+           FROM TrackerAttendance WHERE Date = ?`,
       [today]
     );
 
     const rawVisits = await db.query(
       pg
-        ? `SELECT "Id","EmployeeId","CheckInTime","Latitude","Longitude","ShopName","ShopType","Photo","ViolationFound","Notes","PaperPvNumber","PartnerInspectorName","PartnerInspectorId","MissionType" FROM "TrackerVisits" WHERE "Date" = $1 ORDER BY "CheckInTime" ASC`
-        : 'SELECT Id,EmployeeId,CheckInTime,Latitude,Longitude,ShopName,ShopType,Photo,ViolationFound,Notes,PaperPvNumber,PartnerInspectorName,PartnerInspectorId,MissionType FROM TrackerVisits WHERE Date = ? ORDER BY CheckInTime ASC',
+        ? `SELECT "Id","EmployeeId","CheckInTime","Latitude","Longitude","ShopName","ShopType","ViolationFound","Notes","PaperPvNumber","PartnerInspectorName","PartnerInspectorId","MissionType",
+                  CASE WHEN "Photo" IS NOT NULL AND "Photo" != '' THEN true ELSE false END AS "HasPhoto"
+           FROM "TrackerVisits" WHERE "Date" = $1 ORDER BY "CheckInTime" ASC`
+        : `SELECT Id,EmployeeId,CheckInTime,Latitude,Longitude,ShopName,ShopType,ViolationFound,Notes,PaperPvNumber,PartnerInspectorName,PartnerInspectorId,MissionType,
+                  CASE WHEN Photo IS NOT NULL AND Photo != '' THEN 1 ELSE 0 END AS HasPhoto
+           FROM TrackerVisits WHERE Date = ? ORDER BY CheckInTime ASC`,
       [today]
     );
     const visits = decryptVisitsList(rawVisits || []);
@@ -393,7 +416,7 @@ router.get('/map-data', async (req, res) => {
           CheckOutLongitude: a.CheckOutLongitude !== undefined ? a.CheckOutLongitude : a.checkoutlongitude,
           CheckOutLocation: a.CheckOutLocation || a.checkoutlocation,
           EarlyReason: a.EarlyReason || a.earlyreason,
-          CheckInPhoto: a.CheckInPhoto || a.checkinphoto,
+          hasCheckInPhoto: a.HasCheckInPhoto === true || a.hascheckinphoto === true || a.HasCheckInPhoto === 1 || a.hascheckinphoto === 1,
           Notes: a.Notes || a.notes,
         };
       }
@@ -411,7 +434,7 @@ router.get('/map-data', async (req, res) => {
           longitude: v.Longitude !== undefined ? v.Longitude : v.longitude,
           shopName: v.ShopName || v.shopname || 'معاينة ميدانية',
           shopType: v.ShopType || v.shoptype,
-          photo: v.Photo || v.photo,
+          hasPhoto: v.HasPhoto === true || v.hasphoto === true || v.HasPhoto === 1 || v.hasphoto === 1,
           violationFound: v.ViolationFound !== undefined ? v.ViolationFound : v.violationfound,
           notes: v.Notes || v.notes,
           paperPvNumber: v.paperPvNumber || v.PaperPvNumber || v.paperpvnumber || null,
@@ -422,33 +445,31 @@ router.get('/map-data', async (req, res) => {
       }
     }
 
-    // Also include any user who recorded attendance or visits today even if not in targetEmployees
+    // ⚡ Batch query for any user who recorded attendance or visits today even if not in targetEmployees
     const existingEmpIds = new Set(targetEmployees.map(e => Number(e.Id || e.id)));
-    const extraIds = new Set([...Object.keys(attendanceMap), ...Object.keys(visitsMap)].map(Number));
-    for (const extraId of extraIds) {
-      if (extraId && !existingEmpIds.has(extraId)) {
-        const uRows = await db.query(
-          pg
-            ? `SELECT "Id", "NomComplet", "NomUtilisateur", "Service" FROM "UtilisateursSysteme" WHERE "Id" = $1`
-            : `SELECT Id, NomComplet, NomUtilisateur, Service FROM UtilisateursSysteme WHERE Id = ?`,
-          [extraId]
-        );
-        if (uRows && uRows.length > 0) {
-          const u = uRows[0];
-          targetEmployees.push({
-            Id: extraId,
-            NumeroMatricule: `USR-${extraId}`,
-            NomAr: u.NomComplet || u.nomcomplet || u.NomUtilisateur || u.nomutilisateur,
-            PrenomAr: '',
-            Nom: u.NomUtilisateur || u.nomutilisateur,
-            Prenom: '',
-            Service: u.Service || u.service || 'مصلحة حماية المستهلك وقمع الغش',
-            Grade: 'مفتش رقابة ميداني',
-            AdministrativeStatus: 'active',
-            IsBrigadeLeader: false,
-            BrigadeName: 'فرقة تفتيش ميدانية',
-          });
-        }
+    const extraIds = [...new Set([...Object.keys(attendanceMap), ...Object.keys(visitsMap)].map(Number))].filter(id => id && !existingEmpIds.has(id));
+    if (extraIds.length > 0) {
+      const uRows = await db.query(
+        pg
+          ? `SELECT "Id", "NomComplet", "NomUtilisateur", "Service" FROM "UtilisateursSysteme" WHERE "Id" = ANY($1)`
+          : `SELECT Id, NomComplet, NomUtilisateur, Service FROM UtilisateursSysteme WHERE Id IN (${extraIds.map(() => '?').join(',')})`,
+        pg ? [extraIds] : extraIds
+      );
+      for (const u of (uRows || [])) {
+        const uId = u.Id || u.id;
+        targetEmployees.push({
+          Id: uId,
+          NumeroMatricule: `USR-${uId}`,
+          NomAr: u.NomComplet || u.nomcomplet || u.NomUtilisateur || u.nomutilisateur,
+          PrenomAr: '',
+          Nom: u.NomUtilisateur || u.nomutilisateur,
+          Prenom: '',
+          Service: u.Service || u.service || 'مصلحة حماية المستهلك وقمع الغش',
+          Grade: 'مفتش رقابة ميداني',
+          AdministrativeStatus: 'active',
+          IsBrigadeLeader: false,
+          BrigadeName: 'فرقة تفتيش ميدانية',
+        });
       }
     }
 
@@ -584,7 +605,8 @@ router.get('/map-data', async (req, res) => {
         checkInLongitude: att && att.CheckInLongitude != null ? parseFloat(att.CheckInLongitude) : null,
         checkOutLatitude: att && att.CheckOutLatitude != null ? parseFloat(att.CheckOutLatitude) : null,
         checkOutLongitude: att && att.CheckOutLongitude != null ? parseFloat(att.CheckOutLongitude) : null,
-        checkInPhoto: att ? att.CheckInPhoto : null,
+        checkInPhoto: null,
+        hasCheckInPhoto: att ? (att.hasCheckInPhoto === true) : false,
         notes: att ? att.Notes : null,
         visitsCount: empVisits.length,
         visits: empVisits,
@@ -628,10 +650,42 @@ router.get('/map-data', async (req, res) => {
       console.warn('Brigade split detection warning:', e.message);
     }
 
+    _mapCacheData = result;
+    _mapCacheTime = Date.now();
     res.json(result);
   } catch (err) {
     console.error('Map data error:', err.message);
     res.status(500).json({ error: 'خطأ في جلب بيانات الخريطة' });
+  }
+});
+
+// 📸 Get photo of morning attendance for a specific employee on demand (Lazy Loading)
+router.get('/photo/:employeeId', async (req, res) => {
+  try {
+    const db = await getConnection();
+    const pg = isPostgres();
+    const today = req.query.date || getTodayAlgeria();
+    const empId = parseInt(req.params.employeeId, 10);
+    if (isNaN(empId)) return res.status(400).json({ error: 'معرف الموظف غير صالح' });
+
+    const rows = await db.query(
+      pg
+        ? `SELECT "CheckInPhoto" FROM "TrackerAttendance" WHERE "EmployeeId" = $1 AND "Date" = $2 LIMIT 1`
+        : `SELECT TOP 1 CheckInPhoto FROM TrackerAttendance WHERE EmployeeId = ? AND Date = ?`,
+      [empId, today]
+    );
+
+    if (!rows || rows.length === 0 || !(rows[0].CheckInPhoto || rows[0].checkinphoto)) {
+      return res.status(404).json({ error: 'لا توجد صورة حضور مسجلة' });
+    }
+
+    res.json({
+      employeeId: empId,
+      date: today,
+      checkInPhoto: rows[0].CheckInPhoto || rows[0].checkinphoto,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'خطأ في جلب صورة الحضور: ' + err.message });
   }
 });
 
@@ -801,6 +855,8 @@ router.post('/checkin', async (req, res) => {
         : 'SELECT TOP 1 * FROM TrackerAttendance WHERE EmployeeId = ? AND Date = ? ORDER BY Id DESC',
       [finalEmpId, today]
     );
+
+    invalidateMapCache();
 
     res.status(201).json({
       ...(result[0] || {}),
@@ -996,6 +1052,8 @@ router.post('/checkout', async (req, res) => {
       [employeeId, today]
     );
 
+    invalidateMapCache();
+
     res.json({
       ...(result[0] || {}),
       success: true,
@@ -1057,6 +1115,8 @@ router.post('/cancel-checkout', async (req, res) => {
         : 'SELECT TOP 1 * FROM TrackerAttendance WHERE EmployeeId = ? AND Date = ? ORDER BY Id DESC',
       [employeeId, today]
     );
+
+    invalidateMapCache();
 
     res.json(result[0] || { success: true });
   } catch (err) {
@@ -1203,6 +1263,8 @@ router.post('/location', async (req, res) => {
       [parseInt(employeeId), lat, lng, acc, spd, today]
     );
 
+    invalidateMapCache();
+
     res.json({ success: true, message: 'تم تسجيل نقطة GPS بنجاح ✅' });
   } catch (err) {
     console.error('Location record error:', err.message);
@@ -1267,4 +1329,5 @@ router.delete('/employee/:empId', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.invalidateMapCache = invalidateMapCache;
 

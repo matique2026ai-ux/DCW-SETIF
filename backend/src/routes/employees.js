@@ -22,9 +22,25 @@ const TARGET_DEPARTMENTS = [
   'المديرية',
 ];
 
+// ⚡ In-memory micro-cache for employees list (TTL: 10 seconds)
+let _employeesCache = {};
+let _employeesCacheTime = 0;
+const EMP_CACHE_TTL = 10000;
+
+function invalidateEmployeesCache() {
+  _employeesCache = {};
+  _employeesCacheTime = 0;
+}
+
 // GET all employees with administrative status & brigade assignment
 router.get('/', async (req, res) => {
   try {
+    const cacheKey = JSON.stringify(req.query || {});
+    const now = Date.now();
+    if (_employeesCache[cacheKey] && (now - _employeesCacheTime < EMP_CACHE_TTL)) {
+      return res.json(_employeesCache[cacheKey]);
+    }
+
     const db = await getConnection();
     const pg = isPostgres();
     const { department, active, all, status, brigade } = req.query;
@@ -126,6 +142,9 @@ router.get('/', async (req, res) => {
         r.IsBrigadeLeader === true || r.IsBrigadeLeader === 1
       );
     }
+
+    _employeesCache[cacheKey] = filtered;
+    _employeesCacheTime = Date.now();
 
     res.json(filtered);
   } catch (err) {
@@ -249,6 +268,8 @@ router.post('/', verifyToken, async (req, res) => {
       );
     }
 
+    invalidateEmployeesCache();
+
     res.status(201).json({
       success: true,
       message: `تم إدراج الموظف (${cleanNomAr} ${cleanPrenomAr}) في السجل الإداري بنجاح ✅`,
@@ -356,6 +377,8 @@ router.put('/:id/admin-status', verifyToken, async (req, res) => {
         await db.query(`UPDATE Employes SET FonctionExercee = ? WHERE Id = ?`, [assignedPosition, employeeId]);
       }
     }
+
+    invalidateEmployeesCache();
 
     res.json({ success: true, message: 'تم تحديث الوضعية الإدارية والتكليف بنجاح' });
   } catch (err) {
@@ -528,6 +551,8 @@ router.delete('/:id', async (req, res) => {
       await db.query('DELETE FROM UtilisateursSysteme WHERE EmployeeId = ?', [employeeId]);
       await db.query('DELETE FROM Employes WHERE Id = ?', [employeeId]);
     }
+
+    invalidateEmployeesCache();
 
     res.json({ success: true, message: 'تم حذف الموظف وحسابه بنجاح ✅' });
   } catch (err) {

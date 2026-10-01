@@ -11,18 +11,39 @@ const {
   verifyPvSeal,
 } = require('../utils/cryptoUtils');
 
+const { invalidateMapCache } = require('./attendance');
+
 const router = express.Router();
 
 const pg_q = (pg, sql_pg, sql_mssql) => pg ? sql_pg : sql_mssql;
+
+// ⚡ In-memory micro-cache for /today visits (TTL: 5 seconds)
+let _todayVisitsCache = null;
+let _todayVisitsCacheTime = 0;
+const TODAY_VISITS_TTL = 5000;
+
+function invalidateVisitsCache() {
+  _todayVisitsCache = null;
+  _todayVisitsCacheTime = 0;
+  if (typeof invalidateMapCache === 'function') invalidateMapCache();
+}
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const db = await getConnection();
     const pg = isPostgres();
-    const { date, employeeId, isApproved } = req.query;
+    const { date, employeeId, isApproved, includePhoto } = req.query;
+
+    const selectCols = (includePhoto === 'true' || employeeId)
+      ? 'tv.*'
+      : (pg
+          ? `tv."Id", tv."EmployeeId", tv."Date", tv."CheckInTime", tv."CheckOutTime", tv."Latitude", tv."Longitude", tv."ShopName", tv."ShopType", tv."LocationName", tv."ViolationFound", tv."ViolationType", tv."Notes", tv."PaperPvNumber", tv."PartnerInspectorName", tv."PartnerInspectorId", tv."MissionType", tv."IsApproved", tv."ApprovedBy", tv."ApprovedAt", tv."SeizureValue", tv."SeizureNotes", tv."SamplesCount", tv."SamplesNotes", tv."CreatedAt",
+             CASE WHEN tv."Photo" IS NOT NULL AND tv."Photo" != '' THEN true ELSE false END AS "HasPhoto"`
+          : `tv.Id, tv.EmployeeId, tv.Date, tv.CheckInTime, tv.CheckOutTime, tv.Latitude, tv.Longitude, tv.ShopName, tv.ShopType, tv.LocationName, tv.ViolationFound, tv.ViolationType, tv.Notes, tv.PaperPvNumber, tv.PartnerInspectorName, tv.PartnerInspectorId, tv.MissionType, tv.IsApproved, tv.ApprovedBy, tv.ApprovedAt, tv.SeizureValue, tv.SeizureNotes, tv.SamplesCount, tv.SamplesNotes, tv.CreatedAt,
+             CASE WHEN tv.Photo IS NOT NULL AND tv.Photo != '' THEN 1 ELSE 0 END AS HasPhoto`);
 
     let query = pg_q(pg,
-      `SELECT tv.*,
+      `SELECT ${selectCols},
               COALESCE(e."NomAr", u."NomComplet", 'مفتش ميداني') as "NomAr",
               COALESCE(e."PrenomAr", '') as "PrenomAr",
               COALESCE(e."Nom", u."NomUtilisateur", 'Inspecteur') as "Nom",
@@ -31,9 +52,9 @@ router.get('/', authMiddleware, async (req, res) => {
        FROM "TrackerVisits" tv
        LEFT JOIN "Employes" e ON tv."EmployeeId" = e."Id"
        LEFT JOIN "UtilisateursSysteme" u ON (tv."EmployeeId" = u."Id" OR tv."EmployeeId" = u."EmployeeId")`,
-      `SELECT tv.*,
+      `SELECT ${selectCols},
               COALESCE(e.NomAr, u.NomComplet, 'مفتش ميداني') as NomAr,
-              COALESCE(e.PrenomAr, '') as PrenomAr,
+              COALESCE(e.PrenomAr, '') as NomAr,
               COALESCE(e.Nom, u.NomUtilisateur, 'Inspecteur') as Nom,
               COALESCE(e.Prenom, '') as Prenom,
               COALESCE(e.Service, u.Service, 'مصلحة حماية المستهلك وقمع الغش') as Service
@@ -78,13 +99,30 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.get('/today', authMiddleware, async (req, res) => {
   try {
+    const { employeeId, includePhoto } = req.query;
+
+    // Fast-path from cache for bulk wilaya queries
+    if (!employeeId && includePhoto !== 'true') {
+      const now = Date.now();
+      if (_todayVisitsCache && (now - _todayVisitsCacheTime < TODAY_VISITS_TTL)) {
+        return res.json(_todayVisitsCache);
+      }
+    }
+
     const db = await getConnection();
     const pg = isPostgres();
     const today = getTodayAlgeria();
-    const { employeeId } = req.query;
+
+    const selectCols = (includePhoto === 'true' || employeeId)
+      ? 'tv.*'
+      : (pg
+          ? `tv."Id", tv."EmployeeId", tv."Date", tv."CheckInTime", tv."CheckOutTime", tv."Latitude", tv."Longitude", tv."ShopName", tv."ShopType", tv."LocationName", tv."ViolationFound", tv."ViolationType", tv."Notes", tv."PaperPvNumber", tv."PartnerInspectorName", tv."PartnerInspectorId", tv."MissionType", tv."IsApproved", tv."ApprovedBy", tv."ApprovedAt", tv."SeizureValue", tv."SeizureNotes", tv."SamplesCount", tv."SamplesNotes", tv."CreatedAt",
+             CASE WHEN tv."Photo" IS NOT NULL AND tv."Photo" != '' THEN true ELSE false END AS "HasPhoto"`
+          : `tv.Id, tv.EmployeeId, tv.Date, tv.CheckInTime, tv.CheckOutTime, tv.Latitude, tv.Longitude, tv.ShopName, tv.ShopType, tv.LocationName, tv.ViolationFound, tv.ViolationType, tv.Notes, tv.PaperPvNumber, tv.PartnerInspectorName, tv.PartnerInspectorId, tv.MissionType, tv.IsApproved, tv.ApprovedBy, tv.ApprovedAt, tv.SeizureValue, tv.SeizureNotes, tv.SamplesCount, tv.SamplesNotes, tv.CreatedAt,
+             CASE WHEN tv.Photo IS NOT NULL AND tv.Photo != '' THEN 1 ELSE 0 END AS HasPhoto`);
 
     let query = pg_q(pg,
-      `SELECT tv.*,
+      `SELECT ${selectCols},
               COALESCE(e."NomAr", u."NomComplet", 'مفتش ميداني') as "NomAr",
               COALESCE(e."PrenomAr", '') as "PrenomAr",
               COALESCE(e."Nom", u."NomUtilisateur", 'Inspecteur') as "Nom",
@@ -94,7 +132,7 @@ router.get('/today', authMiddleware, async (req, res) => {
        LEFT JOIN "Employes" e ON tv."EmployeeId" = e."Id"
        LEFT JOIN "UtilisateursSysteme" u ON (tv."EmployeeId" = u."Id" OR tv."EmployeeId" = u."EmployeeId")
        WHERE tv."Date" = $1`,
-      `SELECT tv.*,
+      `SELECT ${selectCols},
               COALESCE(e.NomAr, u.NomComplet, 'مفتش ميداني') as NomAr,
               COALESCE(e.PrenomAr, '') as PrenomAr,
               COALESCE(e.Nom, u.NomUtilisateur, 'Inspecteur') as Nom,
@@ -122,7 +160,14 @@ router.get('/today', authMiddleware, async (req, res) => {
     query += pg ? ' ORDER BY tv."CheckInTime" DESC' : ' ORDER BY tv.CheckInTime DESC';
 
     const result = await db.query(query, params);
-    res.json(decryptVisitsList(result));
+    const decrypted = decryptVisitsList(result);
+
+    if (!employeeId && includePhoto !== 'true') {
+      _todayVisitsCache = decrypted;
+      _todayVisitsCacheTime = Date.now();
+    }
+
+    res.json(decrypted);
   } catch (err) {
     console.error('Get today visits error:', err.message);
     res.status(500).json({ error: 'خطأ في جلب زيارات اليوم' });
@@ -295,6 +340,8 @@ router.post('/', authMiddleware, async (req, res) => {
       [finalEmpId, today]
     );
 
+    invalidateVisitsCache();
+
     res.status(201).json(decryptVisitRecord(result[0]));
   } catch (err) {
     console.error('Create visit error:', err.message);
@@ -341,6 +388,7 @@ router.post('/:id/checkout', authMiddleware, async (req, res) => {
         : 'SELECT * FROM TrackerVisits WHERE Id = ?',
       [req.params.id]
     );
+    invalidateVisitsCache();
     res.json(decryptVisitRecord(result[0]));
   } catch (err) {
     res.status(500).json({ error: 'خطأ في إنهاء الزيارة' });
@@ -409,6 +457,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
       pg ? `SELECT * FROM "TrackerVisits" WHERE "Id" = $1` : 'SELECT * FROM TrackerVisits WHERE Id = ?',
       [req.params.id]
     );
+    invalidateVisitsCache();
     res.json(decryptVisitRecord(result[0]));
   } catch (err) {
     res.status(500).json({ error: 'خطأ في تحديث بيانات المعاينة' });
@@ -441,6 +490,7 @@ const handleApprove = async (req, res) => {
         : 'SELECT * FROM TrackerVisits WHERE Id = ?',
       [req.params.id]
     );
+    invalidateVisitsCache();
     res.json({
       success: true,
       message: 'تم تأشير واعتماد المعاينة رسمياً بنجاح ✅',
@@ -506,6 +556,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
       pg ? 'DELETE FROM "TrackerVisits" WHERE "Id" = $1' : 'DELETE FROM TrackerVisits WHERE Id = ?',
       [numericId]
     );
+
+    invalidateVisitsCache();
 
     res.json({ success: true, message: 'تم حذف محضر المعاينة بنجاح ✅' });
   } catch (err) {

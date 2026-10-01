@@ -31,6 +31,17 @@ const path = require('path');
 const fs = require('fs');
 
 app.use(cors());
+
+// ⚡ HTTP Gzip Compression (reduces JSON & asset payload size by 75-85%)
+let compression;
+try {
+  compression = require('compression');
+  app.use(compression({
+    level: 6,
+    threshold: 1024,
+  }));
+} catch (_) {}
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 

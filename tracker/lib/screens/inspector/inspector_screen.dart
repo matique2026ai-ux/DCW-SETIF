@@ -49,10 +49,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
     super.initState();
     _loadStatus();
     _loadActiveProgram();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 35), (_) {
       if (mounted) {
         _loadStatus();
-        _loadActiveProgram();
       }
     });
     // 🛰️ تسجيل GPS الدوري كل 5 دقائق (يبدأ فوراً ثم يتكرر)

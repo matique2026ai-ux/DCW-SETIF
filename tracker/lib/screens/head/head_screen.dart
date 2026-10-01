@@ -74,7 +74,7 @@ class _HeadScreenState extends State<HeadScreen> with SingleTickerProviderStateM
       if (mounted) setState(() {});
     });
     _loadAllData();
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _pollTimer = Timer.periodic(const Duration(seconds: 40), (_) {
       if (mounted) _loadAllData(silent: true);
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {

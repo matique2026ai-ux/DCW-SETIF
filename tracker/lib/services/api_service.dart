@@ -1106,13 +1106,14 @@ class ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getTodayVisits([int? employeeId]) async {
+  Future<List<Map<String, dynamic>>> getTodayVisits([int? employeeId, bool includePhoto = false]) async {
     try {
-      final url = employeeId != null
-          ? '$baseUrl/visits/today?employeeId=$employeeId'
-          : '$baseUrl/visits/today';
+      final params = <String, String>{};
+      if (employeeId != null) params['employeeId'] = employeeId.toString();
+      if (includePhoto) params['includePhoto'] = 'true';
+      final uri = Uri.parse('$baseUrl/visits/today').replace(queryParameters: params.isNotEmpty ? params : null);
       final response = await http.get(
-        Uri.parse(url),
+        uri,
         headers: _headers,
       ).timeout(defaultTimeout);
 
@@ -1121,6 +1122,33 @@ class ApiService {
       }
     } catch (_) {}
     return [];
+  }
+
+  /// 📸 جلب صورة حضور صباحي لموظف محدد عند الطلب (توفيراً للذاكرة والشبكة)
+  Future<String?> getAttendancePhoto(int employeeId, {String? date}) async {
+    try {
+      final uri = Uri.parse('$baseUrl/attendance/photo/$employeeId${date != null ? '?date=$date' : ''}');
+      final response = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['checkInPhoto']?.toString();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// 📸 جلب تفاصيل محضر معاينة فردي مع صورته عند الطلب
+  Future<Map<String, dynamic>?> getVisitDetails(int visitId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/visits/$visitId'),
+        headers: _headers,
+      ).timeout(const Duration(seconds: 8));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return null;
   }
 
   Future<List<Map<String, dynamic>>> getAllVisits({String? date, int? employeeId, bool? isApproved}) async {
