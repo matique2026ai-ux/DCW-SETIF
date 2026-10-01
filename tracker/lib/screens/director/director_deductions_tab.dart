@@ -29,6 +29,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   bool _isPrintingReport = false;
   Timer? _pollTimer;
 
+  // --- UX: Quick-jump to pending inquiries & violation filters ---
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _pendingInquiriesKey = GlobalKey();
+  String _violationFilter = 'all'; // 'all', 'absent', 'late'
+  String _violationSearchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +47,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
   @override
   void dispose() {
     _pollTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -347,8 +354,108 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1050),
           child: ListView(
+            controller: _scrollController,
             padding: const EdgeInsets.all(16),
             children: [
+          // ── اللافتة الذكية للانتقال المباشر للاستفسارات المعلقة ──
+          if (answeredInquiries.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                final ctx = _pendingInquiriesKey.currentContext;
+                if (ctx != null) {
+                  Scrollable.ensureVisible(
+                    ctx,
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.easeInOut,
+                    alignment: 0.05,
+                  );
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF7F1D1D), Color(0xFF991B1B)],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFEF4444), width: 1.3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.rate_review, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            loc.isArabic
+                                ? 'يوجد ${answeredInquiries.length} استفسار تم الرد عليه بانتظار قراركم الإداري'
+                                : '${answeredInquiries.length} demandes répondues en attente de décision',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            loc.isArabic
+                                ? 'انقر هنا للانتقال المباشر للبت في الملفات دون الحاجة للتمرير عبر القائمة'
+                                : 'Cliquez ici pour accéder directement sans défiler',
+                            style: TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            loc.isArabic ? 'انتقال فوري' : 'Aller',
+                            style: const TextStyle(
+                              fontFamily: 'Tajawal',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11.5,
+                              color: Color(0xFF7F1D1D),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_downward, color: Color(0xFF7F1D1D), size: 14),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           // 1. Morning Grace Time Setting Header
           Container(
             padding: const EdgeInsets.all(16),
@@ -600,6 +707,7 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
           const SizedBox(height: 18),
 
           // 3. Urgent: Answered Inquiries Awaiting Director Sovereign Decision
+          SizedBox(key: _pendingInquiriesKey, height: 0),
           Row(
             children: [
               const Icon(Icons.rate_review, color: Color(0xFFD4AF37), size: 22),
@@ -1247,6 +1355,39 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
 
 
 
+  // ── Violation type quick-filter chip (used in _buildAutoFlaggedViolationsSection) ──
+  Widget _buildViolationFilterChip({
+    required String label,
+    required bool isSelected,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withValues(alpha: 0.22) : Colors.black26,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isSelected ? color : Colors.white12,
+            width: isSelected ? 1.4 : 0.8,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Tajawal',
+            fontSize: 11.5,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? color : Colors.white60,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAutoFlaggedViolationsSection(AppLocalizations loc) {
     final List<Map<String, dynamic>> flaggedList = [];
 
@@ -1394,11 +1535,66 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        loc.isArabic
-                            ? 'فرز ذكي آلي للمخالفين اليوم لتوفير وقت المدير؛ يمكنك التغاضي أو توجيه الاستفسار بنقرة واحدة:'
-                            : 'Filtrage automatique des contrevenants. Traitez chaque cas (Ordre ou Tolérance) :',
-                        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white70),
+                      const SizedBox(height: 10),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _buildViolationFilterChip(
+                              label: loc.isArabic ? 'الكل (${flaggedList.length})' : 'Tous (${flaggedList.length})',
+                              isSelected: _violationFilter == 'all',
+                              color: const Color(0xFFD4AF37),
+                              onTap: () => setState(() => _violationFilter = 'all'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildViolationFilterChip(
+                              label: loc.isArabic
+                                  ? '🔴 غياب (${flaggedList.where((f) => f['violationType'] == 'absent').length})'
+                                  : '🔴 Absences (${flaggedList.where((f) => f['violationType'] == 'absent').length})',
+                              isSelected: _violationFilter == 'absent',
+                              color: Colors.redAccent,
+                              onTap: () => setState(() => _violationFilter = 'absent'),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildViolationFilterChip(
+                              label: loc.isArabic
+                                  ? '🟠 تأخر (${flaggedList.where((f) => f['violationType'] == 'late').length})'
+                                  : '🟠 Retards (${flaggedList.where((f) => f['violationType'] == 'late').length})',
+                              isSelected: _violationFilter == 'late',
+                              color: Colors.orangeAccent,
+                              onTap: () => setState(() => _violationFilter = 'late'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Search Box for Violations
+                      SizedBox(
+                        height: 36,
+                        child: TextField(
+                          onChanged: (v) => setState(() => _violationSearchQuery = v),
+                          style: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white),
+                          decoration: InputDecoration(
+                            hintText: loc.isArabic ? 'بحث سريع في المخالفين بالاسم أو المصلحة...' : 'Recherche...',
+                            hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 11, color: Colors.white38),
+                            prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37), size: 16),
+                            filled: true,
+                            fillColor: Colors.black38,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 1.0),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -1406,13 +1602,37 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
               ],
             ),
           ),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: flaggedList.length,
-            separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
-            itemBuilder: (context, idx) {
-              final item = flaggedList[idx];
+          Builder(builder: (context) {
+            final displayList = flaggedList.where((f) {
+              if (_violationFilter != 'all' && f['violationType'] != _violationFilter) return false;
+              if (_violationSearchQuery.trim().isNotEmpty) {
+                final q = _violationSearchQuery.trim().toLowerCase();
+                final name = (f['name'] ?? '').toString().toLowerCase();
+                final service = (f['service'] ?? '').toString().toLowerCase();
+                if (!name.contains(q) && !service.contains(q)) return false;
+              }
+              return true;
+            }).toList();
+
+            if (displayList.isEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(
+                  child: Text(
+                    loc.isArabic ? 'لا توجد مخالفات في هذا التصنيف حالياً ✅' : 'Aucune infraction de ce type ✅',
+                    style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white60),
+                  ),
+                ),
+              );
+            }
+
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: displayList.length,
+              separatorBuilder: (_, __) => Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+              itemBuilder: (context, idx) {
+                final item = displayList[idx];
               final isLate = item['violationType'] == 'late';
               final String name = (item['name'] ?? '').toString();
               final String service = (item['service'] ?? '').toString();
@@ -1650,11 +1870,12 @@ class _DirectorDeductionsTabState extends State<DirectorDeductionsTab> {
                 },
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
+          );
+        }),
+      ],
+    ),
+  );
+}
 
   void _showEmployeePicker() {
     final loc = AppLocalizations.of(context);

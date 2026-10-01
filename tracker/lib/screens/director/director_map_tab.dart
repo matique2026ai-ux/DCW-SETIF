@@ -256,7 +256,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                 onTap: () => _showVisitDetailsModal(visitMap, empName),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37),
+                    color: const Color(0xFF8B5CF6),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                     boxShadow: const [
@@ -445,9 +445,9 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                       if (isOut) {
                         markerColor = const Color(0xFF64748B);
                       } else if (isLate) {
-                        markerColor = const Color(0xFFF59E0B);
+                        markerColor = const Color(0xFFF97316);
                       } else if (isInField) {
-                        markerColor = const Color(0xFFD4AF37);
+                        markerColor = const Color(0xFF0D9488);
                       } else {
                         markerColor = const Color(0xFF10B981);
                       }
@@ -762,20 +762,21 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Divider(color: Colors.white12, height: 8),
-                    _legendItem(const Color(0xFF10B981), loc.isArabic ? 'حضور منضبط بالمقر' : 'Présent à l\'heure (siège)'),
+                    // ── عناصر المفتاح بأيقونات وألوان مميزة تماماً ──
+                    _legendItem(const Color(0xFF10B981), loc.isArabic ? 'حضور منضبط بالمقر' : 'Présent à l\'heure (siège)', icon: Icons.check_circle_outline),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFFF59E0B), loc.isArabic ? 'حاضر مع تأخر صباحي' : 'Présent avec retard'),
+                    _legendItem(const Color(0xFFF97316), loc.isArabic ? 'حاضر مع تأخر صباحي' : 'Présent avec retard', icon: Icons.schedule),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFFD4AF37), loc.isArabic ? 'نشط في الميدان' : 'Actif sur le terrain'),
+                    _legendItem(const Color(0xFF0D9488), loc.isArabic ? 'نشط في الميدان' : 'Actif sur le terrain', icon: Icons.directions_walk),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFFF59E0B), loc.isArabic ? 'معاينة / محل تجاري' : 'Visite / commerce'),
+                    _legendItem(const Color(0xFF8B5CF6), loc.isArabic ? 'معاينة / محل تجاري' : 'Visite / commerce', icon: Icons.storefront),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFF64748B), loc.isArabic ? 'منصرف (أنهى الدوام)' : 'Sorti (fin de shift)'),
+                    _legendItem(const Color(0xFF64748B), loc.isArabic ? 'منصرف (أنهى الدوام)' : 'Sorti (fin de shift)', icon: Icons.exit_to_app),
                     const SizedBox(height: 5),
-                    _legendItem(const Color(0xFFEF4444), loc.isArabic ? 'لم يسجل الحضور (غائب)' : 'Non enregistré (absent)'),
+                    _legendItem(const Color(0xFFEF4444), loc.isArabic ? 'لم يسجل الحضور (غائب)' : 'Non enregistré (absent)', icon: Icons.person_off_outlined),
                     const SizedBox(height: 5),
                     _legendItem(
-                      const Color(0xFFD4AF37),
+                      const Color(0xFF10B981),
                       loc.isArabic ? 'نطاق البصمة (المقرات)' : 'Périmètre GPS officiel',
                       isCircle: true,
                     ),
@@ -783,6 +784,7 @@ class _DirectorMapTabState extends State<DirectorMapTab>
                     _legendItem(
                       const Color(0xFFD4AF37),
                       loc.isArabic ? 'مسار المفتش (عند النقر)' : 'Itinéraire (sélection)',
+                      icon: Icons.route,
                     ),
                   ],
                 ),
@@ -793,19 +795,31 @@ class _DirectorMapTabState extends State<DirectorMapTab>
     );
   }
 
-  Widget _legendItem(Color color, String label, {bool isCircle = false}) {
+  Widget _legendItem(Color color, String label, {bool isCircle = false, IconData? icon}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: isCircle ? color.withValues(alpha: 0.25) : color,
-            shape: BoxShape.circle,
-            border: Border.all(color: color, width: isCircle ? 1.5 : 1.0),
+        if (icon != null && !isCircle)
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: color.withValues(alpha: 0.6), width: 0.8),
+            ),
+            child: Icon(icon, color: color, size: 12),
+          )
+        else
+          Container(
+            width: 14,
+            height: 14,
+            decoration: BoxDecoration(
+              color: isCircle ? color.withValues(alpha: 0.2) : color,
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: isCircle ? 1.8 : 1.0),
+            ),
           ),
-        ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -966,92 +980,189 @@ class _DirectorMapTabState extends State<DirectorMapTab>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Directionality(
-        textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
-        child: Container(
-          height: MediaQuery.of(context).size.height * 0.75,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF160A1D),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: Border.all(color: themeColor.withValues(alpha: 0.45), width: 1.5),
-            boxShadow: const [
-              BoxShadow(color: Colors.black87, blurRadius: 20, spreadRadius: 4),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+      builder: (ctx) {
+        String modalSearch = '';
+        String selectedService = 'all';
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredEmps = emps.where((emp) {
+              final name = (emp['name'] ?? '').toString().toLowerCase();
+              final service = (emp['service'] ?? '').toString();
+              if (selectedService != 'all' && !service.contains(selectedService)) {
+                return false;
+              }
+              if (modalSearch.trim().isNotEmpty) {
+                final q = modalSearch.trim().toLowerCase();
+                if (!name.contains(q) && !service.toLowerCase().contains(q)) {
+                  return false;
+                }
+              }
+              return true;
+            }).toList();
+
+            return Directionality(
+              textDirection: loc.isArabic ? TextDirection.rtl : TextDirection.ltr,
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.82,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF160A1D),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border.all(color: themeColor.withValues(alpha: 0.45), width: 1.5),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black87, blurRadius: 20, spreadRadius: 4),
+                  ],
                 ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: themeColor.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      isCheckout ? Icons.exit_to_app : (isAbsent ? Icons.person_off : Icons.people_outline),
-                      color: themeColor,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
                       children: [
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: themeColor.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isCheckout ? Icons.exit_to_app : (isAbsent ? Icons.person_off : Icons.people_outline),
+                            color: themeColor,
+                            size: 20,
                           ),
                         ),
-                        Text(
-                          loc.isArabic ? 'العدد الإجمالي: ${emps.length} موظف' : 'Total : ${emps.length} employés',
-                          style: TextStyle(
-                            fontFamily: 'Tajawal',
-                            fontSize: 11,
-                            color: themeColor,
-                            fontWeight: FontWeight.w600,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              Text(
+                                loc.isArabic
+                                    ? 'المعروض: ${filteredEmps.length} من إجمالي ${emps.length} موظف'
+                                    : 'Affiché : ${filteredEmps.length} sur ${emps.length}',
+                                style: TextStyle(
+                                  fontFamily: 'Tajawal',
+                                  fontSize: 11,
+                                  color: themeColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white70),
+                          onPressed: () => Navigator.pop(ctx),
                         ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white70),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const Divider(color: Colors.white12, height: 16),
-              Expanded(
-                child: emps.isEmpty
-                    ? Center(
-                        child: Text(
-                          loc.isArabic ? 'لا يوجد موظفون في هذه القائمة حالياً' : 'Aucun employé dans cette catégorie',
-                          style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary),
+                    const SizedBox(height: 10),
+                    // Quick Search Field
+                    TextField(
+                      onChanged: (v) => setModalState(() => modalSearch = v),
+                      style: const TextStyle(fontFamily: 'Tajawal', fontSize: 13, color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: loc.isArabic ? 'ابحث سريعاً بالاسم أو اللقب أو المصلحة...' : 'Recherche rapide par nom...',
+                        hintStyle: const TextStyle(fontFamily: 'Tajawal', fontSize: 12, color: Colors.white38),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFFD4AF37), size: 20),
+                        filled: true,
+                        fillColor: Colors.black38,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: emps.length,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 1.2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Quick Filter Chips by Service
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildFilterChip(
+                            loc.isArabic ? 'الكل (${emps.length})' : 'Tous',
+                            'all',
+                            selectedService,
+                            (v) => setModalState(() => selectedService = v),
+                            color: themeColor,
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFilterChip(
+                            loc.isArabic ? 'حماية المستهلك' : 'Consommation',
+                            'حماية المستهلك',
+                            selectedService,
+                            (v) => setModalState(() => selectedService = v),
+                            color: const Color(0xFF10B981),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFilterChip(
+                            loc.isArabic ? 'المنافسة والتحقيقات' : 'Concurrence',
+                            'المنافسة',
+                            selectedService,
+                            (v) => setModalState(() => selectedService = v),
+                            color: const Color(0xFFD4AF37),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFilterChip(
+                            loc.isArabic ? 'ملاحظة السوق' : 'Marché',
+                            'ملاحظة السوق',
+                            selectedService,
+                            (v) => setModalState(() => selectedService = v),
+                            color: const Color(0xFF38BDF8),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildFilterChip(
+                            loc.isArabic ? 'الإدارة والوسائل' : 'Administration',
+                            'الإدارة',
+                            selectedService,
+                            (v) => setModalState(() => selectedService = v),
+                            color: const Color(0xFFF97316),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(color: Colors.white12, height: 16),
+                    Expanded(
+                      child: filteredEmps.isEmpty
+                          ? Center(
+                              child: Text(
+                                loc.isArabic ? 'لا توجد نتائج تطابق البحث' : 'Aucun résultat trouvé',
+                                style: const TextStyle(fontFamily: 'Tajawal', color: AppTheme.TextSecondary),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredEmps.length,
                         itemBuilder: (context, idx) {
-                          final emp = emps[idx];
+                          final emp = filteredEmps[idx];
                           final name = emp['name']?.toString() ?? (loc.isArabic ? 'موظف' : 'Employé');
                           final service = emp['service']?.toString() ?? '';
                           final checkIn = emp['checkInTime'] != null ? _formatAttendanceTime(emp['checkInTime']) : null;
@@ -1232,9 +1343,12 @@ class _DirectorMapTabState extends State<DirectorMapTab>
             ],
           ),
         ),
-      ),
+        );
+      },
     );
-  }
+  },
+);
+}
 
   String _formatAttendanceTime(dynamic rawTime) {
     if (rawTime == null || rawTime.toString().isEmpty) return '---';
